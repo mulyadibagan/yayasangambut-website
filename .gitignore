@@ -20,6 +20,9 @@ pnpm-debug.log*
 # local migration snapshots
 src/data/legacy-wordpress-raw.json
 
+# Cloudflare local state
+.wrangler/
+
 # macOS-specific files
 .DS_Store
 

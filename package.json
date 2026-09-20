@@ -10,12 +10,16 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "content:import-wordpress": "node scripts/import-wordpress.mjs"
+    "content:import-wordpress": "node scripts/import-wordpress.mjs",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=yayasangambut-website --branch=main"
   },
   "dependencies": {
     "astro": "^7.3.3"
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "wrangler": "^4.135.0"
   }
 }

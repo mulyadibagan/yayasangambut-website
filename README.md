@@ -31,13 +31,23 @@ Output siap deploy berada di `dist/`.
 
 ## Deploy ke Cloudflare Pages
 
-Buat Pages project baru dan hubungkan repository ini. Gunakan konfigurasi:
+Website staging publik tersedia di:
+
+`https://yayasangambut-website.pages.dev/`
+
+Project Cloudflare Pages memakai direct upload. Untuk membangun dan menerbitkan versi terbaru:
+
+```bash
+npm run deploy
+```
+
+Konfigurasi deployment:
 
 - Framework preset: `Astro`
 - Build command: `npm run build`
 - Build output directory: `dist`
 - Node.js: `22`
-- Production branch: pilih setelah alur review disepakati
+- Production branch: `main`
 
 Gunakan subdomain staging Cloudflare Pages terlebih dahulu. Jangan arahkan `yayasangambut.org` sampai konten, legalitas, analytics, formulir, performa, dan keamanan selesai direview.
 
@@ -80,7 +90,7 @@ Snapshot 20 September 2026 menghasilkan:
 - 10 kategori lokasi
 - 530 record media publik pada respons REST saat snapshot
 
-Konten terbit berada di `src/content/`. `src/data/legacy-wordpress.json` adalah manifest ringkas untuk editorial dan aset; `src/data/legacy-wordpress-raw.json` menyimpan payload post, halaman, kategori, dan tag sumber agar transformasi dapat diaudit. Importer juga membangun `public/_redirects` untuk URL halaman, post, kategori, dan tag lama.
+Konten terbit berada di `src/content/`. `src/data/legacy-wordpress.json` adalah manifest ringkas untuk editorial dan aset. `src/data/legacy-wordpress-raw.json` menyimpan payload sumber hanya secara lokal dan diabaikan Git karena dapat memuat nonce formulir sementara. Importer juga membangun `public/_redirects` untuk URL halaman, post, kategori, dan tag lama.
 
 Halaman demo WordPress (`sample-page`, `donasi`) tidak diterbitkan sebagai konten baru, tetapi isi sumbernya tetap ada di raw snapshot. Custom post demo logo slider tidak diperlakukan sebagai mitra resmi.
 
