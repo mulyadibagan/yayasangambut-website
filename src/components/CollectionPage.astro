@@ -1,8 +1,33 @@
 ---
-import { getCollection } from 'astro:content'; import ContentLayout from '../layouts/ContentLayout.astro'; import type { Lang } from '../data/site';
-const { lang, type }=Astro.props as {lang:Lang,type:'programs'|'articles'|'publications'}; const entries=(await getCollection(type,({data})=>data.language===lang&&data.status==='published')).sort((a,b)=>('order'in a.data&&'order'in b.data)?a.data.order-b.data.order:0);
-const labels={programs:{id:['Program','Lima jalur kerja untuk menghubungkan pemulihan ekosistem, penghidupan, dan pengetahuan.'],en:['Programs','Five ways of working that connect ecosystem recovery, livelihoods, and knowledge.']},articles:{id:['Cerita Lapangan','Pembelajaran, suara, dan praktik yang tumbuh dari kerja bersama di lapangan.'],en:['Field Stories','Lessons, voices, and practices emerging from work in the field.']},publications:{id:['Publikasi','Laporan, panduan, dan catatan pembelajaran untuk dipakai bersama.'],en:['Publications','Reports, guides, and learning notes made to be shared.']}} as const; const [title,intro]=labels[type][lang];
+import { getCollection } from 'astro:content';
+import ContentLayout from '../layouts/ContentLayout.astro';
+import { legacyProjects, legacyServices, type Lang } from '../data/site';
+const { lang, type }=Astro.props as {lang:Lang,type:'programs'|'articles'|'publications'};
+let entries:any[] = await getCollection(type as any,({data}:any)=>data.language===lang&&data.status==='published');
+let fallback=false;
+if(type==='publications'&&!entries.length){entries=await getCollection('publications',({data})=>data.language==='id'&&data.status==='published');fallback=true;}
+entries.sort((a,b)=>type==='programs'?a.data.order-b.data.order:type==='articles'?b.data.date.valueOf()-a.data.date.valueOf():b.data.year-a.data.year);
+const labels={programs:{id:['Program','Lima jalur kerja untuk menghubungkan pemulihan ekosistem, penghidupan, pengetahuan, dan koordinasi multipihak.'],en:['Programs','Five ways of working that connect ecosystem recovery, livelihoods, knowledge, and multi-stakeholder coordination.']},articles:{id:['Cerita Lapangan',`${entries.length} cerita, berita, dan pembelajaran dari kerja lapangan Yayasan Gambut.`],en:['Field Stories',`${entries.length} stories and lessons from Yayasan Gambut’s field work.`]},publications:{id:['Publikasi',`${entries.length} laporan, panduan, dan bahan pembelajaran untuk dibaca atau diunduh.`],en:['Publications',`${entries.length} reports, guides, and learning resources available to read or download.`]}} as const;
+const [title,intro]=labels[type][lang];
 const segment=type==='programs'?(lang==='id'?'program':'programs'):type==='articles'?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications');
 ---
-<ContentLayout title={title} intro={intro}><section class="section"><div class="container cards">{entries.map(entry=><article><p class="eyebrow">{type==='publications'?entry.data.year:('category'in entry.data?entry.data.category:entry.data.eyebrow)}</p><h2>{entry.data.title}</h2><p>{entry.data.summary}</p><a class="text-link" href={`/${lang}/${segment}/${entry.data.slug}/`}>{lang==='id'?'Selengkapnya':'Learn more'}</a></article>)}</div></section></ContentLayout>
-<style>.cards{display:grid;gap:1rem}.cards article{padding:clamp(1.5rem,4vw,3rem);border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-bright)}.cards h2{font-size:clamp(1.8rem,3vw,3rem)}.cards p:not(.eyebrow){color:var(--muted)}@media(min-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.cards article:first-child{grid-column:1/-1}}</style>
+<ContentLayout title={title} intro={intro}>
+  <section class="section"><div class="container">
+    {fallback&&<p class="archive-note">{lang==='en'?'These publications are currently available in their original Indonesian editions.':'Dokumen ditampilkan dalam bahasa sumber.'}</p>}
+    <div class:list={['cards',type]}>{entries.map(entry=>{
+      const internal=!fallback||type!=='publications';
+      const href=internal?`/${lang}/${segment}/${entry.data.slug}/`:entry.data.fileUrl;
+      return <article>
+        {type==='articles'&&entry.data.featuredImage&&<img src={entry.data.featuredImage} width="900" height="600" loading="lazy" alt={entry.data.imageAlt||entry.data.title}/>}
+        {type==='publications'&&entry.data.cover&&<img class="cover" src={entry.data.cover} width="700" height="900" loading="lazy" alt={entry.data.title}/>}
+        <div><p class="eyebrow">{type==='publications'?entry.data.year:('category'in entry.data?entry.data.category:entry.data.eyebrow)}</p><h2>{entry.data.title}</h2><p>{entry.data.summary}</p>{type==='articles'&&<p class="date">{entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</p>}<a class="text-link" href={href} target={!internal?'_blank':undefined} rel={!internal?'noreferrer':undefined}>{type==='publications'?(lang==='id'?'Buka dokumen':'Open document'):(lang==='id'?'Selengkapnya':'Learn more')}</a></div>
+      </article>
+    })}</div>
+  </div></section>
+  {type==='programs'&&<section class="legacy-services section"><div class="container"><p class="eyebrow">{lang==='id'?'Apa yang kami lakukan':'What we do'}</p><h2>{lang==='id'?'Empat bentuk kerja yang dipublikasikan':'Four published ways of working'}</h2><div class="service-grid">{legacyServices[lang].map(service=><article><h3>{service.title}</h3><p>{service.body}</p></article>)}</div></div></section>}
+  {type==='programs'&&<section class="projects section" id="proyek"><div class="container"><p class="eyebrow">{lang==='id'?'Arsip program':'Program archive'}</p><h2>{lang==='id'?'Inisiatif 2020–2021':'Initiatives from 2020–2021'}</h2><div class="timeline">{legacyProjects.map(project=><article><strong>{project.year}</strong><p>{project.title}</p></article>)}</div></div></section>}
+</ContentLayout>
+<style>
+  .archive-note{max-width:48rem;margin:0 0 2rem;padding:1rem;border-left:3px solid var(--coast-700);color:var(--muted)}.cards{display:grid;gap:1rem}.cards article{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-bright)}.cards article>div{padding:clamp(1.3rem,3vw,2.2rem)}.cards h2{font-size:clamp(1.7rem,2.5vw,2.65rem)}.cards p:not(.eyebrow){color:var(--muted)}.cards article>img{aspect-ratio:3/2;object-fit:cover}.cards article>.cover{aspect-ratio:4/3;object-fit:contain;padding:1rem;background:#e8ebe6}.date{font-size:.82rem;font-weight:750}.legacy-services{background:var(--paper-bright)}.legacy-services h2,.projects h2{max-width:13ch}.service-grid{display:grid;gap:1rem;margin-top:2.5rem}.service-grid article{padding:1.5rem;border:1px solid var(--line);border-radius:var(--radius-md)}.service-grid h3{font:500 1.55rem/1.1 var(--serif)}.service-grid p{color:var(--muted)}.projects{background:#dce8e6}.timeline{margin-top:2.5rem;border-top:1px solid var(--line)}.timeline article{display:grid;grid-template-columns:5rem 1fr;gap:1rem;padding:1.3rem 0;border-bottom:1px solid var(--line)}.timeline strong{color:var(--coast-700)}.timeline p{margin:0;max-width:55rem}
+  @media(min-width:760px){.cards,.service-grid{grid-template-columns:repeat(2,1fr)}.cards.programs article:first-child{grid-column:1/-1}.cards.articles article,.cards.publications article{display:grid;grid-template-columns:minmax(12rem,.75fr) 1.25fr}.cards.articles article>img,.cards.publications article>.cover{height:100%;aspect-ratio:auto}.timeline article{grid-template-columns:8rem 1fr}}
+</style>

@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import ContentLayout from '../layouts/ContentLayout.astro';
+import type { Lang } from '../data/site';
+const {lang}=Astro.props as {lang:Lang};
+const galleries=(await getCollection('gallery',({data})=>data.language==='id'&&data.status==='published')).sort((a,b)=>a.data.order-b.data.order);
+const imageCount=galleries.reduce((total,album)=>total+album.data.images.length,0);
+---
+<ContentLayout title={lang==='id'?'Galeri':'Gallery'} intro={lang==='id'?`${imageCount} foto dalam ${galleries.length} album dokumentasi lapangan dari arsip website Yayasan Gambut.`:`${imageCount} photographs across ${galleries.length} field-documentation albums from the Yayasan Gambut website archive.`}>
+  <section class="section"><div class="container albums">
+    {lang==='en'&&<p class="archive-note">Album titles and source descriptions remain in Indonesian to preserve the original public archive.</p>}
+    {galleries.map((album,albumIndex)=><article class="album" id={album.data.slug}>
+      <header><span>{String(albumIndex+1).padStart(2,'0')}</span><div><h2>{album.data.title}</h2>{album.data.summary&&<p>{album.data.summary}</p>}<small>{album.data.images.length} {lang==='id'?'foto':'photos'}</small></div></header>
+      <div class="photos">{album.data.images.map((src,index)=><a href={src} target="_blank" rel="noreferrer"><img src={src} width="900" height="700" loading="lazy" alt={`${album.data.title} — ${lang==='id'?'foto':'photo'} ${index+1}`}/></a>)}</div>
+    </article>)}
+  </div></section>
+</ContentLayout>
+<style>
+  .archive-note{max-width:48rem;margin:0 0 3rem;padding:1rem;border-left:3px solid var(--coast-700);color:var(--muted)}.album{padding:0 0 4rem;margin:0 0 4rem;border-bottom:1px solid var(--line)}.album header{display:grid;grid-template-columns:3rem 1fr;gap:1rem;margin-bottom:1.5rem}.album header>span{font-weight:850;color:var(--coast-700)}.album h2{margin-bottom:.7rem;font-size:clamp(2rem,4vw,4rem)}.album header p{max-width:50rem;color:var(--muted)}.album small{font-weight:800;color:var(--peat-700)}.photos{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}.photos a{overflow:hidden;border-radius:.55rem;background:var(--forest-950)}.photos img{height:100%;aspect-ratio:4/3;object-fit:cover;transition:transform .25s}.photos a:hover img{transform:scale(1.025)}
+  @media(min-width:760px){.album header{grid-template-columns:6rem 1fr}.photos{grid-template-columns:repeat(3,1fr);gap:.8rem}}
+  @media(min-width:1050px){.photos{grid-template-columns:repeat(4,1fr)}}
+</style>

@@ -14,8 +14,11 @@ pnpm-debug.log*
 
 
 # environment variables
-.env
-.env.production
+.env*
+!.env.example
+
+# local migration snapshots
+src/data/legacy-wordpress-raw.json
 
 # macOS-specific files
 .DS_Store

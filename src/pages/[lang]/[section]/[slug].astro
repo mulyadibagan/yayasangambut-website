@@ -1,7 +1,33 @@
 ---
-import { getCollection, render } from 'astro:content'; import BaseLayout from '../../../layouts/BaseLayout.astro';
-export async function getStaticPaths(){const all=[...(await getCollection('programs')),...(await getCollection('articles')),...(await getCollection('publications'))];return all.filter(e=>e.data.status==='published').map(entry=>{const lang=entry.data.language;const section=entry.collection==='programs'?(lang==='id'?'program':'programs'):entry.collection==='articles'?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications');return{params:{lang,section,slug:entry.data.slug},props:{entry}}})}
-const {entry}=Astro.props; const {Content}=await render(entry); const lang=entry.data.language; const isArticle=entry.collection==='articles';
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+export async function getStaticPaths(){
+  const all=[...(await getCollection('programs')),...(await getCollection('articles')),...(await getCollection('publications'))];
+  return all.filter(e=>e.data.status==='published').map(entry=>{
+    const lang=entry.data.language;
+    const section=entry.collection==='programs'?(lang==='id'?'program':'programs'):entry.collection==='articles'?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications');
+    return{params:{lang,section,slug:entry.data.slug},props:{entry}};
+  });
+}
+const {entry}=Astro.props;
+const {Content}=await render(entry);
+const lang=entry.data.language;
+const isArticle=entry.collection==='articles';
+const isPublication=entry.collection==='publications';
+const collectionUrl=`/${lang}/${entry.collection==='programs'?(lang==='id'?'program':'programs'):isArticle?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications')}/`;
+const collectionLabel=entry.collection==='programs'?(lang==='id'?'Program':'Programs'):isArticle?(lang==='id'?'Cerita Lapangan':'Field Stories'):(lang==='id'?'Publikasi':'Publications');
 ---
-<BaseLayout title={`${entry.data.title} — Yayasan Gambut`} description={entry.data.summary} article={isArticle} image={isArticle?entry.data.featuredImage:undefined}><article class="detail"><header class="container"><p class="eyebrow">{entry.collection==='publications'?entry.data.year:('category'in entry.data?entry.data.category:entry.data.eyebrow)}</p><h1>{entry.data.title}</h1><p class="lede">{entry.data.summary}</p>{isArticle&&<p class="meta">{entry.data.author} · {entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</p>}</header>{isArticle&&<figure><img src={entry.data.featuredImage} width="1600" height="900" alt={entry.data.imageAlt}/>{entry.data.imageCredit&&<figcaption>{entry.data.imageCredit}</figcaption>}</figure>}<div class="container prose"><Content/>{entry.collection==='publications'&&<p><a class="button primary" href={entry.data.fileUrl}>{lang==='id'?'Unduh publikasi (segera tersedia)':'Download publication (coming soon)'}</a></p>}</div></article></BaseLayout>
-<style>.detail>header{padding:clamp(4rem,8vw,8rem) 0 3rem}.detail h1{max-width:15ch}.meta{font-weight:750;color:var(--coast-700)}figure{width:min(calc(100% - 2rem),86rem);margin:0 auto}figure img{max-height:46rem;object-fit:cover;border-radius:var(--radius-lg)}figcaption{padding:.5rem 0;color:var(--muted);font-size:.75rem}.prose{max-width:48rem;padding-top:3rem;padding-bottom:7rem}.prose :global(h2){font-size:2rem;margin-top:2.5rem}.prose :global(p),.prose :global(li){font-size:1.08rem;color:var(--muted)}</style>
+<BaseLayout title={`${entry.data.title} — Yayasan Gambut`} description={entry.data.summary} article={isArticle} image={isArticle?entry.data.featuredImage:entry.data.cover}>
+  <article class="detail">
+    <header class="container"><nav class="breadcrumb" aria-label="Breadcrumb"><a href={collectionUrl}>{collectionLabel}</a><span>／</span><span>{entry.data.title}</span></nav><p class="eyebrow">{isPublication?entry.data.year:('category'in entry.data?entry.data.category:entry.data.eyebrow)}</p><h1>{entry.data.title}</h1><p class="lede">{entry.data.summary}</p>{isArticle&&<p class="meta">{entry.data.author} · {entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</p>}</header>
+    {isArticle&&entry.data.featuredImage&&<figure class="featured"><img src={entry.data.featuredImage} width="1600" height="900" alt={entry.data.imageAlt||entry.data.title}/>{entry.data.imageCredit&&<figcaption>{entry.data.imageCredit}</figcaption>}</figure>}
+    {isPublication&&entry.data.cover&&<figure class="publication-cover"><img src={entry.data.cover} width="900" height="1200" alt={entry.data.title}/></figure>}
+    <div class="container prose"><Content/>
+      {isPublication&&<p><a class="button primary" href={entry.data.fileUrl} target="_blank" rel="noreferrer">{lang==='id'?'Buka atau unduh PDF ↗':'Open or download PDF ↗'}</a></p>}
+      {entry.data.sourceUrl&&<aside class="source"><strong>{lang==='id'?'Sumber migrasi':'Migration source'}</strong><a href={entry.data.sourceUrl} target="_blank" rel="noreferrer">{lang==='id'?'Lihat halaman pada arsip website lama ↗':'View page in the legacy website archive ↗'}</a></aside>}
+    </div>
+  </article>
+</BaseLayout>
+<style>
+  .detail>header{padding:clamp(3rem,7vw,7rem) 0 3rem}.detail h1{max-width:16ch}.breadcrumb{display:flex;gap:.5rem;align-items:center;margin-bottom:2.5rem;color:var(--muted);font-size:.78rem}.breadcrumb span:last-child{overflow:hidden;max-width:32rem;text-overflow:ellipsis;white-space:nowrap}.meta{font-weight:750;color:var(--coast-700)}.featured{width:min(calc(100% - 2rem),86rem);margin:0 auto}.featured img{max-height:46rem;object-fit:cover;border-radius:var(--radius-lg)}figcaption{padding:.5rem 0;color:var(--muted);font-size:.75rem}.publication-cover{width:min(calc(100% - 2rem),42rem);margin:0 auto}.publication-cover img{max-height:44rem;object-fit:contain;border-radius:var(--radius-md);background:white}.prose{max-width:48rem;padding-top:3rem;padding-bottom:7rem}.prose :global(h2){font-size:2rem;margin-top:2.5rem}.prose :global(h3){margin-top:2rem;font-size:1.35rem}.prose :global(p),.prose :global(li){font-size:1.08rem;color:var(--muted)}.prose :global(img){margin:2rem 0;border-radius:var(--radius-md)}.prose :global(a){overflow-wrap:anywhere}.source{display:grid;gap:.35rem;margin-top:4rem;padding:1.2rem;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper-bright);font-size:.85rem}.source strong{color:var(--coast-700)}
+</style>

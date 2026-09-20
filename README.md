@@ -1,6 +1,6 @@
 # Yayasan Gambut — Official Website
 
-Repository mandiri untuk website resmi `yayasangambut.org`. Proyek ini tidak memuat, menyalin, atau mengubah aplikasi maupun dataset WebGIS di `webgisyg.id`.
+Repository mandiri untuk website resmi `yayasangambut.org`. Proyek ini tidak memuat, menyalin, atau mengubah aplikasi maupun dataset WebGIS di `webgisyg.id`. Konten publik website WordPress lama sudah dimigrasikan melalui REST API dan sitemap; website sumber tidak diubah.
 
 ## Teknologi dan prinsip
 
@@ -52,14 +52,37 @@ src/
 │   ├── publications/{id,en}/
 │   ├── locations/{id,en}/
 │   ├── team/{id,en}/
-│   └── partners/{id,en}/
-├── data/              copy antarmuka dan data sementara
+│   ├── partners/{id,en}/
+│   └── gallery/id/
+├── data/              copy antarmuka, manifest, dan snapshot sumber
 ├── layouts/           layout halaman dan metadata SEO
 ├── pages/             routing statis ID/EN, sitemap, robots
 └── styles/            design tokens dan gaya global
 ```
 
 Schema semua collection ada di `src/content.config.ts`. Nilai `status` yang didukung: `draft`, `review`, dan `published`.
+
+## Snapshot dan migrasi WordPress
+
+Jalankan ulang importer saat perlu menyegarkan konten publik dari website lama:
+
+```bash
+npm run content:import-wordpress
+```
+
+Snapshot 20 September 2026 menghasilkan:
+
+- 49 post sumber; 47 menjadi cerita dan 2 menjadi publikasi
+- 12 halaman, 14 kategori, dan 209 tag
+- 8 publikasi unik
+- 11 profil tim
+- 9 album dengan total 54 foto
+- 10 kategori lokasi
+- 530 record media publik pada respons REST saat snapshot
+
+Konten terbit berada di `src/content/`. `src/data/legacy-wordpress.json` adalah manifest ringkas untuk editorial dan aset; `src/data/legacy-wordpress-raw.json` menyimpan payload post, halaman, kategori, dan tag sumber agar transformasi dapat diaudit. Importer juga membangun `public/_redirects` untuk URL halaman, post, kategori, dan tag lama.
+
+Halaman demo WordPress (`sample-page`, `donasi`) tidak diterbitkan sebagai konten baru, tetapi isi sumbernya tetap ada di raw snapshot. Custom post demo logo slider tidak diperlakukan sebagai mitra resmi.
 
 ## Menambah artikel
 
@@ -100,7 +123,9 @@ Secret untuk proses build atau integrasi server di masa depan harus dibuat sebag
 2. Gunakan custom domain media dan aktifkan cache publik.
 3. Simpan foto, video, dan PDF final di R2; repository hanya menyimpan URL dan metadata.
 4. Siapkan transformasi gambar WebP/AVIF dan ukuran responsif di pipeline media.
-5. Migrasikan URL contoh foto eksternal setelah Yayasan Gambut menyediakan aset berizin.
+5. Migrasikan dan rewrite semua URL `https://yayasangambut.org/wp-content/uploads/...` sebelum DNS production dialihkan.
+
+Saat ini konten memakai URL aset pada WordPress lama supaya repository tidak menampung ratusan gambar dan PDF besar. Ini aman untuk staging selama origin WordPress tetap hidup. Pemindahan ke R2 atau proxy kompatibel untuk jalur `/wp-content/uploads/*` adalah blocker peluncuran domain: setelah DNS berpindah ke Pages, URL lama akan menunjuk ke website baru dan gagal jika tidak dipertahankan.
 
 ## Rencana CMS
 
@@ -116,9 +141,9 @@ Website resmi hanya boleh mengambil ringkasan yang memang dinyatakan publik, mis
 
 ## Checklist sebelum domain production
 
-- Verifikasi profil, visi-misi, legalitas, alamat, kontak, tim, dan mitra
+- Review editorial profil, visi-misi, legalitas, alamat, kontak, tim, dan montage mitra yang sudah dimigrasikan
 - Ganti seluruh statistik placeholder dengan data bersumber dan bertanggal
-- Ganti contoh artikel/publikasi dan foto eksternal dengan konten resmi berizin
+- Pindahkan aset WordPress yang dirujuk ke R2 dan rewrite seluruh URL media
 - Finalisasi privacy policy, analytics consent, serta endpoint formulir kontak
 - Uji aksesibilitas, broken links, Core Web Vitals, dan social previews
 - Deploy dan review di staging Cloudflare Pages
