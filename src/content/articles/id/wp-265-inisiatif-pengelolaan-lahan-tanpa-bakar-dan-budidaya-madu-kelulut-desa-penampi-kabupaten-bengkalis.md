@@ -33,13 +33,13 @@ Badan Restorasi Gambut pada tahun 2019 melaksanakan serangkaian pelatihan pening
 
 Melihat semangat Petani di Desa Penampi yang masih aktif mengkampanyekan PLTB maka Yayasan Gambut melalui dukungan pendanaan dari Global Environment Centre (GEC) menyerukan kembali bersama 4 orang petani yang berkomitmen untuk mengembangkan pertanian lahan gambut tanpa bakar di pekarangan lahan gambut di sekitar rumah warga di Desa Penampi
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/YG-Diskusi.jpg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/YG-Diskusi.jpg)
 
 _Yayasan Gambut Berdiskusi Dengan Pemerintah Desa Penampi terkait Inisiatif Pengelolaan Lahan Tanpa Bakar_
 
 Petani Desa Penampi akhirnya mengembangkan berbagai macam komoditas hortikultura tanpa bakar di lahan gambut di sekitar pekarangan rumah mereka, pengolahan lahan mereka lakukan dengan cara manual menggunakan cangkul dan membuat bedengan di lahan gambut, dalam pengolahan pertanian lahan agar produktif pH tanah menjadi perhatian utama bagi petani, sehingga sebelum melakukan penanaman mereka memberikan dolomit untuk menaikkan pH tanah di lahan gambut kemudian rutin melakukan pemupukan sesuai kebutuhan masing-masing tanaman serta mensuplai kebutuhan harian air bagi tanaman.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/PLTB-Penampi.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/PLTB-Penampi.png)
 
 _Pertanian Lahan Tanpa Bakar Desa Penampi_
 
@@ -47,7 +47,7 @@ Pertanian tanpa bakar di Desa Penampi merupakan bagian dari upaya untuk mencegah
 
 Di Kelompok yang lain sebanyak 7 orang mengembangkan budidaya madu kelulut, meskipun di daerah lain budidaya madu kelulut sudah marak, tetapi bagi Pak Samrizal salah seorang pengelola madu kelulut yang mendapatkan pelatihan dari Yayasan Gambut mengakui usaha tersebut masih tergolong baru bagi mereka. Di awal pelatihan yang dilaksanakan pada 8-9 Oktober 2020, peserta dari desa Penampi mendapatkan 14 Unit Koloni Madu Kelulut, sebulan setelah mendapatkan pelatihan yang awal nya hanya 7 orang terlibat menjadi 11 orang dan koloni madu kelulut pun bertambah menjadi 30 unit.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Madu.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Madu.png)
 
 _Pelatihan Madu kelulut hingga pencarian Koloni Baru di Desa Penampi_
 

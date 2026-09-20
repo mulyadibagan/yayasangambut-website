@@ -23,7 +23,7 @@ legacy: true
 
 Pemerintah Provinsi Riau Melalui Dinas Lingkungan Hidup dan Kehutanan (DLHK) menginisiasi program adopsi pohon yang bertujuan agar masyarakat tetap menjaga pohon di wilayah mereka tinggal dan mendapatkan insentif. Program ini menggalang donasi publik yang akan disalurkan langsung kepada masyarakat adat/lokal yang bersangkutan tanpa potongan biaya untuk manajemen
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2021/09/Launching-Adopsi-Pohon-1024x517.png)
+![](https://yayasangambut.org/wp-content/uploads/2021/09/Launching-Adopsi-Pohon-1024x517.png)
 
 _Launching Adopsi Pohon Riau oleh Pemprov Riau melalui Dinas Lingkungan dan Kehutanan Hidup Provinsi Riau, Agustus 2021 (sumber : https://www.youtube.com/watch?v=x86KZsQxNbE&t=950s )_
 
@@ -31,7 +31,7 @@ Dana yang terkumpul akan digunakan untuk dana sosial (15%, misalnya dukungan unt
 
 Semenjak di launching pada bulan Agustus, dana yang terkumpul lebih dari 2 Miliar Rupiah dari berbagai pihak dan total pohon yang sudah di identifikasi oleh tim manajemen sebanyak 10.613 Batang, Dana Adopsi sebesar Rp 200 ribu/batang/tahun untuk pohon dewasa sementara untuk pohon muda atau pohon yang akan di tanam Rp 50.000/batang/tahun.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2021/09/hutan-adopsi-1024x508.png)
+![](https://yayasangambut.org/wp-content/uploads/2021/09/hutan-adopsi-1024x508.png)
 
 _Lanksap Hutan yang sudah di Identifikasi dan siap di Adopsi (sumber : https://www.youtube.com/watch?v=M0owyiF7d0Q&t=55s )_
 

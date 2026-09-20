@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-Astro akan menampilkan URL lokal, biasanya `http://localhost:4321`. Build produksi:
+Astro akan menampilkan URL lokal, biasanya `http://localhost:4321`. Build pratinjau (selalu `noindex`):
 
 ```bash
 npm run build
@@ -28,6 +28,12 @@ npm run preview
 ```
 
 Output siap deploy berada di `dist/`.
+
+Build yang dapat diindeks hanya boleh dibuat untuk aktivasi domain resmi setelah seluruh checklist peluncuran selesai:
+
+```bash
+npm run build:production
+```
 
 ## Deploy ke Cloudflare Pages
 
@@ -124,6 +130,7 @@ Salin `.env.example` menjadi `.env` untuk development lokal. Variabel berawalan 
 
 - `PUBLIC_MEDIA_BASE_URL`: origin publik bucket/custom domain R2
 - `PUBLIC_WEBGIS_API_URL`: endpoint API publik, read-only, dari WebGIS
+- `PUBLIC_SITE_ENV`: gunakan `staging` untuk pratinjau dan `production` hanya untuk build domain resmi. Nilai production diaktifkan secara eksplisit oleh `npm run build:production`; build Astro biasa tetap `noindex`
 
 Secret untuk proses build atau integrasi server di masa depan harus dibuat sebagai encrypted environment variable di Cloudflare, tanpa prefix `PUBLIC_`.
 
@@ -152,7 +159,7 @@ Website resmi hanya boleh mengambil ringkasan yang memang dinyatakan publik, mis
 ## Checklist sebelum domain production
 
 - Review editorial profil, visi-misi, legalitas, alamat, kontak, tim, dan montage mitra yang sudah dimigrasikan
-- Ganti seluruh statistik placeholder dengan data bersumber dan bertanggal
+- Verifikasi indikator dampak organisasi sebelum menambahkannya; beranda sementara hanya menampilkan jumlah konten arsip yang dapat dihitung langsung
 - Pindahkan aset WordPress yang dirujuk ke R2 dan rewrite seluruh URL media
 - Finalisasi privacy policy, analytics consent, serta endpoint formulir kontak
 - Uji aksesibilitas, broken links, Core Web Vitals, dan social previews

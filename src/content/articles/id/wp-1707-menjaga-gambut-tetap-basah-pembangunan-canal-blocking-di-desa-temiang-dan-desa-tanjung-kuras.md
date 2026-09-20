@@ -23,7 +23,7 @@ legacy: true
 
 Dalam upaya untuk menjaga ekosistem gambut agar tetap sehat dan terlindungi, Yayasan Gambut bersama masyarakat di Desa Temiang, Kabupaten Bengkalis, dan Desa Tanjung Kuras, Kabupaten Siak, telah melakukan pembangunan sekat parit atau canal blocking. Program ini bertujuan untuk mempertahankan kelembaban alami lahan gambut, yang jika dibiarkan kering dapat menyebabkan risiko kebakaran yang tinggi, terutama selama musim kemarau.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-08-at-11.46.43-1024x768.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-08-at-11.46.43-1024x768.jpeg)
 
 _Harisyah ( Kelompok Masyarakat Tanjung Kuras ) sedang mempersiapakan lokasi pembangunan Sekat Parit di Lahan Gambut_
 
@@ -31,7 +31,7 @@ _Harisyah ( Kelompok Masyarakat Tanjung Kuras ) sedang mempersiapakan lokasi pem
 
 Dengan membangun sekat parit di kanal-kanal ini, air dapat tertahan sehingga tetap menjaga kelembaban tanah gambut. Canal blocking ini dirancang untuk menyesuaikan dengan kebutuhan ekologis setempat, sehingga mampu mengurangi aliran air keluar dari lahan gambut dan membantu menstabilkan kondisi lingkungan agar terhindar dari kekeringan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-10-at-13.36.01-1024x461.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-10-at-13.36.01-1024x461.jpeg)
 
 _Proses pembangunan Sekat Parit di Desa temiang_
 
@@ -39,7 +39,7 @@ Desa Temiang dan Desa Tanjung Kuras dipilih karena kedua wilayah ini memiliki la
 
 Pada tahap perencanaan, tim Yayasan Gambut dan kelompok masyarakat melakukan survei dan analisis lokasi untuk menentukan titik kanal yang akan diblokir. Setelah itu, dimulailah proses konstruksi oleh kelompok masyarakat, sehingga memungkinkan masyarakat untuk melanjutkan pemeliharaannya secara mandiri kedepannya.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-11-at-11.01.25.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-11-at-11.01.25.jpeg)
 
 _Proses pengecoran menggunakan semen dilakukan di akhir untuk menambah kekuatan struktur kanal bloking_
 

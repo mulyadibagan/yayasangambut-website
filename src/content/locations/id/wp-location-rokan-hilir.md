@@ -2,7 +2,7 @@
 name: "Rokan Hilir"
 slug: "rokan-hilir"
 province: Riau
-summary: "1 artikel publik terhubung dengan lokasi ini dalam arsip website lama."
+summary: "1 artikel publik terhubung dengan lokasi ini dalam arsip cerita Yayasan Gambut."
 type: lokasi-arsip
 legacyCategorySlug: "rokan-hilir"
 language: id

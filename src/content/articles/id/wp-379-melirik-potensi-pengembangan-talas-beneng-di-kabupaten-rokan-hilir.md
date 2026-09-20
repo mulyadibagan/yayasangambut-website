@@ -25,7 +25,7 @@ Talas Beneng yang merupakan singkatan dari besar dan koneng yang berarti berukur
 
 Talas Beneng di panen setelah berumur 2 tahun dengan produksi umbi sekitar 40-45 Kg, talas ini memiliki kadar protein, mineral dan serta pangan yang tinggi, dimana di daerah asalnya tepung talas tersebut sudah di formulasikan menjadi produk olahan brownies, Bakpao dan Kue Kering.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/Ubi-Talas-Beneng-Small.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/Ubi-Talas-Beneng-Small.jpeg)
 
 _Talas Beneng (Dok: Rusli, 2020)_
 
@@ -41,7 +41,7 @@ Perkiraan umbi yang berumur 1 tahun bobot nya bisa mencapai 10 – 15 kg/batang,
 
 “Budidaya Talas Beneng di rekomendasikan tidak menggunakan pupuk kimia dalam perawatan nya, untuk kebutuhan pupuk organik kandang perhektarnya di awal tanam sebanyak 5 ton dan kapur dolomit 1 ton, begitu juga di tahun ke 2 jika petani berniat memanen umbi pada umur 2 tahun” tutur Rusli yang menjabat sebagai Bupati LIRA di Kabupaten Rokan Hilir kepada Yayasan Gambut dalam keterangan tertulis.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/Survey-Lokasi-Lahan-terlantar-utk-budidaya-talas-benen-1024x768.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/Survey-Lokasi-Lahan-terlantar-utk-budidaya-talas-benen-1024x768.jpeg)
 
 _Survey Rencana Lokasi Tanam Talas Beneng di Kepenghuluan Labuhan Tangga Besar (Dok: Rusli, 2020)_
 

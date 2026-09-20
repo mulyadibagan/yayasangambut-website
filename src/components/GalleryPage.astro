@@ -9,7 +9,7 @@ const imageCount=galleries.reduce((total,album)=>total+album.data.images.length,
 <ContentLayout title={lang==='id'?'Galeri':'Gallery'} intro={lang==='id'?`${imageCount} foto dalam ${galleries.length} album dokumentasi lapangan dari arsip website Yayasan Gambut.`:`${imageCount} photographs across ${galleries.length} field-documentation albums from the Yayasan Gambut website archive.`}>
   <section class="section"><div class="container albums">
     {lang==='en'&&<p class="archive-note">Album titles and source descriptions remain in Indonesian to preserve the original public archive.</p>}
-    {galleries.map((album,albumIndex)=><article class="album" id={album.data.slug}>
+    {galleries.map((album,albumIndex)=><article class="album" id={album.data.slug} lang={lang==='en'?'id':undefined}>
       <header><span>{String(albumIndex+1).padStart(2,'0')}</span><div><h2>{album.data.title}</h2>{album.data.summary&&<p>{album.data.summary}</p>}<small>{album.data.images.length} {lang==='id'?'foto':'photos'}</small></div></header>
       <div class="photos">{album.data.images.map((src,index)=><a href={src} target="_blank" rel="noreferrer"><img src={src} width="900" height="700" loading="lazy" alt={`${album.data.title} — ${lang==='id'?'foto':'photo'} ${index+1}`}/></a>)}</div>
     </article>)}

@@ -1,6 +1,6 @@
 ---
-name: "Dr.Ir. Lailan Syaufina M.Sc"
-position: "Member of Founder"
+name: "Dr. Ir. Lailan Syaufina, M.Sc."
+position: "Anggota Pendiri"
 group: "Governance"
 photo: "https://yayasangambut.org/wp-content/uploads/2020/05/Buk-Lailan.jpg"
 language: id

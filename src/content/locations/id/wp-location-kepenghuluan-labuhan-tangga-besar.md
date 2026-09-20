@@ -2,7 +2,7 @@
 name: "Kepenghuluan Labuhan Tangga Besar"
 slug: "kepenghuluan-labuhan-tangga-besar"
 province: Riau
-summary: "1 artikel publik terhubung dengan lokasi ini dalam arsip website lama."
+summary: "1 artikel publik terhubung dengan lokasi ini dalam arsip cerita Yayasan Gambut."
 type: lokasi-arsip
 legacyCategorySlug: "kepenghuluan-labuhan-tangga-besar"
 language: id

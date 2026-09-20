@@ -27,7 +27,7 @@ Kolaborasi awal dimulai ketika 100 relawan menanam 200 pohon Bakau Minyak (Rhizo
 
 Tahap 1 (2023-2024) membangun fondasi yang kuat dengan pengembangan komunitas Sekat Bakau dan pembibitan mereka, yang menghasilkan lebih dari 10.000 bibit untuk ditanam di lahan seluas 4 hektar yang terdegradasi di Buruk Bakul. Bibit-bibit ini mencakup berbagai spesies seperti Rhizophora apiculata, Ceriops tagal, Bruguiera gymnorrhiza, dan Avicennia alba untuk meningkatkan ketahanan ekosistem. Pemecah gelombang sepanjang 100 meter dibangun menggunakan 540 batang pohon nibong untuk mengurangi energi gelombang dan mendorong sedimentasi. Program ini juga memfasilitasi pertukaran pengetahuan melalui kunjungan studi ke Malaysia, di mana anggota komunitas mempelajari teknik restorasi mangrove yang telah terbukti.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/DJI_0389-1024x576.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/DJI_0389-1024x576.jpg)
 
 _Alat Pemecah Ombak (APO) Sepanjang 200 Meter di desa Buruk Bakul_
 
@@ -35,7 +35,7 @@ Tahap 2 (2024-2025) memperluas upaya ini secara signifikan, dengan dua pembibita
 
 **Upacara Penyelesaian Project Phase II di Desa Buruk Bakul, Kecamatan Bukit Batu, Kabupaten Bengkalis**
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/WhatsApp-Image-2025-05-18-at-12.13.58-1024x683.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/WhatsApp-Image-2025-05-18-at-12.13.58-1024x683.jpeg)
 
 _Foto Bersama di Area Penanaman Bakau di Desa Buruk Bakul_
 
@@ -65,7 +65,7 @@ Sebanyak 67 orang peserta yang hadir dalam proses penanaman antara lain :
 
 Kegiatan dimulai dengan Kata Sambutan oleh Ketua Sekat Bakau, Khaidir menyampaikan bahwa dalam proses pelaksanaan program konservasi mangrove ini mendapatkan banyak pengetahuan baru dalam menghadapi tantangan untuk menjaga kawasan pesisir di desa buruk bakul. Ia juga menambahkan melalui dukungan Aramco Asia Singapore dan pendampingan Global Environment Centre serta Yayasan Gambut menjadi sebuah jalan harapan untuk terus dapat menjaga ekosistem dari degradasi lingkungan yang terjadi di Desa Buruk Bakul.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/P2110316-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/P2110316-1024x683.jpg)
 
 _Camat Bukit Batu Acil Esyno memberikan sambutan saat kegiatan penanaman di Desa Buruk Bakul_
 
@@ -77,7 +77,7 @@ Nagarajan Rengasamy selaku Manager Forest and Coastal Proggrame Global Environme
 
 **Upacara Penyelesaian Project Phase II di Desa Kelapa Pati, Kecamatan Bengkalis, Kabupaten Bengkalis.**
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/P2120069-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/P2120069-1024x683.jpg)
 
 _Foto Bersama di Area Penanaman di Desa Kelapa Pati_
 
@@ -151,7 +151,7 @@ Pada kegiatan ini dihadiri oleh berbagai stakeholder di Kabupaten Bengkalis deng
 
 Sambutan hangat mengawali kegiatan ini oleh Defitri Akbar, Direktur Bahtera Melayu, menyampaikan rasa terimakasihnya dengan berlangsungnya program konservasi mangrove fase  2 (dua) ini di kabupaten bengkalis khususnya di Dukung Aramco Asia Singapore, Global Environment Centre (GEC) dan Yayasan Gambut (YG) dan suatu kebanggaan Bahtera Melayu bisa ikut berkolaborasi dalam program ini dan akan dilanjutkan ke fase 3 (tiga) harapan Defitri dan disambut dengan tepukan tangan yang meriah  tamu yang hadir.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/P2110786-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/P2110786-1024x683.jpg)
 
 _Foto Bersama Multi Pihak pada Pembukaan Acara di Gedung Serba Guna Desa Kelapa Pati_
 
@@ -161,13 +161,13 @@ Ketua kelompok Masyarakat  paret segagah Rio fernandes menceritakan terbentuknya
 
 Sambutan tertulis Bupati Bengkalis yang berhalangan hadi dalam kegiatan ini, di sampaikan melalui Johansyah Syafri mengatakan, mengucapkan rasa terimakasih dan apresiasi kepada Aramco Asia Singapore, Global Environment Centre (GEC), Yayasan Gambut, dan LSM Bahtera Melayu menjadikan Kabupaten Bengkalis dan ada 4 (empat) Lokasi di jadikan program konservasi mangrove berbasis Masyarakat.  Johan juga menyampaikan laju abrasi yang terjadi di Pantai pulau Bengkalis mencapai 59 hektar pertahun , sedangkan sedimentasinya hanya 16,5 hektar pertahun. Progam ini diharapkan tidak berhenti di fase 2 ( dua) dan berlanjut ke fase selanjutnya untuk mempercepat dan memperluas proses sidementasi di area Pantai pulau bengkalis.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/P2110704-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/P2110704-1024x683.jpg)
 
 _Staf Ahli Bupati Bidang Kemasyarakatan dan Sumber Daya Manusia Johansyah Syafri  saat memberikan kata sambutan_
 
 Patsy Koh, selaku Director of Public Affairs Aramco Asia Singapore merasa terhormat dengan sambutan yang meriah dengan atraksi adat tradisi local serta dukungan dari Pemerintah Kabupaten Bengkalis. Saat ini bukan hanya merayakan penutupan dari program fase 2 namun juga bagaimana mempersiapkan fase selanjutnya sesuai dengan permintaan pemerintah kabupaten bengkalis. Program konservasi mangrove ini bukan hanya menghadapi tantantangan abrasi Pantai, namun juga memberikan pemahaman kepada Masyarakat bagaimana melestarikan lingkungan yang baik dan benar. Serta bagaimana komitmen masyarkat menjaganya agar memberikan dampak ekonomi yang berkelanjutan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2025/07/P2110689-1-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2025/07/P2110689-1-1024x683.jpg)
 
 _Director of Public Affairs Aramco Asia Singapore, Patsy Koh saat memberikan kata sambutan_
 

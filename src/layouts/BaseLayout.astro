@@ -1,6 +1,110 @@
 ---
-import Header from '../components/Header.astro'; import Footer from '../components/Footer.astro'; import { organisation } from '../data/site'; import '../styles/global.css';
-const { title, description, article=false, image }=Astro.props; const canonical=new URL(Astro.url.pathname,Astro.site); const lang=Astro.currentLocale??'id';
-const schema=article?{'@context':'https://schema.org','@type':'Article',headline:title,description,mainEntityOfPage:canonical.href,image}:{'@context':'https://schema.org','@type':'Organization',name:'Yayasan Gambut',url:'https://yayasangambut.org',logo:'https://yayasangambut.org/brand/yayasan-gambut-logo.png',email:organisation.email,address:organisation.pekanbaruOffice,sameAs:[organisation.facebook,organisation.instagram,organisation.linkedin,organisation.youtube,'https://webgisyg.id/']};
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { organisation, pagePairs } from '../data/site';
+import { excerpt } from '../utils/text';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  article?: boolean;
+  image?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  headline?: string;
+  noIndex?: boolean;
+  minimalChrome?: boolean;
+}
+
+const {
+  title,
+  description,
+  article = false,
+  image,
+  publishedTime,
+  modifiedTime,
+  author,
+  headline,
+  noIndex = false,
+  minimalChrome = false,
+} = Astro.props;
+const lang = Astro.currentLocale ?? 'id';
+const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const canonical = new URL(currentPath, Astro.site).href;
+const alternatePath = pagePairs[currentPath];
+const alternateLang = lang === 'id' ? 'en' : 'id';
+const socialImage = image ?? new URL('/brand/yayasan-gambut-logo.png', Astro.site).href;
+// Search indexing is opt-in. A plain `astro build` must not become indexable
+// merely because Vite's default mode is named "production".
+const isProduction = import.meta.env.PUBLIC_SITE_ENV === 'production';
+const metaDescription = excerpt(description, 155);
+
+const organisationSchema = {
+  '@type': 'Organization',
+  name: 'Yayasan Gambut',
+  url: 'https://yayasangambut.org',
+  logo: 'https://yayasangambut.org/brand/yayasan-gambut-logo.png',
+};
+
+const schema = article
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: headline ?? title,
+      description: metaDescription,
+      mainEntityOfPage: canonical,
+      image: socialImage,
+      ...(publishedTime && { datePublished: publishedTime }),
+      ...(modifiedTime && { dateModified: modifiedTime }),
+      ...(author && { author: { '@type': 'Organization', name: author } }),
+      publisher: organisationSchema,
+    }
+  : {
+      '@context': 'https://schema.org',
+      ...organisationSchema,
+      email: organisation.email,
+      address: organisation.pekanbaruOffice,
+      sameAs: [organisation.facebook, organisation.instagram, organisation.linkedin, organisation.youtube, 'https://webgisyg.id/'],
+    };
 ---
-<!doctype html><html lang={lang}><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width"/><meta name="generator" content={Astro.generator}/><meta name="description" content={description}/><link rel="canonical" href={canonical}/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/><meta property="og:type" content={article?'article':'website'}/><meta property="og:title" content={title}/><meta property="og:description" content={description}/><meta property="og:url" content={canonical}/>{image&&<meta property="og:image" content={image}/>}<meta name="twitter:card" content={image?'summary_large_image':'summary'}/><meta name="twitter:title" content={title}/><meta name="twitter:description" content={description}/>{image&&<meta name="twitter:image" content={image}/>}<script type="application/ld+json" set:html={JSON.stringify(schema)}></script><title>{title}</title></head><body><a class="skip-link" href="#main">{lang==='id'?'Lewati ke isi utama':'Skip to main content'}</a><Header/><main id="main"><slot/></main><Footer/></body></html>
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={metaDescription} />
+    <meta name="robots" content={isProduction && !noIndex ? 'index, follow' : 'noindex, nofollow, noarchive'} />
+    <meta name="theme-color" content="#0a2c27" />
+    <link rel="canonical" href={canonical} />
+    {alternatePath && <link rel="alternate" hreflang={alternateLang} href={new URL(alternatePath, Astro.site).href} />}
+    <link rel="alternate" hreflang={lang} href={canonical} />
+    {alternatePath && <link rel="alternate" hreflang="x-default" href={lang === 'id' ? canonical : new URL(alternatePath, Astro.site).href} />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:site_name" content="Yayasan Gambut" />
+    <meta property="og:locale" content={lang === 'id' ? 'id_ID' : 'en_US'} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={image ? title : 'Logo Yayasan Gambut'} />
+    {article && publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {article && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={image ? title : 'Logo Yayasan Gambut'} />
+    <script type="application/ld+json" set:html={JSON.stringify(schema)}></script>
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{lang === 'id' ? 'Lewati ke isi utama' : 'Skip to main content'}</a>
+    {!minimalChrome && <Header />}
+    <main id="main"><slot /></main>
+    {!minimalChrome && <Footer />}
+  </body>
+</html>

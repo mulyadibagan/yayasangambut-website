@@ -23,7 +23,7 @@ legacy: true
 
 Desa Buruk Bakul adalah desa yang berlokasi di wilayah pesisir Indonesia yang mana secara administrasi masuk kedalam Kabupaten Bengkalis Provinsi Riau. didalam kawasan ekosistem mangrove Desa Buruk Bakul terdapat beberapa spesies tumbuhan yang hidup, anara lain *Rhizopora sp, Avicenia sp, Xylocarpus granatum sp, sonerratia sp* dan *nypah fruticants*.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/DJI_0313-1024x576.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/DJI_0313-1024x576.jpg)
 
 _Foto Udara Kawasan eksosistem Mangrove di Desa Buruk Bakul dan kondisi garis pantai yang mengalami abrasi_
 
@@ -33,7 +33,7 @@ Berdasarkan kondisi di atas Yayasan Gambut melalui dukungan Global Environment C
 
 **Pembangunan APO (Alat Pemecah Ombak) dan kelompok SEKAT BAKAU Desa Buruk Bakul**
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/DJI_0445-1024x576.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/DJI_0445-1024x576.jpg)
 
 _Alat Pemecah Ombak (APO) Desa Buruk Bakul yang menggunakan kayu nibung sebagai material utamanya_
 
@@ -43,13 +43,13 @@ Design APO lebih meniru struktur akar bakau/mangrove yang bersifat hanya meredam
 
 Pembangunan APO di Desa Buruk Bakul dengan konsep *Hybrid Enginering* (HE), yang mana konsep inovatif ini menggunakan konstruksi berbahan dasar kayu dan ranting – ranting. Yayasan Gambut melihat konsep ini adalah pilihan yang sesuai untuk masyarakat sehingga dapat dilakukan secara swadaya oleh masyarakat dan kelompok dalam melalukan kegiatan rehabilitasi pada wilayah yang terdampak abrasi.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20230902-WA0015-1-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20230902-WA0015-1-1024x768.jpg)
 
 _Anggota Kelompok Sekat Bakau saat pembangunan APO secara swadaya_
 
 Pembangunan APO dibangun sejajar dengan garis pantai yang membentuk sudut sekitar 130 – 140 derajat pada seperempat bagian awalnya guna memudahkan terjadinya pengendapan awal. bahan utama dalam konstruksi APO ini adalah Kayu Nibung, pemilihan kayu nibung didasarkan atas ketersediaan bahan baku di desa buruk bakul, kemudian kayu nibung memiliki ketahan yang sangat baik pada salinitas air yang tinggi.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/AAS-CSR-Indonesia-Wave-Breaker-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/AAS-CSR-Indonesia-Wave-Breaker-1024x768.jpg)
 
 _Foto Tampak Samping Kayu Nibung yang telah tertanam di kawasan yang terjadi abrasi_
 
@@ -65,13 +65,13 @@ Kelompok Sekat bakau memiliki sekitar 25 anggota yang merupakan masyarakat desa 
 
 Dalam upaya memaksimalkan penanaman mangrove di pesisir pantai buruk Bakul, kelompok Sekat Bakau mengambil inisiatif dengan membangun pelapis APO nibung. Pelapis APO ini terdiri dari buluh atau bambu yang diletakkan sejajar sepanjang APO dengan jarak sekitar 5 meter.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20231230-WA0006.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20231230-WA0006.jpg)
 
 _Bambu yang digunakan sebagai pelapis APO dengan tujuan menahan laju ombak di areal penanaman mangrove_
 
 Model pelapis ini memiliki bentuk kotak persegi panjang dan huruf “n” dengan ukuran panjang 5,5 meter dan lebar 3 meter. Pembangunan menggunakan total 1.680 tual buluh, dengan panjang setiap tualnya 1,5 meter, dan kedalaman penancapannya berkisar antara 50 hingga 75 cm. Proses pembangunan dimulai dari bagian timur APO atau sebelah hulu.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20231230-WA0002-1.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20231230-WA0002-1.jpg)
 
 _Pelibatan Multipihak dalam membangun kesadaran peduli lingkungan pesisir : Penanaman bibit mangrove di areal yang mengalami kerusakan_
 

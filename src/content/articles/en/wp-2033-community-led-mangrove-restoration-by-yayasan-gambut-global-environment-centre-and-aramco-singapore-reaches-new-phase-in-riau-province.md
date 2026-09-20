@@ -29,7 +29,7 @@ This effort builds on two previous successful phases, during which more than 24,
 
 “This program has transformed how communities view mangroves — not just as trees, but as guardians of their coastlines, livelihoods and futures. Every sapling planted today represents a commitment by the community to protect what is theirs,” said Mulyadi S.P., Director of Yayasan Gambut.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2026/07/photo_7-1536x1143-1-1024x762.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2026/07/photo_7-1536x1143-1-1024x762.jpeg)
 
 _Perepat (Sonneratia alba) and Api-api Putih (Avicennia alba) trees planted four months ago continue to thrive along the Sepahat coastline, helping stabilise shoreline erosion facing the Malacca Strait._
 
@@ -45,8 +45,8 @@ Upon completion in late 2026, the program will have rehabilitated approximately 
 
 YG, GEC, and Aramco’s objective is to ensure the longevity of restored ecosystems through continued community monitoring, maintenance and adaptive management.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2026/07/P1115225.JPG-2-1024x683.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2026/07/P1115225.JPG-2-1024x683.jpeg)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2026/07/Monitoring-Sepahat-3-2-2026-2.JPG-1-1024x683.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2026/07/Monitoring-Sepahat-3-2-2026-2.JPG-1-1024x683.jpeg)
 
 *Community nurseries supporting the supply of mangrove seedlings for restoration across Riau coastline.*

@@ -25,7 +25,7 @@ Yayasan Gambut mendukung rehabilitasi mangrove di desa Buruk Bakul kecamatan Buk
 
 Komunitas Sekat Bakau mengalami kendala dalam melakukan kegiatan rehabilitasi mangrove dimana tingkat kelangsungan hidup tanaman rendah. Jenis mangrove yang ditanam adalah karena pengaruh kuat gelombang, terutama pada Musim Utara. Dari 100% yang ditanam saat Musim Utara datang, hingga Musim Timur ini hanya sekitar 10-15% yang hidup atau mampu bertahan. Komunitas Sekat Bakau berharap para pihak dapat membantu membiayai pembangunan Alat Pemecah Gelombang (APO). APO yang dibangun menggunakan atau memanfaatkan bambu atau alang-alang dan nibung yang banyak terdapat di Desa Buruk Bakul. Berdasarkan penelitian yang dilakukan di Desa Pangkalan Jambi Kecamatan Bukit Batu, model APO yang sesuai dengan karakteristik Pantai Selat Bengkalis khususnya di Desa Buruk Bakul Bakul adalah Segitiga Mangrove Barrier
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2022/07/1657861600552-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2022/07/1657861600552-1024x768.jpg)
 
 _Kelompok Sekat Bakau foto Bersama sebelum melakukan penanaman_
 

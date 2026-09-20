@@ -25,7 +25,7 @@ Produksi minyak sawit memainkan peran penting dalam mata pencaharian petani keci
 
 Meskipun sertifikasi RSPO semakin penting, petani kecil di Siak seringkali kekurangan akses ke sumber daya, pelatihan, dan dukungan yang diperlukan untuk menerapkan standar yang dipersyaratkan untuk sertifikasi. Kesenjangan ini membatasi potensi pasar mereka dan berkontribusi pada degradasi lingkungan, terutama di daerah lahan gambut yang rentan, yang umum di wilayah ini.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/12/1420839-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/12/1420839-1024x683.jpg)
 
 _Aktivitas Panen Kelapa Sawit oleh Masyarakat / Sumber Foto : Khamidi Setio Budi_
 
@@ -33,7 +33,7 @@ Kabupaten Siak mencakup area lahan gambut yang luas yang penting untuk penyimpan
 
 Memberdayakan petani kecil di Siak dengan pengetahuan tentang standar RSPO membantu meningkatkan ketahanan masyarakat dan memastikan stabilitas ekonomi jangka panjang dengan mengintegrasikan mereka ke dalam rantai pasokan berkelanjutan. Dengan mengadakan lokakarya di area utama ini, Yayasan Gambut bertujuan untuk mempercepat penerapan praktik-praktik yang selaras dengan RSPO di antara petani kelapa sawit, memastikan keberlanjutan lingkungan dan pertumbuhan ekonomi bagi petani kecil.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/12/IMG20241204102101-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/12/IMG20241204102101-1024x771.jpg)
 
 _Peserta Sosialisasi di Ruang Pertemuan Pucuk Rebung Pemerintah Kabupaten Siak_
 
@@ -41,13 +41,13 @@ kegiatan LOKAKARYA “Sosialisasi dan Distribusi Buklet RSPO: Panduan Praktik Te
 
 Acara Lokakarya ini di laksanakan bertujuan untuk meningkatkan pemahaman para petani sawit mandiri terkait pentingnya keberlanjutan dalam praktik perkebunan kelapa sawit, khususnya melalui sertifikasi Roundtable on Sustainable Palm Oil (RSPO). Salah satu fokus utama lokakarya adalah pengenalan sertifikasi RSPO dan manfaatnya bagi petani sawit secara nyata,sehingga petani yang telah tersertifikasi mendapatkan jalur akses pasar yang lebih luas, peningkatan produktivitas, dan insentif ekonomi dari penjualan hasil Perkebunan yang bersertifikat RSPO.
 
-Dika Dwi Darmawan ( *Executive Smallholder Programme Indonesia *) memaparkan tentang “**Membangun Perkebunan Sawit yang Berkelanjutan Hari ini dan Masa mendatang**”. Dalam paparannya peserta yang hadir di jelaskan tentang ap aitu RSPO dan poin – poin utama dalam Kelapa Sawit Berkelanjutan melalui sertifikasi RSPO. Sebagai perwakilan dari RSPO, Dika Dwi Darmawan menerangkan Sejarah hadirnya RSPO yang didirikan pada tahun 2004, RSPO adalah organisasi keanggotaan internasional nirlaba yang menyatukan pemangku kepentingan dari sektor-sektor utama industri minyak sawit untuk mendorong pertumbuhan dan penggunaan minyak sawit berkelanjutan melalui standar global yang kredibel.
+Dika Dwi Darmawan ( *Executive Smallholder Programme Indonesia *) memaparkan tentang “**Membangun Perkebunan Sawit yang Berkelanjutan Hari ini dan Masa mendatang**”. Dalam paparannya peserta yang hadir dijelaskan tentang apa itu RSPO dan poin-poin utama dalam Kelapa Sawit Berkelanjutan melalui sertifikasi RSPO. Sebagai perwakilan dari RSPO, Dika Dwi Darmawan menerangkan sejarah hadirnya RSPO yang didirikan pada tahun 2004. RSPO adalah organisasi keanggotaan internasional nirlaba yang menyatukan pemangku kepentingan dari sektor-sektor utama industri minyak sawit untuk mendorong pertumbuhan dan penggunaan minyak sawit berkelanjutan melalui standar global yang kredibel.
 
 Anggota pendiri kami termasuk World Wide Fund for Nature (WWF), Malaysian Palm Oil Association (MPOA), Unilever, Migros, dan AAK. Berkantor pusat di Kuala Lumpur, Malaysia, RSPO juga memiliki kantor perwakilan di Indonesia, Inggris, Amerika Serikat, Belanda, Cina, dan Kolombia.
 
-Minyak sawit berkelanjutan berdasarkan definisi RSPO adalah Produksi minyak sawit berkelanjutan meliputi pengelolaan dan operasi yang sesuai **hukum** yang berlaku, layak untuk **lingkungan** dan tatanan **sosial **serta memberikan manfaat **ekonomis. **dengan mengedepankan dampak kesejahteraan, dampak masyarakat dan dampak planet.
+Minyak sawit berkelanjutan berdasarkan definisi RSPO adalah produksi minyak sawit berkelanjutan yang meliputi pengelolaan dan operasi sesuai **hukum** yang berlaku, layak untuk **lingkungan** dan tatanan **sosial**, serta memberikan manfaat **ekonomis**, dengan mengedepankan dampak kesejahteraan, masyarakat, dan planet.
 
-Paparan kedua disampaikan oleh Siswanto dengan judul paparan “**Kebijakan daerah Dalam Mendukung Percepatan Sertifikasi Perkebunan Berkelanjutan”**, Perwakilan dari Dinas Perkebuan Kabupaten Siak. Dari sisi pemerintah sendiri juga mendukung gerakan untuk Perkebunan kelapa sawit berkelanjutan daerah yang juga tertuang didalam rencana aksi Pemerintah Kabupaten Siak itu sendiri, karena di Kabupaten siak sendiri juga memiliki potensi besar dalam Perkebunan kelapa sawit. Berdasarkan paparan, di kabupaten siak terdapat Perkebunan Rakyat (PR) dengan luas 220,974 Ha ( 64%), Perkebunan Besar negara (PBN) seluas 9,474.46 Ha dan Perkebunan Besar Swasta seluas 117,195.47 Ha ( 34%).
+Paparan kedua disampaikan oleh Siswanto dengan judul “**Kebijakan Daerah dalam Mendukung Percepatan Sertifikasi Perkebunan Berkelanjutan**”, perwakilan dari Dinas Perkebunan Kabupaten Siak. Pemerintah daerah mendukung gerakan perkebunan kelapa sawit berkelanjutan yang tertuang dalam rencana aksi Pemerintah Kabupaten Siak, mengingat besarnya potensi perkebunan kelapa sawit di wilayah tersebut. Berdasarkan paparan, di Kabupaten Siak terdapat Perkebunan Rakyat (PR) seluas 220.974 ha (64%), Perkebunan Besar Negara (PBN) seluas 9.474,46 ha, dan Perkebunan Besar Swasta seluas 117.195,47 ha (34%).
 
 Saat ini masih terdapat tantangan yang di hadapi petani kecil kelapa sawit di kabupaten siak seperti bibit yang tidak unggul, belum tergabung kedalam asosiasi atau koperasi, kurangnya akses pasar dan yang terpenting adalah kurangnya minat untuk melakukan sertifikasi terhadap kebun di karenakan anggapan biaya yang tinggi dalam mengurus prosesnya.
 
@@ -91,7 +91,7 @@ Antusiasme para peserta dituang dalam bentuk sesi diskusi, terdapat poin – poi
 
 - **Ketergantungan pada Pendampingan:** Proses sertifikasi seringkali memerlukan pendampingan dari NGO atau perusahaan besar, yang tidak selalu tersedia dalam jangka panjang.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/12/WhatsApp-Image-2024-12-24-at-14.22.20-1-1024x768.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/12/WhatsApp-Image-2024-12-24-at-14.22.20-1-1024x768.jpeg)
 
 _Simbolis penyerahan buklet RSPO oleh Mulyadi, Direktur Yayasan Gambut kepada peserta lokakarya_
 

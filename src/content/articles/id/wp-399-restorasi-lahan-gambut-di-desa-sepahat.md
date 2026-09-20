@@ -27,7 +27,7 @@ Total Drainase kanal yang terdapat di Desa Sepahat sepanjang 360 Kilometer atau 
 
 Pada tahun 2012 Badan Lingkungan Hidup (BLH) Riau membangun 2 Unit Sekat Kanal, kemudian tahun 2014 2 Unit sekat kanal di bangun Kementrian Lingkungan Hidup (KLH) melalui program Asean Peatland Forest Project (APFP), Tahun 2015 di lanjutkan oleh KLHK melalui dukungan dana dari United Nation Development Programme (UNDP) membangun 11 Unit Sekat Kanal, dan untuk tahun 2016 Yayasan Mitra Insani membangun 5 Unit Sekal serta 6 unit Sumur Bor dan Polsek Bukit Batu Membangun 5 Unit Sekat Kanal.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-11-at-6.35.10-PM.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-11-at-6.35.10-PM.jpeg)
 
 _Perintisan Jalur Tanam Oleh Kelompok MPA Desa Sepahat (Dok: Arifin dan YG, 2020)_
 
@@ -35,11 +35,11 @@ Melalui dukungan WWF Riau Yayasan Mitra Insani membangun kembali 5 unit sekat ka
 
 Kemudian pada tahun 2019, WWF Riau melaksanakan pelatihan Revegetasi di Desa Sepahat, yang kemudian di dukung oleh Pemerintah Desa Sepahat dengan mengalokasi lahan seluas 35 hektar untuk di tanami berbagai jenis tanaman hutan, Samsul Komar, WWF Riau Spesialis Fire Monitoring & Restoration Sumatera Peatland menyampaikan kepada Yayasan Gambut telah melakukan penanaman pohon hutan seluas 15 Hektar di lahan gambut bekas terbakar.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-13-at-7.29.36-PM.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-13-at-7.29.36-PM.jpeg)
 
 -
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-13-at-7.29.38-PM-961x1024.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-13-at-7.29.38-PM-961x1024.jpeg)
 
 Penanaman Sagu dan Tanaman Hutan di Desa Sepahat dari Yayasan Gambut (Dok: Arifin dan YG, 2020)
 

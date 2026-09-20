@@ -25,7 +25,7 @@ Pak Rudiyanto (40) merupakan salah satu petani yang berada di Desa Penampi Kecam
 
 Pengalaman pertama pak rudi menanam tanam Pare di sekitar pekarangan rumah nya yang merupakan lahan gambut dalam, kemudian lanjut menanam Semangka dan berbagai tanaman lainnya. Saat itu beliau masih aktif sendiri dan pernah di undang untuk berbagi ilmu dengan desa – desa lain, alasan rekan – rekan lainnya untuk turut aktif menerapkan PLTB salah satunya adalah modal untuk memulai tanam.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Pelatihan-F1-Embrio.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Pelatihan-F1-Embrio.jpeg)
 
 Pak Rudi saat memberikan pelatihan pembuatan F1 Mbio
 
@@ -37,7 +37,7 @@ Ada trik khusus bagi bang rudi dan rekannya sebelum menanam beliau menerapkan F1
 
 “Siapkan air 5 liter, dedak padi 1 kg, gula pasir 1 kg, Nenas 1 butir, udang 1/2 kg, tepung sagu sekitar 2 ons, kemudian semua bahan tersebut dimasak dan setelah dingin campurkan kotoran ayam kampung sekitar 1 sendok yang di ambil sebelum matahari terbit, kemudian di fermentasikan selama 1 hari 1 malam” bahan – bahan yang di sebutkan pak rudi saat di hubungi via telfon oleh Yayasan Gambut, Selasa (24/11/2020)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/F1-Mbio-1024x768.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/F1-Mbio-1024x768.jpeg)
 
 Perebusan bahan-bahan untuk pembuatan F1 Mbio (Foto : Rudiyanto)
 
@@ -47,13 +47,13 @@ Untuk luas lahan 1 Hektar pak rudi mengaplikasikan 5 liter F1 Embrio tersebut di
 
 Selain bertani pak rudi juga aktif mengelola Plank Sistem Peringatan kebakaran Hutan dan Lahan dimana informasi tersebut merupakan bagian dari penyadaran terhadap masyarakat tentang resiko terjadinya kebakaran, ada beberapa indikator warna yang di ubah secara manual oleh pak rudi dengan mengacu informasi dari website BMKG [Sistem Peringatan Kebakaran Hutan dan Lahan [SPARTAN]](https://www.bmkg.go.id/cuaca/kebakaran-hutan.bmkg?index=dc&wil=riau&day=obs)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/FDRS-1.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/FDRS-1.png)
 
 Sistem Peringatan Kebakaran Hutan Dan Lahan (SPARTAN) sumber : BMKG
 
 **Panen Cabai tanpa Bakar di Lahan Gambut**
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Cabe-Penampi-2-1024x768.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Cabe-Penampi-2-1024x768.jpeg)
 
 Budidaya Cabai Rawit di Lahan Gambut milik Pak Rudi
 

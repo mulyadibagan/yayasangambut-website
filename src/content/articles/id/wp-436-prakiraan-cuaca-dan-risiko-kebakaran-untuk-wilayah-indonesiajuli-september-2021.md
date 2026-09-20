@@ -25,8 +25,8 @@ Untuk wilayah Pulau Sumatera di bagian utara dari Juli s.d September mengalami p
 
 Berikut adalah Prediksi Presipitasi dan Temperatur dari Bulan Juli – September 2021 yang di keluarkan oleh APCC
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2021/07/Jas-1024x748.png)
+![](https://yayasangambut.org/wp-content/uploads/2021/07/Jas-1024x748.png)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2021/07/t2m-1024x748.png)
+![](https://yayasangambut.org/wp-content/uploads/2021/07/t2m-1024x748.png)
 
 Sumber : Informasi dari APEC Climate Center ([https://www.apcc21.org/main.do?lang=en](https://www.apcc21.org/main.do?lang=en))

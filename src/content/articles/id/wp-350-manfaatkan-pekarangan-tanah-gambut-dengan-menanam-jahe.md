@@ -27,7 +27,7 @@ Beberapa tahun belakangan wahyu aktif melakukan pembibitan jahe merah bersama 4 
 
 Wahyu mengungkapkan Bibit jahe yang siap tanam minimal sudah berumur 3 (tiga) bulan, dan media tanah yang di gunakan merupakan tanah gambut dengan campuran serabut kelapa sawit dimana dari hasil riset lapangan serabut tersebut bagus untuk menjaga kelembaban media tanam bibit jahe.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-04-at-10.58.46-AM-1-1024x770.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-04-at-10.58.46-AM-1-1024x770.jpeg)
 
 _Pembangunan Sekat Kanal di Desa Harapan Jaya untuk menjaga gambut tetap basah_
 

@@ -22,6 +22,15 @@ const plain = (html = '') => decode(html
   .replace(/\s+/g, ' ')
   .trim());
 
+const excerpt = (value = '', maxLength = 280) => {
+  const clean = value.replace(/\s+/g, ' ').trim();
+  if (clean.length <= maxLength) return clean;
+  const candidate = clean.slice(0, maxLength + 1);
+  const lastSpace = candidate.lastIndexOf(' ');
+  const cut = lastSpace > Math.floor(maxLength * 0.65) ? candidate.slice(0, lastSpace) : clean.slice(0, maxLength);
+  return `${cut.replace(/[\s,;:.!?–—-]+$/u, '')}…`;
+};
+
 const yaml = (value) => JSON.stringify(value ?? '');
 
 function markdownFromHtml(input = '') {
@@ -34,9 +43,9 @@ function markdownFromHtml(input = '') {
     (_, src) => `\n\n[Media tersemat](${decode(src)})\n\n`);
 
   html = html.replace(/<figure[^>]*>[\s\S]*?<img[^>]*src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>[\s\S]*?(?:<figcaption[^>]*>([\s\S]*?)<\/figcaption>)?[\s\S]*?<\/figure>/gi,
-    (_, src, alt, caption = '') => `\n\n![${plain(alt) || 'Dokumentasi kegiatan Yayasan Gambut'}](${decode(src)})${caption ? `\n\n_${plain(caption)}_` : ''}\n\n`);
+    (_, src, alt, caption = '') => `\n\n![${plain(alt)}](${decode(src)})${caption ? `\n\n_${plain(caption)}_` : ''}\n\n`);
   html = html.replace(/<img[^>]*src="([^"]+)"[^>]*alt="([^"]*)"[^>]*>/gi,
-    (_, src, alt) => `\n\n![${plain(alt) || 'Dokumentasi kegiatan Yayasan Gambut'}](${decode(src)})\n\n`);
+    (_, src, alt) => `\n\n![${plain(alt)}](${decode(src)})\n\n`);
   html = html.replace(/<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href, label) => `[${plain(label) || decode(href)}](${decode(href)})`);
   html = html.replace(/<(strong|b)[^>]*>([\s\S]*?)<\/\1>/gi, '**$2**');
   html = html.replace(/<(em|i)[^>]*>([\s\S]*?)<\/\1>/gi, '*$2*');
@@ -106,7 +115,7 @@ function featuredFor(post) {
 function articleMarkdown(post, index) {
   const title = plain(post.title.rendered);
   const bodyText = plain(post.content.rendered);
-  const summary = plain(post.excerpt.rendered || bodyText).replace(/Read More\s*»?$/i, '').slice(0, 280).trim();
+  const summary = excerpt(plain(post.excerpt.rendered || bodyText).replace(/Read More\s*»?$/i, ''));
   const media = featuredFor(post);
   const featuredImage = media?.media_details?.sizes?.large?.source_url || media?.source_url || imageUrls(post.content.rendered)[0];
   const gallery = [...new Set([featuredImage, ...imageUrls(post.content.rendered)].filter(Boolean))];
@@ -127,13 +136,27 @@ function articleMarkdown(post, index) {
 
 function teamEntries(aboutHtml) {
   const entries = [];
+  const editorial = {
+    'AINUL AZIZAH S.H': { name: 'Ainul Azizah, S.H.', position: 'Keterlibatan Pemuda & Komunitas' },
+    'Dr.Ir. Lailan Syaufina M.Sc': { name: 'Dr. Ir. Lailan Syaufina, M.Sc.', position: 'Anggota Pendiri' },
+    'Dr.M. Amrul Khoiri, SP., MP. C.APO': { name: 'Dr. M. Amrul Khoiri, S.P., M.P., C.APO', position: 'Ahli Manajemen Perkebunan Berkelanjutan' },
+    'Hisam Setiawan': { name: 'Hisam Setiawan', position: 'Pendiri' },
+    'Ir. Aep Purnama M.Si': { name: 'Ir. Aep Purnama, M.Si.', position: 'Pengawas' },
+    'Ir. Riena Rachmatillah P': { name: 'Ir. Riena Rachmatillah P.', position: 'Manajer Keuangan' },
+    'Joni Irawan, S.P., M.Si': { name: 'Joni Irawan, S.P., M.Si.', position: 'Ahli Manajemen Agroforestri' },
+    'Mulyadi S.P': { name: 'Mulyadi, S.P.', position: 'Direktur' },
+    'RAVITA SAFITRI S.Si, M.Si, M.Sc': { name: 'Ravita Safitri, S.Si., M.Si., M.Sc.', position: 'Riset & Pengembangan' },
+    'Riandra Hamdani S.I.Kom': { name: 'Riandra Hamdani, S.I.Kom.', position: 'Program & Hubungan Publik' },
+    'ZAMHARIR, S.Pi': { name: 'Zamharir, S.Pi.', position: 'Ahli Sistem Informasi Geografis' },
+  };
   const pattern = /elementor-image-box-wrapper[\s\S]*?<img[^>]+src="([^"]+)"[\s\S]*?<h5[^>]*class="elementor-image-box-title"[^>]*>([\s\S]*?)<\/h5>[\s\S]*?<p[^>]*class="elementor-image-box-description"[^>]*>([\s\S]*?)<\/p>/gi;
   for (const match of aboutHtml.matchAll(pattern)) {
-    const name = plain(match[2]); const position = plain(match[3]);
-    if (!name || entries.some(item => item.name === name)) continue;
-    const lower = position.toLowerCase();
+    const sourceName = plain(match[2]); const sourcePosition = plain(match[3]);
+    const profile = editorial[sourceName] || { name: sourceName, position: sourcePosition };
+    if (!profile.name || entries.some(item => item.name === profile.name)) continue;
+    const lower = sourcePosition.toLowerCase();
     const group = /founder|supervisor/.test(lower) ? 'Governance' : /expert/.test(lower) ? 'Technical Advisors' : 'Management & Program Team';
-    entries.push({ name, position, photo: decode(match[1]), group });
+    entries.push({ ...profile, photo: decode(match[1]), group });
   }
   return entries;
 }
@@ -200,8 +223,19 @@ for (const [index, publication] of publications.entries()) {
   const yearMatch = publication.title.match(/20\d{2}/) || publication.fileUrl.match(/\/(20\d{2})\//);
   const year = Number(yearMatch?.[1] || yearMatch?.[0] || new Date().getFullYear());
   const category = /laporan|report/i.test(publication.title) ? 'Laporan Tahunan' : /panduan|praktik|e-book/i.test(publication.title) ? 'Panduan' : 'Publikasi';
+  const summary = category === 'Laporan Tahunan'
+    ? `Laporan tahunan resmi Yayasan Gambut untuk tahun ${year}, tersedia dalam format PDF berbahasa Indonesia.`
+    : /pengelolaan lahan gambut berkelanjutan/i.test(publication.title)
+      ? 'Panduan berbahasa Indonesia tentang pengelolaan lahan gambut berkelanjutan berbasis masyarakat.'
+      : /kopi gambut/i.test(publication.title)
+        ? 'Publikasi tentang kopi lahan gambut dan pendekatan restorasi berbasis masyarakat.'
+        : /rspo/i.test(publication.title)
+          ? 'Panduan praktik pengelolaan terbaik bagi petani sawit mandiri dalam konteks RSPO.'
+          : /tanpa bakar/i.test(publication.title)
+            ? 'Publikasi mengenai praktik pertanian tanpa bakar yang dilakukan bersama masyarakat di lahan gambut.'
+            : `Publikasi resmi Yayasan Gambut berjudul “${publication.title}”, tersedia dalam format PDF berbahasa Indonesia.`;
   const file = ['---', `title: ${yaml(publication.title)}`, `slug: ${yaml(slug)}`, `year: ${year}`, `category: ${yaml(category)}`,
-    `summary: ${yaml('Dokumen publik Yayasan Gambut yang dipindahkan dari website lama.')}`,
+    `summary: ${yaml(summary)}`,
     publication.cover ? `cover: ${yaml(publication.cover)}` : null, `fileUrl: ${yaml(publication.fileUrl)}`, 'documentLanguage: id', 'language: id', 'status: published', `featured: ${index < 3}`,
     `sourceUrl: ${yaml(publication.sourceLink || documents.link)}`, 'legacy: true', '---', '', 'Dokumen ini merupakan bagian dari arsip publikasi resmi Yayasan Gambut.', ''].filter(Boolean).join('\n');
   await writeFile(join(root, 'src', 'content', 'publications', 'id', `wp-pub-${index + 1}-${slug}.md`), file, 'utf8');
@@ -232,7 +266,7 @@ const locationCategories = categories.filter(item => item.count > 0 && !contentC
 await clearGenerated(join(root, 'src', 'content', 'locations', 'id'), 'wp-location-');
 for (const [index, location] of locationCategories.entries()) {
   const file = ['---', `name: ${yaml(location.name)}`, `slug: ${yaml(location.slug)}`, 'province: Riau',
-    `summary: ${yaml(`${location.count} artikel publik terhubung dengan lokasi ini dalam arsip website lama.`)}`,
+    `summary: ${yaml(`${location.count} artikel publik terhubung dengan lokasi ini dalam arsip cerita Yayasan Gambut.`)}`,
     'type: lokasi-arsip', `legacyCategorySlug: ${yaml(location.slug)}`, 'language: id', 'status: published', `order: ${index + 2}`,
     '---', '', `Lihat cerita lapangan yang terhubung dengan ${location.name}.`, ''].join('\n');
   await writeFile(join(root, 'src', 'content', 'locations', 'id', `wp-location-${location.slug}.md`), file, 'utf8');

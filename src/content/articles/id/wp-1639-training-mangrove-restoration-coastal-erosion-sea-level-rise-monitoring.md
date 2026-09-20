@@ -25,19 +25,19 @@ Tindak lanjut dari kunjungan lokasi pesisir di 2 (dua) desa di Kabupaten Bengkal
 
 Pengelolaan mangrove berbasis masyarakat merupakan strategi efektif untuk memastikan kelestarian dan pemanfaatan berkelanjutan ekosistem ini. Oleh karena itu, diperlukan penguatan kapasitas masyarakat melalui pelatihan yang memberikan pengetahuan dan keterampilan dalam pengelolaan mangrove.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/08/P1000377-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/08/P1000377-1024x683.jpg)
 
 _Foto bersama Perwakilan (kiri ke kanan)Pemerintah Desa Kelapa Pati, Yayasan Bahtera Melayu, Tenaga Ahli, Dinas LHK Kab. Bengkalis, KPH Bengkalis Pulau, Camat Bengkalis Pulau, Yayasan Gambut dan Politeknik Bengkalis_
 
 Dalam pembukaan kegiatan pelatihan dihadiri oleh multipihak yang sangat mendukung dengan adanya program ini. Undangan yang ikut hadir dalam pembukaan adalah Camat Bengkalis Pulau, Kepala KPH Bengkalis Pulau, Perwakilan Dinas Lingkungan Hidup & Kehutanan Kabupaten Bengkalis, Perwakilan Yayasan Bahtera Melayu serta Pemerintah Desa Kelapa Pati. Peserta yang mengikuti pelatihan adalah Kelompok Sekat Bakau Desa Buruk Bakul, Kelompok Mangrove Parit Seghagah, perwakilan dari Universitas Politeknik Bengkalis serta Kelompok Mangrove Belukap dari Desa Teluk Pambang.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/08/P1000360-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/08/P1000360-1024x683.jpg)
 
 _Peserta Pelatihan dari Kelompok Sekat Bakau Desa Buruk Bakul, Kelompok Mangrove Parit Seghagah Desa Kelapa Pati_
 
 Dalam pelatihan ini menghadirkan Tenaga Ahli Ekologi Mangrove dan Pengelolaan Kawasan Pesisir dan Tenaga Ahli Pemetaan dan Pengelolaan Sumberdaya Pesisir. Dimana proses pelatihan diawali dengan penjelasan materi terkait bagaimana nilai baik dan potensi yang terdapat di ekosistem mangrove dan faktor-faktor yang menjadi ancaman kerusakan di wilayah pesisir. Pentingnya memahami kawasan secara spasial juga menjadi pengetahuan kelompok untuk dapat merancang dan membuat kegiatan jangka panjang bagi kelompok untuk memprioritaskan aktivitas.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/08/P1000427-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/08/P1000427-1024x683.jpg)
 
 _Salah satu peserta sedang melakukan pengurukan pohon bakau dalam praktik transek_
 

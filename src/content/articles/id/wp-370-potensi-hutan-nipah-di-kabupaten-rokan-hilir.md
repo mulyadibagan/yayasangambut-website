@@ -29,7 +29,7 @@ Dari Hasil Penafsiran Citra Landsat 8 Tahun 2013 dan citra spot 5 tahun 2012 bah
 
 Berdasarkan hasil penelitian Heriyanto dkk (2011) jumlah rata-rata pohon nipah per hektar adalah 1.972 dengan rata-rata jumlah pohon yang berbuah  674 pohon/ha dengan jumlah buah tua sebanyak 71.476 Buah.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-07-at-2.57.46-PM-1.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-07-at-2.57.46-PM-1.jpeg)
 
 _Survey Potensi Nipah di Rohil dari Program Pembangunan dan Pemberdayaan Masyarakat Desa (P3MD) Rokan Hilir dan PT Unilever Indonesia (Dok: Broto, 2020)_
 

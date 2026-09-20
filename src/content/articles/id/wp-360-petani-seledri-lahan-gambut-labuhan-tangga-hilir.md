@@ -25,7 +25,7 @@ Misfar (34 tahun), Salah seorang petani kepenghuluan labuhan tangga hilir, Kec B
 
 Untuk mencapai keberhasilan budidaya tanaman seledri di lahan gambut, misfar telah melewati berbagai macam kegagalan dan terus belajar hingga akhirnya berhasil memanen rata – rata 450 kg seledri setiap bulan nya setelah 3 bulan tanam.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/seledri-misfar-1-1024x576.jpg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/seledri-misfar-1-1024x576.jpg)
 
 _Budidaya Daun Seledri Kepenghuluan Labuhan Tanggan Hilir (Dok : Misfar)_
 
@@ -33,7 +33,7 @@ Pemanenan seledri di lakukan seminggu sekali setelah 3 bulan tanam, sebelum tana
 
 Setiap bulan sekali tanaman seledri tersebut di beri pupuk kandang sebanyak 10 Kg yang sudah di fermentasi menggunakan sekam padi dan dolomit. Saat ini pemasaran hasil panen seledri untuk mensuplai kebutuhan pasar lokal di Kota Bagan Siapi-Api, harga jual hasil panen per kg bisa kisaran Rp 25.000 s.d Rp 30.000
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/Daun-Sop-panen-1-1024x576.jpg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/Daun-Sop-panen-1-1024x576.jpg)
 
 _Hasil Panen Daun Seledri di Lahan Gambut (Dok: Misfar)_
 

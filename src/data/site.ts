@@ -17,6 +17,12 @@ export const pagePairs: Record<string, string> = {
   '/id/dampak/': '/en/impact/', '/en/impact/': '/id/dampak/', '/id/cerita/': '/en/field-stories/', '/en/field-stories/': '/id/cerita/',
   '/id/publikasi/': '/en/publications/', '/en/publications/': '/id/publikasi/', '/id/galeri/': '/en/gallery/', '/en/gallery/': '/id/galeri/',
   '/id/hubungi-kami/': '/en/contact/', '/en/contact/': '/id/hubungi-kami/',
+  '/id/privacy/': '/en/privacy/', '/en/privacy/': '/id/privacy/',
+  '/id/program/agroforestri-penghidupan/': '/en/programs/agroforestry-livelihoods/', '/en/programs/agroforestry-livelihoods/': '/id/program/agroforestri-penghidupan/',
+  '/id/program/data-riset-gis/': '/en/programs/data-research-gis/', '/en/programs/data-research-gis/': '/id/program/data-riset-gis/',
+  '/id/program/gambut-ketahanan-kebakaran/': '/en/programs/peatlands-fire-resilience/', '/en/programs/peatlands-fire-resilience/': '/id/program/gambut-ketahanan-kebakaran/',
+  '/id/program/mangrove-pesisir/': '/en/programs/mangroves-coasts/', '/en/programs/mangroves-coasts/': '/id/program/mangrove-pesisir/',
+  '/id/program/perhutanan-sosial/': '/en/programs/social-forestry/', '/en/programs/social-forestry/': '/id/program/perhutanan-sosial/',
 };
 
 export const copy = {
@@ -24,34 +30,27 @@ export const copy = {
     nav: ['Tentang Kami', 'Program', 'Lokasi Kerja', 'Dampak', 'Cerita Lapangan', 'Publikasi'],
     heroKicker: 'Pengelolaan sumber daya alam berbasis kemitraan', heroTitle: 'Bersama masyarakat menjaga gambut, hutan, dan pesisir Indonesia.',
     heroText: 'Yayasan Gambut mendukung pengelolaan sumber daya alam lahan basah dan ekosistem lainnya melalui kemitraan strategis dengan masyarakat, pemerintah, akademisi, dan sektor swasta.',
-    seePrograms: 'Lihat Program', exploreWebgis: 'Jelajahi WebGIS', impactEyebrow: 'Dampak yang dapat ditelusuri', impactTitle: 'Perubahan dimulai dari tapak, lalu direkam sebagai bukti.',
+    seePrograms: 'Lihat Program', exploreWebgis: 'Jelajahi WebGIS', impactEyebrow: 'Arsip yang dapat ditelusuri', impactTitle: 'Pengetahuan lapangan, terbuka untuk dipelajari.',
     programEyebrow: 'Program utama', programTitle: 'Satu bentang alam, lima jalur kerja yang saling terhubung.', locationEyebrow: 'Lokasi kerja', locationTitle: 'Berakar di Riau, belajar dari setiap tapak.',
     locationText: 'Kerja yang dipublikasikan mencakup ekosistem gambut, hutan, dan pesisir di sejumlah desa di Riau. Data spasial lengkap tetap tersedia melalui WebGIS.',
     storyEyebrow: 'Cerita terbaru', storyTitle: 'Suara, praktik, dan pembelajaran dari lapangan.', publicationEyebrow: 'Publikasi terbaru', publicationTitle: 'Pengetahuan untuk dipakai bersama.',
     dataTitle: 'Memetakan aksi. Merekam perubahan.', dataText: 'WebGIS Yayasan Gambut adalah ruang khusus untuk data spasial, monitoring, dashboard, dan analisis. Situs ini menautkan ke sana tanpa memuat aplikasi GIS penuh.',
     partners: 'Bekerja melalui kemitraan', partnersText: 'Kolaborasi dibangun bersama komunitas, pemerintah, akademisi, organisasi masyarakat sipil, dan mitra pembangunan.',
-    temporary: 'MENUNGGU VERIFIKASI DATA', latest: 'Lihat semua', read: 'Baca cerita', view: 'Lihat publikasi',
+    temporary: 'SNAPSHOT ARSIP PUBLIK', latest: 'Lihat semua', read: 'Baca cerita', view: 'Lihat publikasi',
   },
   en: {
     nav: ['About', 'Programs', 'Where We Work', 'Impact', 'Field Stories', 'Publications'],
     heroKicker: 'Partnership-based natural resource management', heroTitle: 'Working with communities to protect Indonesia’s peatlands, forests, and coasts.',
     heroText: 'Yayasan Gambut supports the sustainable management of wetlands and other ecosystems through strategic partnerships with communities, government, academia, and the private sector.',
-    seePrograms: 'See our programs', exploreWebgis: 'Explore WebGIS', impactEyebrow: 'Traceable impact', impactTitle: 'Change starts in the field, then becomes evidence.',
+    seePrograms: 'See our programs', exploreWebgis: 'Explore WebGIS', impactEyebrow: 'Traceable archive', impactTitle: 'Field knowledge, open for learning.',
     programEyebrow: 'Core programs', programTitle: 'One landscape, five connected ways of working.', locationEyebrow: 'Where we work', locationTitle: 'Rooted in Riau, learning from every site.',
     locationText: 'Published work spans peatland, forest, and coastal ecosystems across villages in Riau. Complete spatial data remains available through WebGIS.',
     storyEyebrow: 'Latest stories', storyTitle: 'Voices, practice, and lessons from the field.', publicationEyebrow: 'Latest publications', publicationTitle: 'Knowledge made to be shared.',
     dataTitle: 'Mapping action. Recording change.', dataText: 'Yayasan Gambut WebGIS is the dedicated space for spatial data, monitoring, dashboards, and analysis. This website links there without embedding the full GIS application.',
     partners: 'Working through partnership', partnersText: 'Collaboration brings together communities, government, academia, civil society, and development partners.',
-    temporary: 'AWAITING DATA VERIFICATION', latest: 'View all', read: 'Read story', view: 'View publication',
+    temporary: 'PUBLIC ARCHIVE SNAPSHOT', latest: 'View all', read: 'Read story', view: 'View publication',
   },
 } as const;
-
-export const impact = [
-  { value: '—', id: 'Hektare bentang alam didampingi', en: 'Hectares of landscape supported' },
-  { value: '—', id: 'Kelompok masyarakat bermitra', en: 'Community groups partnering' },
-  { value: '—', id: 'Desa dalam jangkauan program', en: 'Villages reached by programs' },
-  { value: '—', id: 'Dataset publik terhubung', en: 'Public datasets connected' },
-];
 
 export const organisation = {
   email: 'official@yayasangambut.org',
@@ -61,10 +60,10 @@ export const organisation = {
 };
 
 export const legacyProjects = [
-  { year: 2020, title: 'Sustainable Peatland Management in Buffer Village GSK and Support Integrated Peat Farmers in Penampi PHUs Bengkalis Island' },
-  { year: 2020, title: 'Peatland Restoration through Agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis' },
-  { year: 2020, title: 'Technical Team Review of ASEAN Peatland Management Strategy' },
-  { year: 2021, title: 'Restoration of Degraded Peatlands and Zero Burning Agriculture in Bengkalis District' },
+  { year: 2020, id: 'Pengelolaan gambut berkelanjutan di desa penyangga GSK dan dukungan bagi petani gambut terpadu di KHG Pulau Bengkalis', en: 'Sustainable Peatland Management in Buffer Village GSK and Support Integrated Peat Farmers in Penampi PHUs Bengkalis Island' },
+  { year: 2020, id: 'Restorasi lahan gambut melalui agroforestri di Desa Sepahat, Kecamatan Bandar Laksamana, Bengkalis', en: 'Peatland Restoration through Agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis' },
+  { year: 2020, id: 'Tim teknis kajian Strategi Pengelolaan Gambut ASEAN', en: 'Technical Team Review of ASEAN Peatland Management Strategy' },
+  { year: 2021, id: 'Restorasi lahan gambut terdegradasi dan pertanian tanpa bakar di Kabupaten Bengkalis', en: 'Restoration of Degraded Peatlands and Zero Burning Agriculture in Bengkalis District' },
 ] as const;
 
 export const legacyServices = {
@@ -101,7 +100,7 @@ export const pageContent = {
       ['Data spasial', 'Situs resmi menyajikan konteks manusia dan program. Peta, monitoring, analisis, dan dataset rinci tetap dikelola di WebGIS Yayasan Gambut.'],
     ]},
     dampak: { title: 'Dampak', intro: 'Kami menyajikan capaian dari artikel dan laporan resmi sambil menyiapkan indikator lintas program yang dapat diverifikasi.', sections: [
-      ['Bukti yang tersedia', 'Arsip publik memuat laporan tahunan, panduan, cerita kegiatan, dokumentasi foto, dan pembelajaran lapangan sejak 2021. Semua dapat ditelusuri melalui halaman Cerita, Publikasi, dan Galeri.'],
+      ['Bukti yang tersedia', 'Arsip publik memuat laporan tahunan, panduan, cerita kegiatan, dokumentasi foto, dan pembelajaran lapangan sejak 2020. Semua dapat ditelusuri melalui halaman Cerita, Publikasi, dan Galeri.'],
       ['Indikator organisasi', 'Angka agregat lintas tahun belum ditampilkan sebagai statistik utama sampai definisi, periode, sumber, dan tanggal pembaruannya diverifikasi.'],
       ['Dari kegiatan ke perubahan', 'Pelaporan membedakan keluaran kegiatan, perubahan praktik, dan dampak bentang alam agar capaian tidak disederhanakan.'],
     ]},
@@ -128,7 +127,7 @@ export const pageContent = {
       ['Spatial data', 'The official website provides the human and program context. Detailed maps, monitoring, analysis, and datasets remain in Yayasan Gambut WebGIS.'],
     ]},
     impact: { title: 'Impact', intro: 'We present evidence from official articles and reports while preparing verifiable indicators across programs.', sections: [
-      ['Available evidence', 'The public archive contains annual reports, guides, activity stories, photo documentation, and field learning since 2021. These are available through Stories, Publications, and Gallery.'],
+      ['Available evidence', 'The public archive contains annual reports, guides, activity stories, photo documentation, and field learning since 2020. These are available through Stories, Publications, and Gallery.'],
       ['Organisation-wide indicators', 'Cross-year aggregate figures are not shown as headline statistics until their definition, period, source, and update date have been verified.'],
       ['From activities to change', 'Reporting distinguishes activity outputs, changes in practice, and landscape impact so achievements are not oversimplified.'],
     ]},

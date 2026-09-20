@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import ContentLayout from '../layouts/ContentLayout.astro';
 import { legacyProjects, legacyServices, type Lang } from '../data/site';
+import { categoryLabel, excerpt } from '../utils/text';
 const { lang, type }=Astro.props as {lang:Lang,type:'programs'|'articles'|'publications'};
 let entries:any[] = await getCollection(type as any,({data}:any)=>data.language===lang&&data.status==='published');
 let fallback=false;
@@ -12,22 +13,65 @@ const [title,intro]=labels[type][lang];
 const segment=type==='programs'?(lang==='id'?'program':'programs'):type==='articles'?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications');
 ---
 <ContentLayout title={title} intro={intro}>
-  <section class="section"><div class="container">
+  <section class="section"><div class="container" data-archive-root data-lang={lang}>
     {fallback&&<p class="archive-note">{lang==='en'?'These publications are currently available in their original Indonesian editions.':'Dokumen ditampilkan dalam bahasa sumber.'}</p>}
+    {type==='articles'&&<div class="filter-status" data-filter-status role="status" hidden><span data-filter-copy></span><a href={`/${lang}/${segment}/`}>{lang==='id'?'Hapus filter':'Clear filter'}</a></div>}
+    {type==='articles'&&<div class="archive-tools"><label><span>{lang==='id'?'Cari dalam arsip':'Search the archive'}</span><input type="search" data-archive-search placeholder={lang==='id'?'Judul, topik, atau lokasi…':'Title, topic, or location…'} autocomplete="off"/></label><span data-result-count aria-live="polite">{entries.length} {lang==='id'?'cerita':'stories'}</span></div>}
     <div class:list={['cards',type]}>{entries.map(entry=>{
       const internal=!fallback||type!=='publications';
       const href=internal?`/${lang}/${segment}/${entry.data.slug}/`:entry.data.fileUrl;
-      return <article>
+      return <article lang={fallback&&lang==='en'?'id':undefined} data-archive-card data-categories={type==='articles'?entry.data.categories.join(' '):undefined} data-tags={type==='articles'?entry.data.tags.join(' '):undefined} data-search={type==='articles'?`${entry.data.title} ${entry.data.summary} ${entry.data.category} ${entry.data.tags.join(' ')}`.toLowerCase():undefined}>
         {type==='articles'&&entry.data.featuredImage&&<img src={entry.data.featuredImage} width="900" height="600" loading="lazy" alt={entry.data.imageAlt||entry.data.title}/>}
         {type==='publications'&&entry.data.cover&&<img class="cover" src={entry.data.cover} width="700" height="900" loading="lazy" alt={entry.data.title}/>}
-        <div><p class="eyebrow">{type==='publications'?entry.data.year:('category'in entry.data?entry.data.category:entry.data.eyebrow)}</p><h2>{entry.data.title}</h2><p>{entry.data.summary}</p>{type==='articles'&&<p class="date">{entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</p>}<a class="text-link" href={href} target={!internal?'_blank':undefined} rel={!internal?'noreferrer':undefined}>{type==='publications'?(lang==='id'?'Buka dokumen':'Open document'):(lang==='id'?'Selengkapnya':'Learn more')}</a></div>
+        <div><p class="eyebrow">{type==='publications'?entry.data.year:('category'in entry.data?categoryLabel(entry.data.category,lang):entry.data.eyebrow)}</p><h2>{entry.data.title}</h2><p>{excerpt(entry.data.summary,190)}</p>{type==='articles'&&<p class="date"><time datetime={entry.data.date.toISOString()}>{entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</time></p>}<a class="text-link" href={href} target={!internal?'_blank':undefined} rel={!internal?'noreferrer':undefined}>{type==='publications'?(lang==='id'?'Buka dokumen':'Open document'):(lang==='id'?'Selengkapnya':'Learn more')}</a></div>
       </article>
     })}</div>
+    {type==='articles'&&<div class="archive-empty" data-empty-state hidden><h2>{lang==='id'?'Belum ada cerita yang cocok':'No matching stories yet'}</h2><p>{lang==='id'?'Coba kata kunci lain atau hapus filter untuk melihat seluruh arsip.':'Try another search term or clear the filter to view the full archive.'}</p><a class="button secondary" href={`/${lang}/${segment}/`}>{lang==='id'?'Lihat seluruh cerita':'View all stories'}</a></div>}
   </div></section>
   {type==='programs'&&<section class="legacy-services section"><div class="container"><p class="eyebrow">{lang==='id'?'Apa yang kami lakukan':'What we do'}</p><h2>{lang==='id'?'Empat bentuk kerja yang dipublikasikan':'Four published ways of working'}</h2><div class="service-grid">{legacyServices[lang].map(service=><article><h3>{service.title}</h3><p>{service.body}</p></article>)}</div></div></section>}
-  {type==='programs'&&<section class="projects section" id="proyek"><div class="container"><p class="eyebrow">{lang==='id'?'Arsip program':'Program archive'}</p><h2>{lang==='id'?'Inisiatif 2020–2021':'Initiatives from 2020–2021'}</h2><div class="timeline">{legacyProjects.map(project=><article><strong>{project.year}</strong><p>{project.title}</p></article>)}</div></div></section>}
-</ContentLayout>
+  {type==='programs'&&<section class="projects section" id="proyek"><div class="container"><p class="eyebrow">{lang==='id'?'Arsip program':'Program archive'}</p><h2>{lang==='id'?'Inisiatif 2020–2021':'Initiatives from 2020–2021'}</h2><div class="timeline">{legacyProjects.map(project=><article><strong>{project.year}</strong><p>{project[lang]}</p></article>)}</div></div></section>}
+<script is:inline>
+  document.querySelectorAll('[data-archive-root]').forEach((root) => {
+    const params = new URLSearchParams(window.location.search);
+    const filterType = params.has('category') ? 'category' : params.has('tag') ? 'tag' : '';
+    const value = filterType ? params.get(filterType)?.trim().toLowerCase() : '';
+    const field = filterType === 'category' ? 'categories' : 'tags';
+    const cards = [...root.querySelectorAll('[data-archive-card]')];
+    const status = root.querySelector('[data-filter-status]');
+    const copy = root.querySelector('[data-filter-copy]');
+    const search = root.querySelector('[data-archive-search]');
+    const resultCount = root.querySelector('[data-result-count]');
+    const emptyState = root.querySelector('[data-empty-state]');
+    const isIndonesian = root.dataset.lang === 'id';
+
+    const applyFilters = () => {
+      const term = search?.value.trim().toLowerCase() || '';
+      let visible = 0;
+      cards.forEach((card) => {
+        const values = filterType && value ? (card.dataset[field] || '').toLowerCase().split(/\s+/).filter(Boolean) : [];
+        const matchesQuery = !filterType || !value || values.includes(value);
+        const matchesSearch = !term || (card.dataset.search || '').includes(term);
+        const matches = matchesQuery && matchesSearch;
+        card.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      if (resultCount) resultCount.textContent = `${visible} ${isIndonesian ? 'cerita' : visible === 1 ? 'story' : 'stories'}`;
+      if (emptyState) emptyState.hidden = visible !== 0;
+      if (status && copy && filterType && value) {
+        const filterLabel = isIndonesian ? (filterType === 'category' ? 'kategori' : 'tag') : filterType;
+        copy.textContent = visible
+          ? (isIndonesian ? `${visible} cerita untuk ${filterLabel} “${value}”` : `${visible} ${visible === 1 ? 'story' : 'stories'} for ${filterLabel} “${value}”`)
+          : (isIndonesian ? `Belum ada cerita untuk ${filterLabel} “${value}”.` : `No stories found for ${filterLabel} “${value}”.`);
+        status.hidden = false;
+      }
+    };
+
+    search?.addEventListener('input', applyFilters);
+    applyFilters();
+  });
+</script>
 <style>
-  .archive-note{max-width:48rem;margin:0 0 2rem;padding:1rem;border-left:3px solid var(--coast-700);color:var(--muted)}.cards{display:grid;gap:1rem}.cards article{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-bright)}.cards article>div{padding:clamp(1.3rem,3vw,2.2rem)}.cards h2{font-size:clamp(1.7rem,2.5vw,2.65rem)}.cards p:not(.eyebrow){color:var(--muted)}.cards article>img{aspect-ratio:3/2;object-fit:cover}.cards article>.cover{aspect-ratio:4/3;object-fit:contain;padding:1rem;background:#e8ebe6}.date{font-size:.82rem;font-weight:750}.legacy-services{background:var(--paper-bright)}.legacy-services h2,.projects h2{max-width:13ch}.service-grid{display:grid;gap:1rem;margin-top:2.5rem}.service-grid article{padding:1.5rem;border:1px solid var(--line);border-radius:var(--radius-md)}.service-grid h3{font:500 1.55rem/1.1 var(--serif)}.service-grid p{color:var(--muted)}.projects{background:#dce8e6}.timeline{margin-top:2.5rem;border-top:1px solid var(--line)}.timeline article{display:grid;grid-template-columns:5rem 1fr;gap:1rem;padding:1.3rem 0;border-bottom:1px solid var(--line)}.timeline strong{color:var(--coast-700)}.timeline p{margin:0;max-width:55rem}
+  .archive-note{max-width:48rem;margin:0 0 2rem;padding:1rem;border-left:3px solid var(--coast-700);color:var(--muted)}.filter-status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.75rem;margin:0 0 1rem;padding:1rem 1.2rem;border-radius:var(--radius-sm);background:#dce8e6;font-weight:750}.filter-status a{font-size:.85rem}.archive-tools{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:2rem}.archive-tools label{display:grid;gap:.45rem;width:min(100%,32rem);font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.archive-tools input{width:100%;min-height:3.2rem;padding:.75rem 1rem;border:1px solid var(--line);border-radius:999px;color:var(--ink);background:var(--paper-bright)}.archive-tools>span{color:var(--muted);font-size:.85rem;font-weight:750}.archive-empty{max-width:42rem;margin:3rem auto 0;padding:2.5rem;text-align:center;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-bright)}.archive-empty h2{font-size:clamp(1.8rem,4vw,3rem)}.archive-empty p{color:var(--muted)}.cards{display:grid;gap:1rem}.cards article{overflow:hidden;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--paper-bright)}.cards article>div{padding:clamp(1.3rem,3vw,2.2rem)}.cards h2{display:-webkit-box;overflow:hidden;-webkit-line-clamp:4;-webkit-box-orient:vertical;font-size:clamp(1.7rem,2.5vw,2.65rem)}.cards p:not(.eyebrow){color:var(--muted)}.cards article>img{aspect-ratio:3/2;object-fit:cover}.cards article>.cover{aspect-ratio:4/3;object-fit:contain;padding:1rem;background:#e8ebe6}.date{font-size:.82rem;font-weight:750}.legacy-services{background:var(--paper-bright)}.legacy-services h2,.projects h2{max-width:13ch}.service-grid{display:grid;gap:1rem;margin-top:2.5rem}.service-grid article{padding:1.5rem;border:1px solid var(--line);border-radius:var(--radius-md)}.service-grid h3{font:500 1.55rem/1.1 var(--serif)}.service-grid p{color:var(--muted)}.projects{background:#dce8e6}.timeline{margin-top:2.5rem;border-top:1px solid var(--line)}.timeline article{display:grid;grid-template-columns:5rem 1fr;gap:1rem;padding:1.3rem 0;border-bottom:1px solid var(--line)}.timeline strong{color:var(--coast-700)}.timeline p{margin:0;max-width:55rem}
   @media(min-width:760px){.cards,.service-grid{grid-template-columns:repeat(2,1fr)}.cards.programs article:first-child{grid-column:1/-1}.cards.articles article,.cards.publications article{display:grid;grid-template-columns:minmax(12rem,.75fr) 1.25fr}.cards.articles article>img,.cards.publications article>.cover{height:100%;aspect-ratio:auto}.timeline article{grid-template-columns:8rem 1fr}}
 </style>
+</ContentLayout>

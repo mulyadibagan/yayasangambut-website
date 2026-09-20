@@ -23,7 +23,7 @@ legacy: true
 
 Pada umumnya, praktik agroforestri di lahan gambut memiliki tantangan tersendiri. Lahan gambut cenderung memiliki kandungan air yang tinggi dan kadar asam yang tinggi pula, sehingga pengelolaannya memerlukan pendekatan khusus untuk menjaga kesuburan tanah dan meminimalkan risiko kebakaran lahan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0023-1-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0023-1-1024x771.jpg)
 
 _Kelompok masyarakat di Kampung Tanjung Kuras menanam Kopi Liberica di Lahan Gambut didalam kebun karet_
 
@@ -33,7 +33,7 @@ Pengelolaan agroforestri di lahan gambut memerlukan perhatian lebih terhadap kes
 
 **Mengenal *Fruits of Peatland : Coffea Liberica***
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0020-771x1024.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0020-771x1024.jpg)
 
 _buah Kopi Liberica yang telah dipanen dengan cara petik merah_
 
@@ -41,7 +41,7 @@ Istilah “Kopi Gambut” saat ini sudah mulai populer bagi sebagian kalangan, k
 
 Secara umum, kopi Liberika memiliki karakteristik rasa yang berbeda dari Arabika atau Robusta. Beberapa penggemar kopi menyebutkan bahwa Liberika memiliki cita rasa yang unik dan kompleks, seringkali dengan sentuhan buah-buahan atau rasa floral yang khas. Aromanya juga bisa berbeda dari varietas kopi lainnya.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0030-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0030-1024x768.jpg)
 
 _Pohon Kopi Liberica di Kecamatan Siak Kecil, Kab. Bengkalis – Riau_
 

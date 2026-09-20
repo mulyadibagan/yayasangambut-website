@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/peringatan-hari-mangrove-di-desa-buruk-bak
 legacy: true
 ---
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2022/08/IMG_1017-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2022/08/IMG_1017-1024x683.jpg)
 
 _Foto bersama Gubernur dan Berbagai Pihak pada peringatan hari mangrove di Desa Buruk Bakul_
 

@@ -25,7 +25,7 @@ Perubahan iklim saat ini menjadi tantangan yang tak dapat di hindari, dalam 10 t
 
 Dalam menghadapi persoalan dan tantangan diatas , Yayasan gambut melihat perlu adanya upaya – upaya mitigasi dan adaptasi perubahan iklim. Respon atas isu *Climate Change *di tuangkan dalam beberapa bentuk kegiatan yang berkolaborasi bersama desa dan kelompok – kelompok yang ada.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230509161603-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230509161603-1024x771.jpg)
 
 *Yayasan Gambut Memantau kondisi bangunan Sekat Kanal di Desa Temiang *
 
@@ -35,7 +35,7 @@ Desa Temiang adalah salah satu desa yang menjadi mitra Yayasan Gambut dalam bera
 
 “di Desa temiang, kita sudah melakukan beberapa kegiatan seperti PLTB Jahe merah, Agroforestri Kopi untuk kelompok Tani Wanita Mekar Jaya, pembangunan sekat kanal, dan peningkatan kapasita kelompok, selain itu kita juga mendukung bagaimana distribusi dan peningkatan produk turunan dari jahe merah mereka. Bahwa sebenarnya yang ingin kita tunjukan adalah tanpa mengorbankan lingkungan , serta memanfaatkan hasil hutan bukan kayu, roda ekonomi masyarakat disekitar kawasan hutan masih dapat terus berputar” Ujar Mulyadi selaku Direktur Yayasan Gambut
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230510091751-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230510091751-1024x771.jpg)
 
 *Yayasan Gambut Diskusi bersama Kelompok Tani Wanita Makmur Jaya Desa Temiang Tentang Program dan Inovasi Produk*
 
@@ -43,7 +43,7 @@ Desa Temiang adalah salah satu desa yang menjadi mitra Yayasan Gambut dalam bera
 
 Terciptanya Kolaborasi yang baik merupakan tanda bahwa dalam menanggapi isu *Climate Change *telah sama – sama di sadari bahwa perlu adanya tindakan yang memikirikan unsur ekologi. Yayasan gambut berkolaborasi bersama Kelompok Tani Wanita Makmur Jaya Desa Temiang, serial pelatihan dan dukungan lainnya yang di upayakan Yayasan Gambut juga bersama multi pihak di respon baik oleh KTW Makmur Jaya, terbukti bahwa Pelatihan PLTB Jahe Merah hingga saat ini dapat terus berjalan hingga kelompok telah menghasilkan produk turunan minuman jahe kemasan yang siap edar.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/05/328620681_5809808659066584_538547717722140064_n-edited.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/05/328620681_5809808659066584_538547717722140064_n-edited.jpg)
 
 *Produk Turunan Dari PLTB Jahe Merah KTW MJ Desa Temiang*
 
@@ -51,7 +51,7 @@ Inovasi demi inovasi di ciptakan oleh kelompok seperti sabun pencuci piring, pro
 
 Dikenal dengan nama Tuti Kelana, beliau adalah Ketua kelompok Wanita Tani Desa Temiang bersama anggota kelompok terus melakukan upaya – upaya dalam menghasilkan produk yang ramah lingkungan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230510103525-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230510103525-1024x771.jpg)
 
 *Tuty sedang menunjukan hasil pewarna alami yang diproduksi oleh kelompok *
 
@@ -59,7 +59,7 @@ Dikenal dengan nama Tuti Kelana, beliau adalah Ketua kelompok Wanita Tani Desa T
 
 “kita berinovasi kepada beragam produk yang sangat ramah lingkunga, seperti pertanian jahe tanpa bakar lahan, kebun kopi, hingga mengidentifikasi tanaman buah yang tumbuh di lahan hutan gambut yang memiliki nilai ekonomi dan dibutuhkan di pasaran” tambah Tuty.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230509180905-1024x771.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230509180905-1024x771.jpg)
 
 *Tim Yayasan Gambut sedang meninjau rencana pemasangan FDRS*
 

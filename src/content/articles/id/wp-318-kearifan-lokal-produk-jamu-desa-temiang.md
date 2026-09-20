@@ -25,7 +25,7 @@ Jika kita berkunjung ke Rumah Buk Tuti (36) di Desa Temiang akan banyak kita jum
 
 secara turun temurun buk tuti hingga saat ini masih aktif memproduksi jamu dari berbagai macam tanaman rimpang dan tanaman obat lainnya, jamu tersebut di manfaatkan oleh masyarakat desa yang secara administrasi terletak di Kecamatan Bandar Laksamana Kabupaten Bengkalis.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Persiapan-Pembuatan-Jamu.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Persiapan-Pembuatan-Jamu.jpeg)
 
 _Proses Pembuatan Bahan – Bahan untuk Jamu_
 
@@ -33,7 +33,7 @@ _Proses Pembuatan Bahan – Bahan untuk Jamu_
 
 Jamu selepas melahirkan tersebut di percaya memiliki manfaat memperbaiki rahim serta memperlancar peredaran darah, karena biasanya setelah melahirkan kondisi badan akan melemah, sehingga di anjurkan konsumsi jamu selama 44 hari setelah melahirkan
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Penjemuran-Obat.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Penjemuran-Obat.jpeg)
 
 _Proses Penjemuran Bahan – Bahan untuk Jamu_
 
@@ -49,7 +49,7 @@ kunyit, jahe merah, kencur, jamu rempah ratus, ketumbar, lada hitam, kulit kayu 
 Bahan – bahan Serbuk untuk Bedak :
 Rempah param, kunyit, bongle, dan kencur kesemua bahan ini di jemur sampai kering kemudian di tumbuk dengan tepung beras
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/jamu-jadi-1.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/jamu-jadi-1.png)
 
 _Jamu yang Sudah di Tumbuk Halus untuk Konsumsi dan bedak oles_
 

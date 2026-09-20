@@ -1,13 +1,13 @@
 ---
-title: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut : Transformasi Pengetahuan dalam Pengembangan Kopi LIberika."
+title: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut: Transformasi Pengetahuan dalam Pengembangan Kopi Liberika"
 slug: "optimalisasi-pertanian-berkelanjutan-di-lahan-gambut-transformasi-pengetahuan-dalam-pengembangan-kopi-liberika"
 date: "2024-10-31T03:34:43"
 modified: "2024-10-31T03:36:10"
 author: "YayasanGambut (YG)"
-summary: "Ditengah meningkatnya kebutuhan hasil pertanian dan ancaman perubahan iklim, optimalisasi lahan gambut untuk pertanian berkelanjutan menjadi Langkah penting untuk mencapai terpenuhinya kebutuhan dan juga kelestarian ekosistem. Bagaimana kita bisa memanfaatkan lahan gambut untuk p"
+summary: "Di tengah meningkatnya kebutuhan hasil pertanian dan ancaman perubahan iklim, optimalisasi lahan gambut untuk pertanian berkelanjutan menjadi langkah penting untuk memenuhi kebutuhan sekaligus menjaga kelestarian ekosistem."
 category: "artikel · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1024x577.jpeg"
-imageAlt: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut : Transformasi Pengetahuan dalam Pengembangan Kopi LIberika."
+imageAlt: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut: Transformasi Pengetahuan dalam Pengembangan Kopi Liberika"
 imageSource: "https://yayasangambut.org/optimalisasi-pertanian-berkelanjutan-di-lahan-gambut-transformasi-pengetahuan-dalam-pengembangan-kopi-liberika/"
 gallery: ["https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1024x577.jpeg","https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1-1024x549.jpeg","https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.31-1024x768.jpeg"]
 categories: ["artikel","desa-temiang"]
@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/optimalisasi-pertanian-berkelanjutan-di-la
 legacy: true
 ---
 
-Ditengah meningkatnya kebutuhan hasil pertanian dan ancaman perubahan iklim, optimalisasi lahan gambut untuk pertanian berkelanjutan menjadi Langkah penting untuk mencapai terpenuhinya kebutuhan dan juga kelestarian ekosistem. Bagaimana kita bisa memanfaatkan lahan gambut untuk pertanian tanpa mengorbankan kelestarian yang ada, mengingat semakin pentingnya lahan gambut yang memiliki peran kruisal dalam mitigasi perubahan iklim.
+Di tengah meningkatnya kebutuhan hasil pertanian dan ancaman perubahan iklim, optimalisasi lahan gambut untuk pertanian berkelanjutan menjadi langkah penting untuk memenuhi kebutuhan sekaligus menjaga kelestarian ekosistem. Bagaimana kita bisa memanfaatkan lahan gambut untuk pertanian tanpa mengorbankan kelestariannya, mengingat peran krusial lahan gambut dalam mitigasi perubahan iklim?
 
 Kita tahu bahwa lahan gambut yang menyimpan cadangan karbon ini sebagai lahan marginal yang sulit untuk dikelola, padahal jika dengan pendekatan yang tepat, lahan gambut dapat dimaksimalkan tanpa merusaknya untuk pertanian yang memberikan keuntungan secara finansial sekaligus menjaga kelestarian lingkungan.
 
@@ -29,15 +29,15 @@ Yayasan Gambut sebagai Lembaga yang berfokus kepada pengembangan pertanian berke
 
 **Pelatihan Teknik Perbanyakan Bibit Kopi Liberika di Desa Temiang**
 
-Desa Temiang memiliki kondisi alam dan ekosistem gambut yang sangat cocok untuk pengembangan kopi liberika, yang mana secara proses jenis kopi ini dapat tumbuh dengan baik dilahan gambut.  Saat ini kopi liberika sudah memiliki pasar khusus yang tergolong cukup besar untuk di Provinsi riau dan sekitarnya. Namun kendala saat ini adalah kurangnya tingkat produktivitas kopi ini untuk di Provinsi Riau dalam memenuhi permintaan pasar, kendala yang ditemukan oleh Yayasan gambut adalah kurangnya pengetahuan dan keterampilan Masyarakat lokal dalam memperbanyak bibit kopi ini. Dari temuan lapangan, terdapat petaniyang masih menggunakan metode yang kurang efisien sehingga pada proses penyemaian bibit tidak optimal baik secara kualitas bibit dan kuantitas yang di dapatkan, dan sudah jelas bahwa ini akan mempengaruhi produktivitas dalam menghasilkan buah kopi kedepannya.
+Desa Temiang memiliki kondisi alam dan ekosistem gambut yang cocok untuk pengembangan kopi Liberika, yang dapat tumbuh dengan baik di lahan gambut. Saat ini kopi Liberika memiliki pasar khusus yang cukup besar di Provinsi Riau dan sekitarnya. Namun, produktivitasnya belum mampu memenuhi permintaan pasar. Kendala yang ditemukan Yayasan Gambut adalah terbatasnya pengetahuan dan keterampilan masyarakat lokal dalam memperbanyak bibit kopi. Berdasarkan temuan lapangan, sejumlah petani masih menggunakan metode yang kurang efisien sehingga proses penyemaian belum optimal, baik dari sisi kualitas maupun kuantitas bibit. Kondisi ini memengaruhi produktivitas buah kopi ke depannya.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1-1024x549.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1-1024x549.jpeg)
 
 _Narasumber, Dr. M. Amrul Khoiri SP., MP., C.APO sedang memberikan paparan pemahaman mendalam tentang metode pembibitan kopi liberika_
 
 Pelatihan ini dilaksanakan sebagai bentuk menjawab tantangan serta permasalahan yang ditemukan, dengan meilbatkan Akademisi Fakultas Pertanian UR,  metode pelatihan di bagi kedalam Dua sesi, dimana sesi pertama peserta pelatihan yang umumnya adalah masyarakat diberikan teori sebagai dasar pemahaman yanga mana mencakup Teknik perbanyakan bibit secara generatif dan vegetatif, pemilihan benih, persiapan media tanam, penyemaian, hingga proses perawatan bibit yang baik. Pada sesi ini peserta di tekankan untuk sangat selektif dalam memilih benih berkualitas agar menghasilkan tanaman dengan akar yang kuat dan memiliki ketahanan yang baik.  Peserta juga mendapatkan pemahaman mendalam tentang manajemen pembibitan dan strategi meningkatkan hasil panen kopi liberika yang lebih efisien dan berkelanjutan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.31-1024x768.jpeg)
+![](https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.31-1024x768.jpeg)
 
 _Praktik lapangan yang di pandu oleh Narasumber Joni Irawan, S.P., M.Si, sedang menjelaskan tentang perawatan bibit kopi yang baik_
 

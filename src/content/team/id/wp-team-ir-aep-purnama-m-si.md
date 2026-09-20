@@ -1,6 +1,6 @@
 ---
-name: "Ir. Aep Purnama M.Si"
-position: "Supervisor"
+name: "Ir. Aep Purnama, M.Si."
+position: "Pengawas"
 group: "Governance"
 photo: "https://yayasangambut.org/wp-content/uploads/2020/05/Aep-Purnama.jpg"
 language: id

@@ -27,11 +27,11 @@ The projects aim to engage and empower the local communities in the rehabilitati
 
 To kickstart the projects, community mangrove nurseries will be established in the Buruk Bakal Village, Bengkalis District, Riau Province, Indonesia and Soc Trang Province in the Lower Mekong Delta, Vietnam to supply 8,000 and 15,000 mangrove seedlings respectively. After the seedlings have grown to a suitable size in the nurseries, they will be planted at the degraded mangrove areas.
 
-**Marwa Al-Khuzaim, Managing Director of Aramco Asia Singapore **said, “At Aramco, environmental protection and preservation is one of our key focuses, and we plant mangroves to protect vital ecosystems and contribute to a lower-carbon future. We are very privileged for the opportunity to expand on our efforts to rehabilitate degraded mangrove areas as well as preserve the homes of the local coastal communities that are under the threat from erosion”.
+**Marwa Al-Khuzaim, Managing Director of Aramco Asia Singapore** said, “At Aramco, environmental protection and preservation is one of our key focuses, and we plant mangroves to protect vital ecosystems and contribute to a lower-carbon future. We are very privileged for the opportunity to expand on our efforts to rehabilitate degraded mangrove areas as well as preserve the homes of the local coastal communities that are under the threat from erosion”.
 
 Mangroves serve a vital role as a protective zone along the coastline. For instance, Indonesia’s Buruk Bakul Village in Riau, has faced challenges of coastal erosion over the last five years, and without proper mitigation efforts in place, the situation can eventually lead to the destruction of the village land. Similarly, the Mekong Delta in Vietnam, home to the largest expanse of Vietnam’s mangroves, is also highly vulnerable to the twin effects of climate crisis and coastal development.
 
-**Faizal Parish, Director of GEC **said, “Aramco’s commitment to mangrove conservation has allowed GEC to expand community-based mangrove rehabilitation programs to more countries in the Southeast Asia region and we are delighted with the opportunity to share our experience and success with the communities in Indonesia and Vietnam”.
+**Faizal Parish, Director of GEC** said, “Aramco’s commitment to mangrove conservation has allowed GEC to expand community-based mangrove rehabilitation programs to more countries in the Southeast Asia region and we are delighted with the opportunity to share our experience and success with the communities in Indonesia and Vietnam”.
 
 With a track record spanning 25 years, award-winning non-profit organisation – GEC has established itself in Southeast Asia as a leader in community-based protection and restoration of peatland and mangrove forests initiatives.
 
@@ -43,4 +43,4 @@ The new projects will be undertaken with two long-term GEC partners, Yayasan Gam
 
 Aramco’s commitment to mangrove protection spans the globe. In Saudi Arabia, Aramco has completed the development of the first mangrove eco-park in the Kingdom in 2022, protecting 64km2 of marine habitats. Over 6.3 million mangrove trees have also been planted at sites along the Arabian Gulf, and in the city of Yanbu on the Red Sea coasts. In Asia, Aramco is supporting mangrove conservation and protection efforts in Haimen Island in Fujian Province, China; Okinawa, Japan; and Johor, Malaysia.
 
-original article from : https://singapore.aramco.com/en/news-media/news/2023/aramco-expands-mangrove-conservation-efforts-to-indonesia-and-vietnam#
+Source: [Aramco Asia — “Aramco expands mangrove conservation efforts to Indonesia and Vietnam”](https://singapore.aramco.com/en/news-media/news/2023/aramco-expands-mangrove-conservation-efforts-to-indonesia-and-vietnam)

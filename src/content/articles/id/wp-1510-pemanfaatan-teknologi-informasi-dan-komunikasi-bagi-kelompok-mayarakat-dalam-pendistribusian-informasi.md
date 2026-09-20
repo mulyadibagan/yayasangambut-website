@@ -25,7 +25,7 @@ Di era digital ini, Teknologi Informasi dan Komunikasi (TIK) telah menjadi bagia
 
 Oleh karena itu, diperlukan upaya untuk meningkatkan kapasitas kelompok di desa terhadap pemanfaatan TIK. Hal ini dapat dilakukan melalui beberapa strategi salah satunya adalah workshop. Di Desa Buruk Bakul sendiri, Yayasan Gambut dan Kelompok Sekat Bakau Desa Buruk Bakul mengadakan workshop untuk peningkatan kelompok dalam pemanfaatan teknologi informasi dan komunikasi yang mana Serindit.id menjadi narasumber dalam workshop pemanfaatan TIK tersebut. Aktifitas ini merupakan bagian dari serangkaian program konservasi ekosistem mangrove bersama Global Environment Centre dengan dukungan ARAMCO Asia Singapore
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/06/IMG-20240603-WA0034-edited.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/06/IMG-20240603-WA0034-edited.jpg)
 
 _Video yang dibuat anggota sekat bakau menggunakan smartphone dan didistribusikan melalui media social_
 
@@ -33,7 +33,7 @@ Workshop ini juga didukung dengan partisipasi aktif Pemerintah Kecamatan Bukit B
 
 Pemateri dalam proses pelatihan adalah Tim Serindit.id, memberikan materi tentang pembuatan “Video Gampil” untuk masyarakat dan kelompok desa agar dapat mengembangkan dan mempromosikan potensi desa melalui media social masing-masing. Hal ini juga bertujuan agar informasi dan komunikasi dapat tersebar luas dengan baik dan menarik melalui “Video Gampil” dengan penyajian sederhana tetapi sangat informatif.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/06/IMG-20240608-WA0108-1-1024x576.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/06/IMG-20240608-WA0108-1-1024x576.jpg)
 
 _Sambutan Oleh Pemerintah Desa Buruk Bakul_
 

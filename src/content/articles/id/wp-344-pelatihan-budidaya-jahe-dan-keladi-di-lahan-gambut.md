@@ -27,7 +27,7 @@ Yayasan Gambut menghadiri pelatihan budidaya Jahe dan Keladi di Lahan Gambut yan
 
 Selanjutnya Pak Rasidi penggerak tanaman palawija lahan gambut tanpa bakar di Desa Harapan Jaya, Kec. Tempuling Kabupaten Indragiri Hilir memaparkan materi terkait budidaya jahe merah, dalam materi nya di jelaskan berbagai jenis bahan yang bagus untuk di jadikan bibit jahe merah, saat ini pak rasidi banyak mensuplai kebutuhan bibit jahe merah di bebeberapa desa di Kabupaten Indragiri Hilir dan Indragiri Hulu
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/128732746_810348739819172_497691244498855690_n-1.jpg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/128732746_810348739819172_497691244498855690_n-1.jpg)
 
 _Praktek Penanaman Jahe Menggunakan Media Tanah Gambut dan Serabut Pelepah Kelapa Sawit_
 

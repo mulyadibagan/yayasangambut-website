@@ -25,7 +25,7 @@ Desa Harapan Jaya tak henti-hentinya terus mecoba menggali potensi ekonomi di de
 
 “Saat ini di desa harapan jaya sudah menanam 1/4 hektar merica berumur 4 tahun di perkebunan sawit, merica tersebut merambat di batang sawit, hingga saat ini kami baru bisa memanen 1 Kg per pohon setiap tahun nya” ujar pak yusuf saaat di konfirmasi Yayasan Gambut, Jumat (11/12/2020)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-11-at-12.34.16-PM-Small-1.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-11-at-12.34.16-PM-Small-1.jpeg)
 
 _Bibit Merica Sulur Desa Harapan Jaya (Dok: Yusuf, 2020)_
 

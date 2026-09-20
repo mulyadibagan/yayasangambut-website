@@ -25,7 +25,7 @@ Desa Penampi merupakan salah satu desa pemasok buah nenas untuk pulau bengkalis 
 
 Menurut Samrizal (31) tidak semua nenas laku di pasaran dengan harga yang tinggi, sehingga di perlukan upaya untuk meningkatkan nilai ekonomis nanas serta daya simpan nenas, dimana salah satunya melalui BUMDes yang di kelolanya telah mengembangkan berbagai macam produk turunan nenas di antaranya dodol nenas, sirup nenas dan Kerupuk Nenas.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/Nenas-2-1024x460.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/Nenas-2-1024x460.png)
 
 Produk Turunan Nanas Desa Penampi (Dodol, Sirup dan Kerupuk Nanas)
 
@@ -42,7 +42,7 @@ Saat ini pemasaran produk turunan nenas ini di jual secara online serta ada di s
 
 “harapannya produk turunan nenas dari Desa Penampi ini di lirik oleh konsumen sebagai oleh-oleh khas dari Bengkalis, serta pemerintah dan para pihak bisa membantu memasarkan produk turunan nenas yang memang adaptif di lahan gambut” begitu yang di sampaikan Samrizal kepada Yayasan Gambut, Senin (23/11/20)
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/nenas-3-1-1024x376.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/nenas-3-1-1024x376.png)
 
 Kiri (Kunjungan Sekolah Lapang BRG), Kanan (Kunjungan Politeknik Bengkalis)
 

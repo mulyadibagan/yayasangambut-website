@@ -1,6 +1,6 @@
 ---
-name: "Mulyadi S.P"
-position: "Director"
+name: "Mulyadi, S.P."
+position: "Direktur"
 group: "Management & Program Team"
 photo: "https://yayasangambut.org/wp-content/uploads/2020/05/Mulyadi.jpg"
 language: id

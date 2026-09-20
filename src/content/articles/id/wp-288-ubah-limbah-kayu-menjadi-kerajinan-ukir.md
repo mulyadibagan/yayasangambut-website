@@ -27,7 +27,7 @@ Beda halnya kayu pulai di mata pak amirudin (40), kayu tersebut menjadi kerajina
 
 “Untuk memproduksi sarung parang jika ada yang memesan biasanya bisa di selesaikan dalam waktu sehari, dengan kisaran harga 200 ribu per unit” tutur pak amirudin kepada Yayasan Gambut, Sabtu (21/11/2020), pak amrudin menggunakan limbah kayu pulai bekas yang di gunakan untuk pembuatan jong titis dimana setiap tahun nya selalu di adakan festival oleh Pemerintah Kabupaten Bengkalis.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-22-at-9.44.55-AM-1-1.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-22-at-9.44.55-AM-1-1.jpeg)
 
 _Sarung Parang dari Kayu Nirih Desa Penampi_
 

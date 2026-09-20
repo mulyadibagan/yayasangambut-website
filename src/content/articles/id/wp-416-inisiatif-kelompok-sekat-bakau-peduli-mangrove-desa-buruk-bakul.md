@@ -25,7 +25,7 @@ Buruk Bakul merupakan salah satu desa yang terletak di wilayah pesisir Indonesia
 
 Dari berbagai jenis mangrove tersebut, mangrove (rhizopora sp) merupakan jenis yang paling terancam karena menjadi incaran masyarakat untuk dijadikan kayu bakar, bahan bangunan, kayu cerocok dan lain sebagainya.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2021/01/Pembibitan-Mangrove-Bakau-Putih-Rhizopora-apiculata-umur-2-Bulan.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2021/01/Pembibitan-Mangrove-Bakau-Putih-Rhizopora-apiculata-umur-2-Bulan.jpeg)
 
 _Pembibitan Mangrove Bakau Putih (Rhizopora apiculata) umur 2 Bulan (Dok: Khaidir Air, 2020)_
 
@@ -33,7 +33,7 @@ Kelompok Peduli Mangrove Sekat Bakau di Desa Buruk Bakul mencatat kawasan vegeta
 
 Semenjak tahun 2019 kelompok Sekat Bakau yang beranggotakan 8 orang telah melakukan inisiatif secara swadaya melakukan pembibitan dan penanaman mangrove, hingga saat ini kelompok tersebut telah membibitkan mangrove dan penanaman sebanyak 3000 batang, karena kuatnya pengaruh hidrodinamis, dari total tersebut hanya sekitar 50% yang hidup,  dan menurut Khaidir Air Ketua Kelompok Sekat Bakau untuk ke depan di butuhkan metode hybrid untuk menahan gelombang air laut
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2021/01/Penanaman-Mangrove-Terdampak-Abrasi-1024x768.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2021/01/Penanaman-Mangrove-Terdampak-Abrasi-1024x768.jpeg)
 
 _Penanaman Mangrove Kelompok Sekat Bakau di Areal Terdampak Abrasi (Dok: Khaidir Air, 2020)_
 

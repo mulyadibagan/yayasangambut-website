@@ -25,7 +25,7 @@ Setelah mendapatkan Pelatihan Budidaya Madu Kelulut dari Yayasan Gambut pada Okt
 
 Desa yang terletak di Kecamatan Bengkalis tersebut menyimpan potensi koloni madu kelulut di wilayah berhutan mereka, biasanya tiap hari pekan kelompok penggiat madu tersebut mencari koloni-koloni baru, beberapa hari lalu mereka mendapatkan koloni dari berbagai jenis kayu yang sudah lapuk di pohon karet dan kelapa dan bahkan kegiatan mereka tersebut menarik Pendamping Ekonomi Desa Penampi berkunjungan menyaksikan aktifitas pengembangan budidaya madu di desa yang juga merupakan kampung nenas tersebut.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/koloni-madu-j.png)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/koloni-madu-j.png)
 
 _Pencarian Koloni Madu di Desa Temeran (20/11/2020) Foto : Samrizal Penampi_
 
@@ -33,7 +33,7 @@ Hari jumat (11/20) 3 orang dari Desa Penampi bertandang ke perbatasan Desa Keleb
 
 2 unit koloni madu kelulut mereka temukan pada pohon kalu meranti kelat, sehingga bertambahlah 32 unit koloni madu yang mereka kelola saat ini. koloni yang mereka temukan tersebut akan di budidayakan di rumah masing-masing anggota yang terlibat dan di buatkan rumah atau toping untuk usaha budidaya madu kelulut mereka. rumah untuk lebah tersebut terbuat dari kayu geronggang.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-10-15-at-6.59.47-PM-1-1024x768.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-10-15-at-6.59.47-PM-1-1024x768.jpeg)
 
 _Proses Pembuatan Topping Madu Kelulut Desa Penampi_
 

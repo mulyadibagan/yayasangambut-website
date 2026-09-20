@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/yayasan-gambut-gec-dan-masyarakat-lokal-be
 legacy: true
 ---
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Group-1-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Group-1-1024x683.jpg)
 
 _Sekitar 100 relawan dari masyarakat lokal, sekolah, pemerintah daerah, Yayasan Gambut, Global Environment Centre dan Aramco merayakan peluncuran Program Konservasi Mangrove Berbasis Masyarakat dengan menanam 8.000 pohon mangrove di Buruk Bakul, Provinsi Riau, Indonesia._
 
@@ -29,11 +29,11 @@ BUKIT BATU, RIAU, 26 Oktober, 2023: Kelompok Sekat Bakau di Desa Buruk Bakul, Ke
 
 Untuk memulai program ini, 100 relawan dari Kelompok Sekat Bakau, masyarakat lokal, sekolah, pemerintah daerah, YG, GEC dan Aramco menanam 200 bibit pohon Bakau Minyak (Rhizophora apiculata) di kawasan hutan bakau yang terdegradasi di Desa Buruk Bakul.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Planting-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Planting-1024x683.jpg)
 
 _Acara penanaman mangrove ini dihadiri oleh Staf Ahli Bupati Bengkalis Bidang Pemerintahan, Hukum, dan Politik, Bapak Allfakhrurrozy, ST, M.Si. (barisan depan, tengah) dan Sekretaris Kecamatan Bukit Batu Bpk. Rizki Subagia Effendi, S.STP., M.Si. (depan kanan) dan Direktur Hubungan Masyarakat dan Dukungan Bisnis Aramco Asia Singapura Ms Patsy Koh (barisan depan, kiri)._
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Community-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Community-1024x768.jpg)
 
 _Program Konservasi Mangrove Berbasis Masyarakat melibatkan dan memberdayakan masyarakat lokal untuk menanam 8.000 pohon mangrove dan merehabilitasi empat hektar kawasan hutan bakau yang terdegradasi di Desa Buruk Bakul_
 
@@ -41,7 +41,7 @@ Hasil penelitian erosi pantai di Kecamatan Bukit Batu1 mengungkapkan bahwa panta
 
 Didukung oleh Aramco, dengan YG sebagai mitra pelaksana program dan GEC sebagai manajemen program dan lembaga fasilitator teknis, program ini bertujuan untuk memulihkan hutan mangrove yang terdegradasi melalui penanaman 8.000 pohon mangrove di Desa Buruk Bakul dan pembangunan pemecah gelombang sepanjang 100 meter, untuk mengurangi kerusakan akibat energi gelombang dan menahan sedimentasi.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Wave-Breaker-1024x768.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Wave-Breaker-1024x768.jpg)
 
 _Pemecah Ombak sepanjang 100 meter dibangun untuk mengurangi energi gelombang dan mengurangi erosi pantai di Desa Buruk Bakul._
 

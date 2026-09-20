@@ -25,7 +25,7 @@ Kelompok Sekat Bakau merupakan aktor kunci dan menjadi garda terdepan dalam menj
 
 Kerusakan kawasan pesisir desa karena abrasi merupakan permasalahan utama yang terjadi di Desa Buruk Bakul, kerusakan ini telah terjadi dari tahun 1991 hingga sekarang. Luas kawasan mangrove di desa buruk bakul sekitar 168 Hektar, yang mana saat ini telah terjadi abrasi rata – rata 4 meter pertahun sepanjang 139 meter garis pantai, pastilah kondisi ini telah menjadi ancaman nyata bagi ruang hidup masyarakat desa.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/03/DJI_0329-1024x576.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/03/DJI_0329-1024x576.jpg)
 
 _Foto udara areal kerusakan pesisir akibat abrasi di desa buruk bakul ( YG Dok 07/09/2023)_
 
@@ -33,25 +33,25 @@ Upaya dalam mengatasi kondisi tersebut telah dilakukan, salah satunya membuat Al
 
 Peningkatan kapasitas ini bertujuan untuk meningkatkan pemahaman dan keterampilan dalam monitoring dan pengawasan vegetasi mangrove. Hal ini penting untuk melindungi mangrove alami dan menjaga keberlanjutan upaya rehabilitasi. Dengan pemantauan yang rutin, diharapkan kelompok dapat menyajikan data tentang pertumbuhan tanaman, efektivitas APO, dan sedimentasi yang terjadi, sehingga dapat mengevaluasi efektivitas upaya rehabilitasi dan membuat penyesuaian jika diperlukan. Informasi ini juga dapat digunakan untuk meningkatkan strategi rehabilitasi, mengidentifikasi faktor-faktor yang mempengaruhi keberhasilan, dan menyusun rencana berkelanjutan untuk pelestarian mangrove.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1343-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1343-1024x683.jpg)
 
 _Narasumber Pelatihan (Romi Jhonnerie) sedang memaparkan materi_
 
 diawal proses pelatihan, peserta diajak kembali mengenal dasar ekosistem mangrove (secara teoritis), pengelompokan mangrove secara umum, sebaran ekosistem mangrove, dan pengelompokan mangrove berdasarkan geografi sekitarnya beserta manfaatnya. Paparan yang terpenting adalah bagaimana bentuk ancaman yang nyata pada mangrove, hal ini bertujuan mengajak peserta untuk menganalisa bentuk – bentuk ancaman langsung atau tidak langsung yang ada di ekosistem mangrove desa buruk bakul.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1347-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1347-1024x683.jpg)
 
 _Salah satu peserta pelatihan mengajukan pertanyaan terkait tantangan yang di hadapi dalam proses rehabilitasi mangrove_
 
 Setelah tanya jawab pada sesi pertama terkait hal – hal mendasar mangrove, dilanjutkan kepada paparan materi monitoring mangrove, sesi ini menjelaskan materi tentang proses observasi dan pengukuran berkala terhadap kondisi fiksik dan hayati ekosistem mangrove, mencakup parameter biofisik, kimiawi dan komunitas biologis mangrove. Observasi bertujuan mendeteksi perubahan dalam eksosistem akibat faktor alami atau aktivitas manusia. Dari data yang di peroleh akan di analisis kemudian dapat dirumuskan upaya pengelolaan dan restorasi yang diperlukan.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1355-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1355-1024x683.jpg)
 
-_Praktik lapangan : Peserta peltihan sedang mengukur diameter pohon baku_
+_Praktik lapangan: peserta pelatihan sedang mengukur diameter pohon bakau._
 
-Dalam proses monitoring mencakup 2 hal, yang pertama internal yaitu mencakup sebaran areal mangrove dan struktur komunitas (jenis, kerapatan,dominasi, nilai penting) da yang kedua ekternal yaitu mencakup kualitas air yang dipengaruhi limbah domestik ataupun industri, tingkat salinitas dan ketersediaan nutrien pada sedimen akibat pola curah hujan dan intrusi air laut,kemudian perubahan iklim dan gangguan hidrologi oleh normalisasi atau reklamasi.
+Proses monitoring mencakup dua hal. Pertama, faktor internal yang meliputi sebaran areal mangrove dan struktur komunitas (jenis, kerapatan, dominasi, dan nilai penting). Kedua, faktor eksternal yang meliputi kualitas air yang dipengaruhi limbah domestik maupun industri, tingkat salinitas, ketersediaan nutrien pada sedimen akibat pola curah hujan dan intrusi air laut, perubahan iklim, serta gangguan hidrologi akibat normalisasi atau reklamasi.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1356-1024x683.jpg)
+![](https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1356-1024x683.jpg)
 
 _Setiap pohon yang ditemukan akan di data dan dicatat oleh peserta yang nantinya akan di analisis_
 

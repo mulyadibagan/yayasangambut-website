@@ -3,7 +3,7 @@ title: "Laporan Tahun 2022"
 slug: "laporan-tahun-2022"
 year: 2022
 category: "Laporan Tahunan"
-summary: "Dokumen publik Yayasan Gambut yang dipindahkan dari website lama."
+summary: "Laporan tahunan resmi Yayasan Gambut untuk tahun 2022, tersedia dalam format PDF berbahasa Indonesia."
 cover: "https://yayasangambut.org/wp-content/uploads/2024/07/Cover-Annual-Report-1-724x1024.jpg"
 fileUrl: "https://yayasangambut.org/wp-content/uploads/2023/04/Compilation-Capaian_Yayasan-Gambut_2022.pdf"
 documentLanguage: id

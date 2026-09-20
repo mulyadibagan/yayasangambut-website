@@ -25,7 +25,7 @@ Pandemi Corona Virus Disease 2019 (Covid-19) telah berdampak terhadap aspek sosi
 
 Salah satu strategi pemulihan ekonomi masyarakat oleh pemerintah dilakukan melalui Kegiatan Padat Karya Penanaman Mangrove Tahun 2020 di Kepenghuluan Panipahan Laut yang terletak di Kecamatan Pasir Limau Kapas, Kabupaten Rokan Hilir, Provinsi Riau.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2021/01/Kawasan-Degradasi-mangrove-1024x480.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2021/01/Kawasan-Degradasi-mangrove-1024x480.jpeg)
 
 _Kawasan yang akan di Tanami Mangrove di Kepenghuluan Panipahan Laut (Dok: KPH Bagan Siapi – Api, 2020)_
 
@@ -33,7 +33,7 @@ Menurut Pak Arifin Kepala UPT KPH Bagan Siapi-Api total kawasan mangrove terdegr
 
 Kegiatan Padat Karya Penanaman Mangrove tersebut juga berada di wilayah kerja BPDASHL Indragiri Rokan dimana jenis mangrove yang ditanam merupakan jenis Api-api (Apicenia) sebanyak 82.500 batang, dengan melibatkan 1.520 HOK masyarakat Desa Panipahan Laut
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2021/01/penanaman-mangrove-1024x480.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2021/01/penanaman-mangrove-1024x480.jpeg)
 
 _Kegiatan Penanaman Mangrove oleh Masyarakat (Dok : KPH Bagan Siapi – Api, 2020)_
 

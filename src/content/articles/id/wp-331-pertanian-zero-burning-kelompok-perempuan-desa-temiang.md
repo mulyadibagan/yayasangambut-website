@@ -25,7 +25,7 @@ Kelompok Tani Makmur Jaya yang berada di Desa Temiang Kecamatan Bandar Laksamana
 
 Saat ini kelompok sudah mulai menanam 1000 bibit Jahe Merah di Dusun 2 Merambai, kegiatan penanaman itu mereka lakukan secara bersama-sama dan dalam hal ini penyediaan bibit di dukung oleh Yayasan Gambut, dan untuk media tanah gambut serta karung di sediakan oleh kelompok tersebut.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-30-at-9.42.13-AM.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-30-at-9.42.13-AM.jpeg)
 
 _Penanaman Jahe Merah media tanah gambut dalam karung_
 
@@ -33,7 +33,7 @@ _Penanaman Jahe Merah media tanah gambut dalam karung_
 
 Kedepannya mereka juga akan mengembangkan pembibitan tanaman kopi liberika, yang saat ini Yayasan Gambut sedang mengusahakan mengalokasikan 1000 benih Kopi di datangkan dari Kabupaten Kepulauan Meranti yang memang sudah terbukti adaptif dan produktif tumbuh di lahan gambut.
 
-![Dokumentasi kegiatan Yayasan Gambut](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-25-at-8.48.12-PM-1-1-216x300.jpeg)
+![](https://www.yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-25-at-8.48.12-PM-1-1-216x300.jpeg)
 
 _Penyortiran Bibit Jahe Merah_
 
