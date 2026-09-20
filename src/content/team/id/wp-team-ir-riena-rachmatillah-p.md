@@ -1,8 +1,9 @@
 ---
 name: "Ir. Riena Rachmatillah P"
-position: "Finance Manager"
+position: "Manajer Keuangan"
+positionEn: "Finance Manager"
 group: "Management & Program Team"
-photo: "https://yayasangambut.org/wp-content/uploads/2020/05/Buk-Riena_S.jpg"
+photo: "/team/riena-rachmatillah.jpg"
 language: id
 status: published
 order: 5

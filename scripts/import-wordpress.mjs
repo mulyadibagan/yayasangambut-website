@@ -138,6 +138,20 @@ function teamEntries(aboutHtml) {
   return entries;
 }
 
+const teamOverrides = {
+  'Hisam Setiawan': { position: 'Pendiri', positionEn: 'Founder', photo: '/team/hisam-setiawan.jpeg', order: 1 },
+  'Dr.Ir. Lailan Syaufina M.Sc': { name: 'Dr. Ir. Lailan Syaufina, M.Sc.', position: 'Anggota Pendiri', positionEn: 'Founding Member', photo: '/team/lailan-syaufina.jpg', order: 2 },
+  'Ir. Aep Purnama M.Si': { name: 'Ir. Aep Purnama, M.Si.', position: 'Pengawas', positionEn: 'Supervisory Board Member', photo: '/team/aep-purnama.jpg', order: 3 },
+  'Mulyadi S.P': { name: 'Mulyadi, S.P.', position: 'Direktur', positionEn: 'Director', photo: '/team/mulyadi.jpg', order: 4 },
+  'Ir. Riena Rachmatillah P': { position: 'Manajer Keuangan', positionEn: 'Finance Manager', photo: '/team/riena-rachmatillah.jpg', order: 5 },
+  'Riandra Hamdani S.I.Kom': { name: 'Riandra Hamdani, S.I.Kom.', position: 'Program dan Hubungan Masyarakat', positionEn: 'Program and Public Relations', photo: '/team/riandra-hamdani.png', order: 6 },
+  'RAVITA SAFITRI S.Si, M.Si, M.Sc': { name: 'Ravita Safitri, S.Si., M.Si., M.Sc.', position: 'Riset dan Pengembangan', positionEn: 'Research and Development', photo: '/team/ravita-safitri.jpeg', order: 7 },
+  'AINUL AZIZAH S.H': { name: 'Ainul Azizah, S.H.', position: 'Administrasi dan Keuangan', positionEn: 'Administration and Finance', photo: '/team/ainul-azizah.jpeg', order: 8 },
+  'ZAMHARIR, S.Pi': { name: 'Zamharir, S.Pi.', position: 'GIS dan Analisis Spasial', positionEn: 'GIS and Spatial Analysis', group: 'Management & Program Team', photo: '/team/zamharir.jpeg', order: 9 },
+  'Dr.M. Amrul Khoiri, SP., MP. C.APO': { name: 'Dr. M. Amrul Khoiri, S.P., M.P., C.APO', position: 'Penasihat Pengelolaan Perkebunan Berkelanjutan', positionEn: 'Sustainable Plantation Management Advisor', group: 'Technical Advisors', photo: '/team/amrul-khoiri.jpg', order: 10 },
+  'Joni Irawan, S.P., M.Si': { position: 'Penasihat Agroforestri', positionEn: 'Agroforestry Advisor', group: 'Technical Advisors', photo: '/team/joni-irawan.jpg', order: 11 },
+};
+
 function galleryEntries(html) {
   const headings = [...html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/gi)];
   return headings.map((heading, index) => {
@@ -175,12 +189,14 @@ for (const [index, post] of storyPosts.entries()) {
 }
 
 const about = pages.find(page => page.slug === 'about');
-const team = teamEntries(about?.content?.rendered ?? '');
+const team = teamEntries(about?.content?.rendered ?? '')
+  .map(member => ({ ...member, ...(teamOverrides[member.name] ?? {}) }))
+  .sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 for (const lang of ['id', 'en']) await clearGenerated(join(root, 'src', 'content', 'team', lang), 'wp-team-');
 for (const [index, member] of team.entries()) {
   const slug = member.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const file = ['---', `name: ${yaml(member.name)}`, `position: ${yaml(member.position)}`, `group: ${yaml(member.group)}`, `photo: ${yaml(member.photo)}`,
-    'language: id', 'status: published', `order: ${index + 1}`, '---', ''].join('\n');
+  const file = ['---', `name: ${yaml(member.name)}`, `position: ${yaml(member.position)}`, member.positionEn ? `positionEn: ${yaml(member.positionEn)}` : null,
+    `group: ${yaml(member.group)}`, `photo: ${yaml(member.photo)}`, 'language: id', 'status: published', `order: ${member.order ?? index + 1}`, '---', ''].filter(Boolean).join('\n');
   await writeFile(join(root, 'src', 'content', 'team', 'id', `wp-team-${slug || index + 1}.md`), file, 'utf8');
 }
 

@@ -1,8 +1,9 @@
 ---
 name: "Hisam Setiawan"
-position: "Founder"
+position: "Pendiri"
+positionEn: "Founder"
 group: "Governance"
-photo: "https://yayasangambut.org/wp-content/uploads/2020/05/Hisam2.jpeg"
+photo: "/team/hisam-setiawan.jpeg"
 language: id
 status: published
 order: 1

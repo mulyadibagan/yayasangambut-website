@@ -1,9 +1,48 @@
 ---
 import Logo from './Logo.astro';
 import { copy, pagePairs, routeMap, type Lang } from '../data/site';
-const lang = (Astro.currentLocale ?? 'id') as Lang; const c = copy[lang]; const r = routeMap[lang];
-const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`; const alternate = pagePairs[currentPath] ?? (lang === 'id' ? '/en/' : '/id/');
+
+const lang = (Astro.currentLocale ?? 'id') as Lang;
+const c = copy[lang];
+const r = routeMap[lang];
+const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const alternate = pagePairs[currentPath] ?? (lang === 'id' ? '/en/' : '/id/');
 const nav = [r.about, r.programs, r.locations, r.impact, r.stories, r.publications];
+const isCurrent = (href: string) => currentPath === href || (href !== `/${lang}/` && currentPath.startsWith(href));
 ---
-<header class="site-header"><div class="container bar"><Logo /><nav aria-label={lang === 'id' ? 'Navigasi utama' : 'Primary navigation'}><ul>{c.nav.map((label,index)=><li><a href={nav[index]}>{label}</a></li>)}</ul></nav><div class="actions"><a class="lang" href={alternate} hreflang={lang === 'id' ? 'en' : 'id'}>{lang === 'id' ? 'EN' : 'ID'}</a><a class="webgis" href="https://webgisyg.id/" target="_blank" rel="noreferrer">WebGIS <span aria-hidden="true">↗</span></a></div><details class="mobile-menu"><summary aria-label={lang === 'id' ? 'Buka menu' : 'Open menu'}>Menu</summary><div>{c.nav.map((label,index)=><a href={nav[index]}>{label}</a>)}<a href={r.contact}>{lang === 'id' ? 'Hubungi Kami' : 'Contact'}</a><a href={alternate}>{lang === 'id' ? 'English' : 'Bahasa Indonesia'}</a><a href="https://webgisyg.id/">WebGIS ↗</a></div></details></div></header>
-<style>.site-header{position:relative;z-index:20;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(14px)}.bar{min-height:5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}nav{display:none}ul{display:flex;gap:1.35rem;margin:0;padding:0;list-style:none}nav a,.lang{font-size:.85rem;font-weight:700;text-decoration:none}nav a:hover,.lang:hover{text-decoration:underline}.actions{display:none;align-items:center;gap:1rem}.webgis{padding:.68rem 1rem;border-radius:999px;background:var(--forest-950);color:white;font-size:.85rem;font-weight:750;text-decoration:none}.mobile-menu{position:relative}.mobile-menu summary{cursor:pointer;list-style:none;padding:.6rem .9rem;border:1px solid var(--line);border-radius:999px;font-weight:750}.mobile-menu div{position:absolute;right:0;top:calc(100% + .7rem);width:min(18rem,calc(100vw - 2rem));display:grid;padding:.6rem;border:1px solid var(--line);border-radius:1rem;background:var(--paper-bright);box-shadow:var(--shadow)}.mobile-menu a{padding:.72rem;text-decoration:none;font-weight:700}@media(min-width:1020px){nav,.actions{display:flex}.mobile-menu{display:none}}</style>
+<header class="site-header">
+  <div class="container bar">
+    <Logo />
+    <nav aria-label={lang === 'id' ? 'Navigasi utama' : 'Primary navigation'}>
+      <ul>{c.nav.map((label,index)=><li><a href={nav[index]} aria-current={isCurrent(nav[index])?'page':undefined}>{label}</a></li>)}</ul>
+    </nav>
+    <div class="actions">
+      <a class="lang" href={alternate} hreflang={lang === 'id' ? 'en' : 'id'}>{lang === 'id' ? 'EN' : 'ID'}</a>
+      <a class="webgis" href="https://webgisyg.id/" target="_blank" rel="noreferrer">WebGIS <span aria-hidden="true">↗</span></a>
+    </div>
+    <details class="mobile-menu">
+      <summary aria-label={lang === 'id' ? 'Buka menu' : 'Open menu'}>Menu</summary>
+      <div>
+        {c.nav.map((label,index)=><a href={nav[index]} aria-current={isCurrent(nav[index])?'page':undefined}>{label}</a>)}
+        <a href={r.contact}>{lang === 'id' ? 'Hubungi Kami' : 'Contact'}</a>
+        <a href={alternate}>{lang === 'id' ? 'English' : 'Bahasa Indonesia'}</a>
+        <a href="https://webgisyg.id/" target="_blank" rel="noreferrer">WebGIS ↗</a>
+      </div>
+    </details>
+  </div>
+</header>
+<style>
+  .site-header{position:relative;z-index:20;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(14px)}
+  .bar{min-height:5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+  nav{display:none}ul{display:flex;gap:1.35rem;margin:0;padding:0;list-style:none}
+  nav a,.lang{font-size:.85rem;font-weight:700;text-decoration:none}
+  nav a:hover,.lang:hover{text-decoration:underline}
+  nav a[aria-current='page']{color:var(--coast-700);text-decoration:underline;text-decoration-thickness:.12rem;text-underline-offset:.4rem}
+  .actions{display:none;align-items:center;gap:1rem}
+  .webgis{padding:.68rem 1rem;border-radius:999px;background:var(--forest-950);color:white;font-size:.85rem;font-weight:750;text-decoration:none}
+  .mobile-menu{position:relative}.mobile-menu summary{cursor:pointer;list-style:none;padding:.6rem .9rem;border:1px solid var(--line);border-radius:999px;font-weight:750}
+  .mobile-menu div{position:absolute;right:0;top:calc(100% + .7rem);width:min(18rem,calc(100vw - 2rem));display:grid;padding:.6rem;border:1px solid var(--line);border-radius:1rem;background:var(--paper-bright);box-shadow:var(--shadow)}
+  .mobile-menu a{padding:.72rem;border-radius:.65rem;text-decoration:none;font-weight:700}
+  .mobile-menu a[aria-current='page']{background:rgba(23,103,122,.1);color:var(--coast-700)}
+  @media(min-width:1020px){nav,.actions{display:flex}.mobile-menu{display:none}}
+</style>
