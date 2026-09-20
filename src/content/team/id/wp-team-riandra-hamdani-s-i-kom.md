@@ -1,8 +1,9 @@
 ---
 name: "Riandra Hamdani, S.I.Kom."
-position: "Program & Hubungan Publik"
+position: "Program dan Hubungan Masyarakat"
+positionEn: "Program and Public Relations"
 group: "Management & Program Team"
-photo: "https://yayasangambut.org/wp-content/uploads/2023/04/profil-150x150.png"
+photo: "/team/riandra-hamdani.png"
 language: id
 status: published
 order: 6

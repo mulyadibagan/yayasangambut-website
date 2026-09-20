@@ -1,8 +1,12 @@
 ---
 import Logo from './Logo.astro';
 import { copy, pagePairs, routeMap, type Lang } from '../data/site';
-const lang = (Astro.currentLocale ?? 'id') as Lang; const c = copy[lang]; const r = routeMap[lang];
-const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`; const alternate = pagePairs[currentPath] ?? (lang === 'id' ? '/en/' : '/id/');
+
+const lang = (Astro.currentLocale ?? 'id') as Lang;
+const c = copy[lang];
+const r = routeMap[lang];
+const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const alternate = pagePairs[currentPath] ?? (lang === 'id' ? '/en/' : '/id/');
 const nav = [r.about, r.programs, r.locations, r.impact, r.stories, r.publications];
 const isActive = (href: string) => currentPath === href || currentPath.startsWith(href);
 ---

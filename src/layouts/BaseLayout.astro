@@ -35,7 +35,9 @@ const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${A
 const canonical = new URL(currentPath, Astro.site).href;
 const alternatePath = pagePairs[currentPath];
 const alternateLang = lang === 'id' ? 'en' : 'id';
-const socialImage = image ?? new URL('/brand/yayasan-gambut-logo.png', Astro.site).href;
+const socialImage = image
+  ? new URL(image, Astro.site).href
+  : new URL('/brand/yayasan-gambut-logo.png', Astro.site).href;
 // Search indexing is opt-in. A plain `astro build` must not become indexable
 // merely because Vite's default mode is named "production".
 const isProduction = import.meta.env.PUBLIC_SITE_ENV === 'production';
@@ -65,7 +67,7 @@ const schema = article
       '@context': 'https://schema.org',
       ...organisationSchema,
       email: organisation.email,
-      address: organisation.pekanbaruOffice,
+      address: [organisation.headOffice, organisation.pekanbaruOffice],
       sameAs: [organisation.facebook, organisation.instagram, organisation.linkedin, organisation.youtube, 'https://webgisyg.id/'],
     };
 ---

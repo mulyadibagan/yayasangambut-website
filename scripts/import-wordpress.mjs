@@ -136,29 +136,33 @@ function articleMarkdown(post, index) {
 
 function teamEntries(aboutHtml) {
   const entries = [];
-  const editorial = {
-    'AINUL AZIZAH S.H': { name: 'Ainul Azizah, S.H.', position: 'Keterlibatan Pemuda & Komunitas' },
-    'Dr.Ir. Lailan Syaufina M.Sc': { name: 'Dr. Ir. Lailan Syaufina, M.Sc.', position: 'Anggota Pendiri' },
-    'Dr.M. Amrul Khoiri, SP., MP. C.APO': { name: 'Dr. M. Amrul Khoiri, S.P., M.P., C.APO', position: 'Ahli Manajemen Perkebunan Berkelanjutan' },
-    'Hisam Setiawan': { name: 'Hisam Setiawan', position: 'Pendiri' },
-    'Ir. Aep Purnama M.Si': { name: 'Ir. Aep Purnama, M.Si.', position: 'Pengawas' },
-    'Ir. Riena Rachmatillah P': { name: 'Ir. Riena Rachmatillah P.', position: 'Manajer Keuangan' },
-    'Joni Irawan, S.P., M.Si': { name: 'Joni Irawan, S.P., M.Si.', position: 'Ahli Manajemen Agroforestri' },
-    'Mulyadi S.P': { name: 'Mulyadi, S.P.', position: 'Direktur' },
-    'RAVITA SAFITRI S.Si, M.Si, M.Sc': { name: 'Ravita Safitri, S.Si., M.Si., M.Sc.', position: 'Riset & Pengembangan' },
-    'Riandra Hamdani S.I.Kom': { name: 'Riandra Hamdani, S.I.Kom.', position: 'Program & Hubungan Publik' },
-    'ZAMHARIR, S.Pi': { name: 'Zamharir, S.Pi.', position: 'Ahli Sistem Informasi Geografis' },
+  const teamProfiles = {
+    'Hisam Setiawan': { name: 'Hisam Setiawan', position: 'Pendiri', positionEn: 'Founder', group: 'Governance', photo: '/team/hisam-setiawan.jpeg', order: 1 },
+    'Dr.Ir. Lailan Syaufina M.Sc': { name: 'Dr. Ir. Lailan Syaufina, M.Sc.', position: 'Anggota Pendiri', positionEn: 'Founding Member', group: 'Governance', photo: '/team/lailan-syaufina.jpg', order: 2 },
+    'Ir. Aep Purnama M.Si': { name: 'Ir. Aep Purnama, M.Si.', position: 'Pengawas', positionEn: 'Supervisory Board Member', group: 'Governance', photo: '/team/aep-purnama.jpg', order: 3 },
+    'Mulyadi S.P': { name: 'Mulyadi, S.P.', position: 'Direktur', positionEn: 'Director', group: 'Management & Program Team', photo: '/team/mulyadi.jpg', order: 4 },
+    'Ir. Riena Rachmatillah P': { name: 'Ir. Riena Rachmatillah P.', position: 'Manajer Keuangan', positionEn: 'Finance Manager', group: 'Management & Program Team', photo: '/team/riena-rachmatillah.jpg', order: 5 },
+    'Riandra Hamdani S.I.Kom': { name: 'Riandra Hamdani, S.I.Kom.', position: 'Program dan Hubungan Masyarakat', positionEn: 'Program and Public Relations', group: 'Management & Program Team', photo: '/team/riandra-hamdani.png', order: 6 },
+    'RAVITA SAFITRI S.Si, M.Si, M.Sc': { name: 'Ravita Safitri, S.Si., M.Si., M.Sc.', position: 'Riset dan Pengembangan', positionEn: 'Research and Development', group: 'Management & Program Team', photo: '/team/ravita-safitri.jpeg', order: 7 },
+    'AINUL AZIZAH S.H': { name: 'Ainul Azizah, S.H.', position: 'Administrasi dan Keuangan', positionEn: 'Administration and Finance', group: 'Management & Program Team', photo: '/team/ainul-azizah.jpeg', order: 8 },
+    'ZAMHARIR, S.Pi': { name: 'Zamharir, S.Pi.', position: 'GIS dan Analisis Spasial', positionEn: 'GIS and Spatial Analysis', group: 'Management & Program Team', photo: '/team/zamharir.jpeg', order: 9 },
+    'Dr.M. Amrul Khoiri, SP., MP. C.APO': { name: 'Dr. M. Amrul Khoiri, S.P., M.P., C.APO', position: 'Penasihat Pengelolaan Perkebunan Berkelanjutan', positionEn: 'Sustainable Plantation Management Advisor', group: 'Technical Advisors', photo: '/team/amrul-khoiri.jpg', order: 10 },
+    'Joni Irawan, S.P., M.Si': { name: 'Joni Irawan, S.P., M.Si.', position: 'Penasihat Agroforestri', positionEn: 'Agroforestry Advisor', group: 'Technical Advisors', photo: '/team/joni-irawan.jpg', order: 11 },
   };
   const pattern = /elementor-image-box-wrapper[\s\S]*?<img[^>]+src="([^"]+)"[\s\S]*?<h5[^>]*class="elementor-image-box-title"[^>]*>([\s\S]*?)<\/h5>[\s\S]*?<p[^>]*class="elementor-image-box-description"[^>]*>([\s\S]*?)<\/p>/gi;
   for (const match of aboutHtml.matchAll(pattern)) {
     const sourceName = plain(match[2]); const sourcePosition = plain(match[3]);
-    const profile = editorial[sourceName] || { name: sourceName, position: sourcePosition };
-    if (!profile.name || entries.some(item => item.name === profile.name)) continue;
     const lower = sourcePosition.toLowerCase();
-    const group = /founder|supervisor/.test(lower) ? 'Governance' : /expert/.test(lower) ? 'Technical Advisors' : 'Management & Program Team';
-    entries.push({ ...profile, photo: decode(match[1]), group });
+    const profile = teamProfiles[sourceName] || {
+      name: sourceName,
+      position: sourcePosition,
+      group: /founder|supervisor/.test(lower) ? 'Governance' : /expert/.test(lower) ? 'Technical Advisors' : 'Management & Program Team',
+      photo: decode(match[1]),
+    };
+    if (!profile.name || entries.some(item => item.name === profile.name)) continue;
+    entries.push(profile);
   }
-  return entries;
+  return entries.sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER));
 }
 
 function galleryEntries(html) {
@@ -202,8 +206,8 @@ const team = teamEntries(about?.content?.rendered ?? '');
 for (const lang of ['id', 'en']) await clearGenerated(join(root, 'src', 'content', 'team', lang), 'wp-team-');
 for (const [index, member] of team.entries()) {
   const slug = member.name.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  const file = ['---', `name: ${yaml(member.name)}`, `position: ${yaml(member.position)}`, `group: ${yaml(member.group)}`, `photo: ${yaml(member.photo)}`,
-    'language: id', 'status: published', `order: ${index + 1}`, '---', ''].join('\n');
+  const file = ['---', `name: ${yaml(member.name)}`, `position: ${yaml(member.position)}`, member.positionEn ? `positionEn: ${yaml(member.positionEn)}` : null,
+    `group: ${yaml(member.group)}`, `photo: ${yaml(member.photo)}`, 'language: id', 'status: published', `order: ${member.order ?? index + 1}`, '---', ''].filter(Boolean).join('\n');
   await writeFile(join(root, 'src', 'content', 'team', 'id', `wp-team-${slug || index + 1}.md`), file, 'utf8');
 }
 

@@ -4,22 +4,22 @@ import { organisation, routeMap, type Lang } from '../data/site';
 const lang=(Astro.currentLocale??'id') as Lang;
 const r=routeMap[lang];
 const isProduction=import.meta.env.PUBLIC_SITE_ENV==='production';
-const services={
-  id:['Agroforestri','Pemetaan','Pelatihan Lapangan','Pengembangan Desa','Pembasahan & Rehabilitasi','Riset'],
-  en:['Agroforestry','Mapping','Field Training','Village Development','Rewetting & Rehabilitation','Research'],
-} as const;
+const focusAreas=lang==='id'
+  ? ['Gambut dan Ketahanan Kebakaran','Mangrove dan Pesisir','Perhutanan Sosial','Agroforestri dan Penghidupan','Riset, Data, dan GIS']
+  : ['Peatlands and Fire Resilience','Mangroves and Coasts','Social Forestry','Agroforestry and Livelihoods','Research, Data, and GIS'];
 ---
 <footer>
   <div class="container footer-grid">
     <div class="intro"><Logo inverse={true}/><p>{lang==='id'?'Bekerja bersama masyarakat untuk pengelolaan sumber daya alam yang lestari dan berkelanjutan.':'Working with communities for sustainable and enduring natural resource management.'}</p></div>
-    <div><h2>{lang==='id'?'Jelajahi':'Explore'}</h2><a href={r.about}>{lang==='id'?'Tentang kami':'About'}</a><a href={r.about+(lang==='id'?'#legalitas':'#legal-status')}>{lang==='id'?'Legalitas':'Legal status'}</a><a href={r.programs}>{lang==='id'?'Program':'Programs'}</a><a href={r.publications}>{lang==='id'?'Publikasi':'Publications'}</a><a href={r.gallery}>{lang==='id'?'Galeri':'Gallery'}</a><a href={`/${lang}/privacy/`}>{lang==='id'?'Kebijakan privasi':'Privacy policy'}</a><a href="https://webgisyg.id/">WebGIS ↗</a></div>
-    <div><h2>{lang==='id'?'Kontak':'Contact'}</h2><p>{organisation.pekanbaruOffice}</p><a href={`mailto:${organisation.email}`}>{organisation.email}</a><a href={r.contact}>{lang==='id'?'Seluruh informasi kontak':'All contact details'}</a></div>
-    <div><h2>{lang==='id'?'Layanan':'Services'}</h2>{services[lang].map(service=><span>{service}</span>)}</div>
+    <div><h2>{lang==='id'?'Jelajahi':'Explore'}</h2><a href={r.about}>{lang==='id'?'Tentang kami':'About'}</a><a href={r.about+(lang==='id'?'#legalitas':'#legal-status')}>{lang==='id'?'Legalitas':'Legal status'}</a><a href={r.programs}>{lang==='id'?'Program':'Programs'}</a><a href={r.publications}>{lang==='id'?'Publikasi':'Publications'}</a><a href={r.gallery}>{lang==='id'?'Galeri':'Gallery'}</a><a href={`/${lang}/privacy/`}>{lang==='id'?'Kebijakan privasi':'Privacy policy'}</a><a href="https://webgisyg.id/" target="_blank" rel="noreferrer">WebGIS ↗</a></div>
+    <div><h2>{lang==='id'?'Kontak':'Contact'}</h2><p><strong>{lang==='id'?'Kantor Pusat Tangerang Selatan':'Head Office — South Tangerang'}</strong><br/>{organisation.headOffice}</p><p><strong>{lang==='id'?'Kantor Operasional Pekanbaru':'Pekanbaru Operational Office'}</strong><br/>{organisation.pekanbaruOffice}</p><a href={`mailto:${organisation.email}`}>{organisation.email}</a><a href={r.contact}>{lang==='id'?'Seluruh informasi kontak':'All contact details'}</a></div>
+    <div><h2>{lang==='id'?'Fokus Kerja':'Focus Areas'}</h2>{focusAreas.map(area=><span>{area}</span>)}</div>
     <div><h2>{lang==='id'?'Ikuti Kami':'Follow Us'}</h2><a href={organisation.facebook} target="_blank" rel="noreferrer">Facebook ↗</a><a href={organisation.instagram} target="_blank" rel="noreferrer">Instagram ↗</a><a href={organisation.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a href={organisation.youtube} target="_blank" rel="noreferrer">YouTube ↗</a></div>
   </div>
   <div class="container bottom"><span>© {new Date().getFullYear()} Yayasan Gambut</span><span>yayasangambut.org{!isProduction&&(lang==='id'?' · pratinjau pra-peluncuran':' · pre-launch preview')}</span></div>
 </footer>
 <style>
-  footer{padding:4.5rem 0 1.5rem;background:var(--forest-950);color:white}.footer-grid{display:grid;gap:2.5rem}.footer-grid>div:not(.intro){display:grid;align-content:start;gap:.5rem}.intro p{max-width:22rem;color:rgba(255,255,255,.72)}h2{margin-bottom:.6rem;font:800 .72rem/1 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--coast-300)}a{width:fit-content;color:white;text-decoration-color:rgba(255,255,255,.35)}.footer-grid p,.footer-grid span{color:rgba(255,255,255,.7);font-size:.88rem}.bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;margin-top:4rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.55);font-size:.78rem}
-  @media(min-width:760px){.footer-grid{grid-template-columns:1.5fr .7fr 1.4fr .9fr .7fr}}
+  footer{padding:4.5rem 0 1.5rem;background:var(--forest-950);color:white}.footer-grid{display:grid;gap:2.5rem}.footer-grid>div:not(.intro){display:grid;align-content:start;gap:.5rem}.intro p{max-width:22rem;color:rgba(255,255,255,.72)}h2{margin-bottom:.6rem;font:800 .72rem/1 var(--sans);letter-spacing:.15em;text-transform:uppercase;color:var(--coast-300)}a{width:fit-content;color:white;text-decoration-color:rgba(255,255,255,.35)}.footer-grid p,.footer-grid span{color:rgba(255,255,255,.7);font-size:.88rem}.footer-grid strong{color:white}.bottom{display:flex;flex-wrap:wrap;justify-content:space-between;gap:1rem;margin-top:4rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.16);color:rgba(255,255,255,.55);font-size:.78rem}
+  @media(min-width:760px){.footer-grid{grid-template-columns:1.2fr .8fr 1.4fr}.footer-grid>div:nth-child(4),.footer-grid>div:nth-child(5){grid-column:auto}}
+  @media(min-width:1120px){.footer-grid{grid-template-columns:1.35fr .65fr 1.45fr 1fr .65fr}}
 </style>

@@ -32,7 +32,7 @@ const locations = defineCollection({
 
 const team = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/team' }),
-  schema: z.object({ name: z.string(), position: z.string(), group: z.enum(['Governance', 'Management & Program Team', 'Technical Advisors']), photo: z.string().optional(), bio: z.string().optional(), language, status, order: z.number() }),
+  schema: z.object({ name: z.string(), position: z.string(), positionEn: z.string().optional(), group: z.enum(['Governance', 'Management & Program Team', 'Technical Advisors']), photo: z.string().optional(), bio: z.string().optional(), language, status, order: z.number() }),
 });
 
 const partners = defineCollection({

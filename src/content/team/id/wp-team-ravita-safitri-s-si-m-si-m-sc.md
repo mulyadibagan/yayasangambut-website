@@ -1,9 +1,10 @@
 ---
 name: "Ravita Safitri, S.Si., M.Si., M.Sc."
-position: "Riset & Pengembangan"
+position: "Riset dan Pengembangan"
+positionEn: "Research and Development"
 group: "Management & Program Team"
-photo: "https://yayasangambut.org/wp-content/uploads/2026/01/WhatsApp-Image-2026-01-13-at-17.14.38-150x150.jpeg"
+photo: "/team/ravita-safitri.jpeg"
 language: id
 status: published
-order: 10
+order: 7
 ---
