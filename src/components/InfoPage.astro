@@ -1,0 +1,6 @@
+---
+import ContentLayout from '../layouts/ContentLayout.astro'; import { pageContent, type Lang } from '../data/site';
+const {lang,page}=Astro.props as {lang:Lang,page:string}; const data=(pageContent as any)[lang][page];
+---
+<ContentLayout title={data.title} intro={data.intro}><section class="section"><div class="container info-grid">{data.sections.map((section:string[],index:number)=><article id={section[0].toLowerCase().replaceAll(' ','-')}><span>0{index+1}</span><div><h2>{section[0]}</h2><p>{section[1]}</p></div></article>)}</div></section></ContentLayout>
+<style>.info-grid{border-top:1px solid var(--line)}article{display:grid;grid-template-columns:3rem 1fr;gap:1rem;padding:2rem 0;border-bottom:1px solid var(--line)}article>span{color:var(--coast-700);font-weight:800}h2{font-size:clamp(1.7rem,3vw,3rem)}p{max-width:50rem;color:var(--muted)}@media(min-width:760px){article{grid-template-columns:6rem 1fr;padding:3rem 0}}</style>

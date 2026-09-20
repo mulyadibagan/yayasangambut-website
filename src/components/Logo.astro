@@ -1,0 +1,5 @@
+---
+const { inverse = false } = Astro.props;
+---
+<a class:list={['brand', { inverse }]} href={Astro.currentLocale === 'en' ? '/en/' : '/id/'} aria-label="Yayasan Gambut — home"><img src="/favicon.svg" width="42" height="42" alt="" /><span><strong>Yayasan</strong><strong>Gambut</strong></span></a>
+<style>.brand{display:inline-flex;align-items:center;gap:.7rem;color:var(--forest-950);text-decoration:none}.brand img{width:2.6rem;height:2.6rem}.brand span{display:grid;line-height:.88;font-size:1rem;letter-spacing:-.02em}.brand.inverse{color:white}</style>
