@@ -60,24 +60,24 @@ export const organisation = {
 };
 
 export const legacyProjects = [
-  { year: 2020, id: 'Pengelolaan gambut berkelanjutan di desa penyangga GSK dan dukungan bagi petani gambut terpadu di KHG Pulau Bengkalis', en: 'Sustainable Peatland Management in Buffer Village GSK and Support Integrated Peat Farmers in Penampi PHUs Bengkalis Island' },
-  { year: 2020, id: 'Restorasi lahan gambut melalui agroforestri di Desa Sepahat, Kecamatan Bandar Laksamana, Bengkalis', en: 'Peatland Restoration through Agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis' },
-  { year: 2020, id: 'Tim teknis kajian Strategi Pengelolaan Gambut ASEAN', en: 'Technical Team Review of ASEAN Peatland Management Strategy' },
-  { year: 2021, id: 'Restorasi lahan gambut terdegradasi dan pertanian tanpa bakar di Kabupaten Bengkalis', en: 'Restoration of Degraded Peatlands and Zero Burning Agriculture in Bengkalis District' },
+  { year: 2020, id: 'Pengelolaan gambut berkelanjutan di desa penyangga Giam Siak Kecil dan dukungan bagi petani gambut terpadu di KHG Pulau Bengkalis', en: 'Sustainable peatland management in Giam Siak Kecil buffer villages and support for integrated peatland farming in the Bengkalis Island Peat Hydrological Unit' },
+  { year: 2020, id: 'Restorasi lahan gambut melalui agroforestri di Desa Sepahat, Kecamatan Bandar Laksamana, Kabupaten Bengkalis', en: 'Peatland restoration through agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis Regency' },
+  { year: 2020, id: 'Tim teknis kajian Strategi Pengelolaan Gambut ASEAN', en: 'Technical review team for the ASEAN Peatland Management Strategy' },
+  { year: 2021, id: 'Restorasi lahan gambut terdegradasi dan pertanian tanpa bakar di Kabupaten Bengkalis', en: 'Restoration of degraded peatlands and zero-burning agriculture in Bengkalis Regency' },
 ] as const;
 
-export const legacyServices = {
+export const programApproaches = {
   id: [
-    { title: 'Koordinasi', body: 'Membangun koordinasi bersama mitra strategis, termasuk pemerintah nasional, pemerintah daerah, dan pemerintah tingkat desa.' },
-    { title: 'Program Hutan dan Pesisir', body: 'Berfokus pada perlindungan dan rehabilitasi hutan dan pesisir melalui kolaborasi dengan masyarakat sekitar hutan, pemerintah, akademisi, dan sektor swasta.' },
-    { title: 'Program Pengelolaan Gambut', body: 'Berfokus pada perlindungan dan rehabilitasi kawasan gambut melalui kolaborasi dengan masyarakat sekitar hutan, pemerintah, akademisi, dan sektor swasta.' },
-    { title: 'Peningkatan Kapasitas Masyarakat', body: 'Memfasilitasi masyarakat dan kelompok masyarakat dengan ilmu dan pengetahuan untuk mengelola sumber daya alam setempat dengan tetap memperhatikan unsur ekologi.' },
+    { title: 'Berbasis masyarakat', body: 'Program dirancang dan dijalankan bersama kelompok masyarakat dan pengelola setempat agar menjawab kebutuhan, hak, dan kondisi di tingkat tapak.' },
+    { title: 'Sesuai kondisi tapak', body: 'Setiap tindakan mempertimbangkan kondisi ekologis, sosial, tata kelola, risiko, dan penghidupan pada masing-masing lokasi.' },
+    { title: 'Berbasis data dan pembelajaran', body: 'Data lapangan, riset, dan informasi geospasial digunakan untuk merencanakan tindakan, memantau hasil, dan memperbaiki pendekatan.' },
+    { title: 'Kolaboratif dan akuntabel', body: 'Kami bekerja bersama pemerintah, perguruan tinggi, organisasi masyarakat sipil, dan sektor swasta dengan pembagian peran dan informasi yang jelas.' },
   ],
   en: [
-    { title: 'Coordination', body: 'Building coordination with strategic partners, including national, regional, and village governments.' },
-    { title: 'Forest and Coastal Program', body: 'Protecting and rehabilitating forests and coasts through collaboration with forest communities, government, academia, and the private sector.' },
-    { title: 'Peatland Management Program', body: 'Protecting and rehabilitating peatland areas through collaboration with forest communities, government, academia, and the private sector.' },
-    { title: 'Community Capacity Building', body: 'Supporting communities and community groups with knowledge for managing local natural resources while respecting ecological considerations.' },
+    { title: 'Community-based', body: 'Programs are designed and implemented with community groups and local managers so that they respond to local needs, rights, and site conditions.' },
+    { title: 'Site-specific', body: 'Each action considers the ecological, social, governance, risk, and livelihood context of the location.' },
+    { title: 'Informed by evidence and learning', body: 'Field data, research, and geospatial information guide planning, results monitoring, and continuous improvement.' },
+    { title: 'Collaborative and accountable', body: 'We work with government, universities, civil-society organisations, and the private sector, with clear roles and appropriate information sharing.' },
   ],
 } as const;
 

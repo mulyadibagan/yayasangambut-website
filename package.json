@@ -7,11 +7,12 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build --mode staging",
-    "build:production": "node scripts/build-production.mjs",
+    "build": "npm run content:validate-programs && astro build --mode staging",
+    "build:production": "npm run content:validate-programs && node scripts/build-production.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "content:import-wordpress": "node scripts/import-wordpress.mjs",
+    "content:validate-programs": "node scripts/validate-programs.mjs",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=yayasangambut-website --branch=main",
     "deploy:production": "npm run build:production && wrangler pages deploy dist --project-name=yayasangambut-website --branch=main"
   },

@@ -17,7 +17,18 @@ const articles = defineCollection({
 
 const programs = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/programs' }),
-  schema: z.object({ title: z.string(), slug: z.string(), eyebrow: z.string(), summary: z.string(), language, status, order: z.number(), featured: z.boolean().default(true) }),
+  schema: z.object({
+    title: z.string(),
+    slug: z.string(),
+    translationKey: z.string(),
+    eyebrow: z.string(),
+    summary: z.string(),
+    reviewedAt: z.coerce.date(),
+    language,
+    status,
+    order: z.number(),
+    featured: z.boolean().default(true),
+  }),
 });
 
 const publications = defineCollection({

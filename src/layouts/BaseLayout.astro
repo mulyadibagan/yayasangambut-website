@@ -16,6 +16,7 @@ interface Props {
   headline?: string;
   noIndex?: boolean;
   minimalChrome?: boolean;
+  schemaType?: 'organization' | 'webpage';
 }
 
 const {
@@ -29,6 +30,7 @@ const {
   headline,
   noIndex = false,
   minimalChrome = false,
+  schemaType = 'webpage',
 } = Astro.props;
 const lang = Astro.currentLocale ?? 'id';
 const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
@@ -63,12 +65,28 @@ const schema = article
       ...(author && { author: { '@type': 'Organization', name: author } }),
       publisher: organisationSchema,
     }
-  : {
+  : schemaType === 'organization'
+    ? {
       '@context': 'https://schema.org',
       ...organisationSchema,
       email: organisation.email,
       address: [organisation.headOffice, organisation.pekanbaruOffice],
       sameAs: [organisation.facebook, organisation.instagram, organisation.linkedin, organisation.youtube, 'https://webgisyg.id/'],
+    }
+    : {
+      '@context': 'https://schema.org',
+      '@type': 'WebPage',
+      name: title,
+      description: metaDescription,
+      url: canonical,
+      inLanguage: lang,
+      ...(image && { primaryImageOfPage: socialImage }),
+      isPartOf: {
+        '@type': 'WebSite',
+        name: 'Yayasan Gambut',
+        url: 'https://yayasangambut.org',
+      },
+      about: organisationSchema,
     };
 ---
 <!doctype html>
