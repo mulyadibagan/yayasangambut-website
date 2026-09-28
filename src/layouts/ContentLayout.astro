@@ -2,4 +2,4 @@
 import BaseLayout from './BaseLayout.astro'; const { title,intro,eyebrow }=Astro.props;
 ---
 <BaseLayout title={`${title} — Yayasan Gambut`} description={intro}><header class="page-hero"><div class="container">{eyebrow&&<p class="eyebrow">{eyebrow}</p>}<h1>{title}</h1><p class="lede">{intro}</p></div></header><slot/></BaseLayout>
-<style>.page-hero{padding:clamp(4.5rem,10vw,9rem) 0 4rem;background:linear-gradient(115deg,var(--paper) 60%,rgba(145,196,205,.24));border-bottom:1px solid var(--line)}h1{max-width:15ch;margin-bottom:1.4rem}</style>
+<style>.page-hero{padding:clamp(3rem,6vw,5.5rem) 0 clamp(2.5rem,4vw,3.75rem);background:linear-gradient(115deg,var(--paper) 68%,rgba(145,196,205,.18));border-bottom:1px solid var(--line)}h1{max-width:18ch;margin-bottom:1rem}</style>
