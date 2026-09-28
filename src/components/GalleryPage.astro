@@ -25,7 +25,7 @@ const galleryCopy:Record<string,{id:{title:string,summary:string},en:{title:stri
       <header lang={lang}><span>{String(albumIndex+1).padStart(2,'0')}</span><div><h2>{galleryCopy[album.data.slug]?.[lang]?.title??album.data.title}</h2><p>{galleryCopy[album.data.slug]?.[lang]?.summary??album.data.summary}</p><small>{album.data.images.length} {lang==='id'?'foto':'photos'}</small></div></header>
       <div class="photos">{album.data.images.map((src,index)=><a href={src} target="_blank" rel="noreferrer" data-gallery-link data-caption={`${galleryCopy[album.data.slug]?.[lang]?.title??album.data.title} — ${lang==='id'?'foto':'photo'} ${index+1}`}><img src={src} width="900" height="700" loading="lazy" decoding="async" alt={`${galleryCopy[album.data.slug]?.[lang]?.title??album.data.title} — ${lang==='id'?'foto':'photo'} ${index+1}`}/><span class="sr-only">{lang==='id'?'Buka foto ukuran penuh':'Open full-size photograph'}</span></a>)}</div>
     </article>)}
-    <dialog class="lightbox" data-lightbox aria-label={lang==='id'?'Pratinjau foto':'Photo preview'}><button type="button" data-lightbox-close aria-label={lang==='id'?'Tutup pratinjau':'Close preview'}>×</button><figure><img data-lightbox-image alt=""/><figcaption data-lightbox-caption></figcaption></figure></dialog>
+    <dialog class="lightbox" data-lightbox aria-label={lang==='id'?'Pratinjau foto':'Photo preview'}><button type="button" data-lightbox-close aria-label={lang==='id'?'Tutup pratinjau':'Close preview'}>×</button><figure><img data-lightbox-image width="1600" height="1200" alt=""/><figcaption data-lightbox-caption></figcaption></figure></dialog>
   </div></section>
 </ContentLayout>
 <script is:inline>
