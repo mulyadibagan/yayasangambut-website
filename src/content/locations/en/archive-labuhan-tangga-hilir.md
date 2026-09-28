@@ -1,0 +1,13 @@
+---
+name: Labuhan Tangga Hilir
+slug: labuhan-tangga-hilir-archive
+province: Riau
+summary: Two Indonesian-language field stories are connected to this location in Yayasan Gambut’s public archive.
+type: archive-location
+legacyCategorySlug: kepenghuluan-labuhan-tangga-hilir
+language: en
+status: published
+order: 10
+---
+
+Explore Indonesian-language field stories connected to Labuhan Tangga Hilir.
