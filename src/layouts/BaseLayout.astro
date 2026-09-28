@@ -113,7 +113,8 @@ const schema = article
     {alternatePath && <link rel="alternate" hreflang={alternateLang} href={new URL(alternatePath, Astro.site).href} />}
     <link rel="alternate" hreflang={lang} href={canonical} />
     {alternatePath && <link rel="alternate" hreflang="x-default" href={lang === 'id' ? canonical : new URL(alternatePath, Astro.site).href} />}
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/brand/yayasan-gambut-logo.png?v=2" />
+    <link rel="apple-touch-icon" href="/brand/yayasan-gambut-logo.png?v=2" />
     <meta property="og:type" content={article ? 'article' : 'website'} />
     <meta property="og:site_name" content="Yayasan Gambut" />
     <meta property="og:locale" content={lang === 'id' ? 'id_ID' : 'en_US'} />
