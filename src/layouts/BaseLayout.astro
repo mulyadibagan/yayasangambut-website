@@ -52,6 +52,14 @@ const organisationSchema = {
   logo: 'https://yayasangambut.org/brand/yayasan-gambut-logo.png',
 };
 
+const postalAddress = (streetAddress: string, addressLocality: string, postalCode: string) => ({
+  '@type': 'PostalAddress',
+  streetAddress,
+  addressLocality,
+  postalCode,
+  addressCountry: 'ID',
+});
+
 const schema = article
   ? {
       '@context': 'https://schema.org',
@@ -70,7 +78,10 @@ const schema = article
       '@context': 'https://schema.org',
       ...organisationSchema,
       email: organisation.email,
-      address: [organisation.headOffice, organisation.pekanbaruOffice],
+      address: [
+        postalAddress('Taman Puri Bintaro PB.11 Nomor 16, Bintaro Sektor 9, Kelurahan Sawah Baru, Kecamatan Ciputat', 'Kota Tangerang Selatan', '15413'),
+        postalAddress('Jalan Gulama No. 8, Kelurahan Tangkerang Barat, Kecamatan Marpoyan Damai', 'Kota Pekanbaru', '28282'),
+      ],
       sameAs: [organisation.facebook, organisation.instagram, organisation.linkedin, organisation.youtube, 'https://webgisyg.id/'],
     }
     : {
