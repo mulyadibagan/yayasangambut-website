@@ -59,6 +59,21 @@ export const organisation = {
   facebook: 'https://www.facebook.com/YayasanGambut', linkedin: 'https://www.linkedin.com/company/yayasangambut/', instagram: 'https://www.instagram.com/yayasangambut/', youtube: 'https://www.youtube.com/@YayasanGambut',
 };
 
+export const impactSnapshot = {
+  reviewedAt: '28 September 2026',
+  sourceGeneratedAt: '28 September 2026, 10.44 WIB',
+  id: [
+    { value: '173', label: 'objek program terpetakan', note: 'Objek dalam snapshot basis data publik YG GeoPortal.', href: 'https://webgisyg.id/webgis.html' },
+    { value: '77', label: 'laporan lapangan terpublikasi', note: 'Laporan kegiatan dan pemantauan yang tersedia dalam snapshot publik.', href: 'https://webgisyg.id/monitoring.html' },
+    { value: '40', label: 'taksa atau jenis terdokumentasi', note: 'Baseline biodiversitas mangrove: 29 flora dan 11 fauna atau biota.', href: 'https://webgisyg.id/biodiversity.html' },
+  ],
+  en: [
+    { value: '173', label: 'mapped program objects', note: 'Objects in the YG GeoPortal public database snapshot.', href: 'https://webgisyg.id/webgis.html' },
+    { value: '77', label: 'published field reports', note: 'Activity and monitoring reports available in the public snapshot.', href: 'https://webgisyg.id/monitoring.html' },
+    { value: '40', label: 'documented taxa or species', note: 'Mangrove biodiversity baseline: 29 flora and 11 fauna or biota.', href: 'https://webgisyg.id/biodiversity.html' },
+  ],
+} as const;
+
 export const legacyProjects = [
   { year: 2020, id: 'Pengelolaan gambut berkelanjutan di desa penyangga Giam Siak Kecil dan dukungan bagi petani gambut terpadu di KHG Pulau Bengkalis', en: 'Sustainable peatland management in Giam Siak Kecil buffer villages and support for integrated peatland farming in the Bengkalis Island Peat Hydrological Unit' },
   { year: 2020, id: 'Restorasi lahan gambut melalui agroforestri di Desa Sepahat, Kecamatan Bandar Laksamana, Kabupaten Bengkalis', en: 'Peatland restoration through agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis Regency' },
@@ -100,10 +115,11 @@ export const pageContent = {
       ['Kabupaten Kampar', 'Hutan Adat Ghimbo Pomuan menjadi salah satu lokasi penanaman kopi agroforestri, yang menghubungkan pemulihan ekosistem, penguatan kelembagaan lokal, dan penghidupan.'],
       ['Cakupan yang terus diperbarui', 'Daftar ini menampilkan lokasi terpilih yang telah dipublikasikan, bukan seluruh jangkauan kerja Yayasan Gambut. Peta, objek program, pemantauan, dan informasi spasial terbaru tersedia melalui YG GeoPortal.'],
     ]},
-    dampak: { title: 'Dampak', intro: 'Kami menyajikan capaian dari artikel dan laporan resmi sambil menyiapkan indikator lintas program yang dapat diverifikasi.', sections: [
-      ['Bukti yang tersedia', 'Arsip publik memuat laporan tahunan, panduan, cerita kegiatan, dokumentasi foto, dan pembelajaran lapangan sejak 2020. Semua dapat ditelusuri melalui halaman Cerita, Publikasi, dan Galeri.'],
-      ['Indikator organisasi', 'Angka agregat lintas tahun belum ditampilkan sebagai statistik utama sampai definisi, periode, sumber, dan tanggal pembaruannya diverifikasi.'],
-      ['Dari kegiatan ke perubahan', 'Pelaporan membedakan keluaran kegiatan, perubahan praktik, dan dampak bentang alam agar capaian tidak disederhanakan.'],
+    dampak: { title: 'Dampak', intro: 'Kami membuka bukti yang dapat ditelusuri—dari objek program dan laporan lapangan hingga perubahan ekosistem yang dipantau dari waktu ke waktu.', sections: [
+      ['Keluaran terverifikasi', 'Penanaman, pelatihan, infrastruktur restorasi, dan objek program dicatat bersama lokasi, waktu, serta dokumentasi yang tersedia. Angka pada halaman ini adalah snapshot bukti publik, bukan akumulasi seluruh kerja Yayasan Gambut.'],
+      ['Perubahan yang dipantau', 'Laporan lapangan dan pemantauan berkala membantu menilai perkembangan vegetasi, kondisi hidrologi, risiko kebakaran, pesisir, serta praktik pengelolaan masyarakat.'],
+      ['Dampak bentang alam', 'Pemulihan ekosistem dan penghidupan yang tangguh memerlukan waktu. Karena itu, kami membedakan keluaran kegiatan, perubahan jangka menengah, dan dampak ekologis jangka panjang.'],
+      ['Batas penggunaan data', 'Cakupan dan frekuensi pembaruan berbeda menurut program. Setiap angka harus dibaca bersama definisi, periode, lokasi, dan sumbernya; data model atau analisis satelit tetap memerlukan verifikasi lapangan.'],
     ]},
     'hubungi-kami': { title: 'Hubungi Kami', intro: 'Mari membicarakan kolaborasi, riset, publikasi, atau pertanyaan tentang kerja Yayasan Gambut.', sections: [
       ['Kantor Pekanbaru', organisation.pekanbaruOffice], ['Kantor Pusat', organisation.headOffice], ['Email', organisation.email],
@@ -128,10 +144,11 @@ export const pageContent = {
       ['Kampar Regency', 'Ghimbo Pomuan Customary Forest is one location for coffee agroforestry planting that connects ecosystem recovery, stronger local institutions, and livelihoods.'],
       ['An evolving footprint', 'This is a selection of published locations, not the full extent of Yayasan Gambut’s work. Current program objects, monitoring, maps, and spatial information are available through the YG GeoPortal.'],
     ]},
-    impact: { title: 'Impact', intro: 'We present evidence from official articles and reports while preparing verifiable indicators across programs.', sections: [
-      ['Available evidence', 'The public archive contains annual reports, guides, activity stories, photo documentation, and field learning since 2020. These are available through Stories, Publications, and Gallery.'],
-      ['Organisation-wide indicators', 'Cross-year aggregate figures are not shown as headline statistics until their definition, period, source, and update date have been verified.'],
-      ['From activities to change', 'Reporting distinguishes activity outputs, changes in practice, and landscape impact so achievements are not oversimplified.'],
+    impact: { title: 'Impact', intro: 'We make evidence traceable—from program objects and field reports to ecosystem change monitored over time.', sections: [
+      ['Verified outputs', 'Planting, training, restoration infrastructure, and program objects are recorded with the available location, date, and documentation. Figures on this page are a snapshot of public evidence, not a cumulative total of all Yayasan Gambut work.'],
+      ['Change monitored over time', 'Field reports and periodic monitoring help assess vegetation, hydrology, fire risk, coastal conditions, and community management practices.'],
+      ['Landscape impact', 'Ecosystem recovery and resilient livelihoods take time. We therefore distinguish activity outputs, medium-term change, and long-term ecological impact.'],
+      ['Data-use limits', 'Coverage and update frequency vary by program. Each figure should be read with its definition, period, location, and source; modelled or satellite-derived analysis still requires field verification.'],
     ]},
     contact: { title: 'Contact Us', intro: 'Let’s discuss collaboration, research, publications, or questions about Yayasan Gambut’s work.', sections: [
       ['Pekanbaru Office', organisation.pekanbaruOffice], ['Head Office', organisation.headOffice], ['Email', organisation.email],
