@@ -16,7 +16,6 @@ jobs:
   deploy:
     name: Build and publish to Cloudflare Pages
     runs-on: ubuntu-latest
-    if: ${{ vars.CLOUDFLARE_DEPLOY_ENABLED == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
