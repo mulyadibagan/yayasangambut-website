@@ -13,8 +13,7 @@
     "astro": "astro",
     "content:import-wordpress": "node scripts/import-wordpress.mjs",
     "content:validate-programs": "node scripts/validate-programs.mjs",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=yayasangambut-website --branch=main",
-    "deploy:production": "npm run build:production && wrangler pages deploy dist --project-name=yayasangambut-website --branch=main"
+    "deploy": "gh workflow run publish-staging.yml --ref main --repo mulyadibagan/yayasangambut-website"
   },
   "dependencies": {
     "astro": "^7.3.3"
