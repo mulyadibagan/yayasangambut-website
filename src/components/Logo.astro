@@ -1,5 +1,5 @@
 ---
 const { inverse = false } = Astro.props;
 ---
-<a class:list={['brand', { inverse }]} href={Astro.currentLocale === 'en' ? '/en/' : '/id/'} aria-label="Yayasan Gambut — home"><img src="/brand/yayasan-gambut-logo.png" width="56" height="56" alt="" /><span><strong>Yayasan</strong><strong>Gambut</strong></span></a>
-<style>.brand{display:inline-flex;align-items:center;gap:.5rem;color:var(--forest-950);text-decoration:none}.brand img{width:3rem;height:3rem;object-fit:contain}.brand span{display:grid;line-height:1;font-size:1rem;letter-spacing:-.025em}.brand.inverse{color:white}.brand.inverse img{filter:drop-shadow(0 0 1px rgba(255,255,255,.9))}</style>
+<a class:list={['brand', { inverse }]} href={Astro.currentLocale === 'en' ? '/en/' : '/id/'} aria-label="Yayasan Gambut — home"><img src="/brand/yayasan-gambut-logo.png" width="64" height="64" alt="" /><span><strong>Yayasan</strong><strong>Gambut</strong></span></a>
+<style>.brand{display:inline-flex;align-items:center;gap:.65rem;flex-shrink:0;color:#70452f;text-decoration:none}.brand img{width:3.9rem;height:3.9rem;object-fit:contain}.brand span{display:grid;line-height:1.06;font-size:1.2rem;letter-spacing:-.025em}.brand.inverse{color:white}.brand.inverse img{filter:drop-shadow(0 0 1px rgba(255,255,255,.9))}@media(max-width:679px){.brand img{width:3.5rem;height:3.5rem}.brand span{font-size:1.1rem}}</style>
