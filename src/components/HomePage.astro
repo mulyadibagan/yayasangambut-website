@@ -20,7 +20,15 @@ const annualReport=publicationPool.find(({data})=>/laporan tahunan|annual report
 const publications=[...(annualReport?[annualReport]:[]),...publicationPool.filter(pub=>pub!==annualReport)].slice(0,2);
 const publicationFallback=!nativePublications.length;
 
-const archiveMetrics=impactSnapshot[lang];
+const archiveMetrics=impactSnapshot[lang].map((item,index)=>({...item,...(lang==='id'?[
+{label:'Data lokasi & kegiatan',note:'Tersaji pada peta program YG.'},
+{label:'Laporan lapangan',note:'Dokumentasi kegiatan dan pemantauan.'},
+{label:'Flora & fauna terdokumentasi',note:'29 flora dan 11 fauna atau biota mangrove.'}
+]:[
+{label:'Location & activity records',note:'Mapped across YG programs.'},
+{label:'Field reports',note:'Activity and monitoring documentation.'},
+{label:'Documented flora & fauna',note:'29 flora and 11 fauna or other mangrove biota.'}
+])[index]}));
 const heroImage=programPhotos[0].src;
 const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1];
 ---
@@ -37,7 +45,7 @@ const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1
     </div>
   </section>
 
-  <section class="section impact-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">{lang==='id'?'Jejak kerja dalam data':'Our work in data'}</p><h2>{lang==='id'?'Dokumentasi kerja, terbuka untuk ditelusuri.':'Our work, documented and open.'}</h2><p class="metric-context">{lang==='id'?'Angka berikut merangkum dokumentasi program dalam basis data publik, bukan ukuran dampak ekologis.':'These figures describe program records in our public database, rather than measured ecological outcomes.'}</p></div><div class="archive-heading-actions"><span class="notice archive">{c.temporary}</span><a class="text-link" href={r.impact}>{lang==='id'?'Metode pelaporan dampak':'Impact reporting method'}</a></div></div><div class="impact-grid">{archiveMetrics.map(item=><a href={item.href} target="_blank" rel="noreferrer"><strong>{item.value}</strong><div><p>{item.label}</p><small>{item.note}</small></div><b aria-hidden="true">↗</b><span class="sr-only"> — {lang==='id'?'buka sumber data':'open data source'}</span></a>)}</div></div></section>
+  <section class="section impact-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">{lang==='id'?'Kerja kami dalam angka':'Our work in numbers'}</p><h2>{lang==='id'?'Dari lapangan, dibagikan untuk semua.':'From the field, shared with everyone.'}</h2><p class="metric-context">{lang==='id'?'Jelajahi lokasi kegiatan, laporan lapangan, dan keanekaragaman hayati yang kami dokumentasikan bersama masyarakat.':'Explore the activity locations, field reports, and biodiversity we document with communities.'}</p></div><div class="archive-heading-actions"><span class="metrics-date">{lang==='id'?'Data per 28 September 2026':'As of 28 September 2026'}</span><a class="text-link" href={r.impact}>{lang==='id'?'Lihat hasil kerja kami':'Explore our work and results'}</a></div></div><div class="impact-grid">{archiveMetrics.map(item=><a href={item.href} target="_blank" rel="noreferrer"><strong>{item.value}</strong><div><p>{item.label}</p><small>{item.note}</small></div><b aria-hidden="true">↗</b><span class="sr-only"> — {lang==='id'?'buka sumber data':'open data source'}</span></a>)}</div></div></section>
 
   <section class="section programs"><div class="container"><div class="section-heading"><div><p class="eyebrow">{c.programEyebrow}</p><h2>{lang==='id'?'Lima fokus. Satu komitmen untuk alam.':'Five focus areas. One commitment to nature.'}</h2></div><a class="text-link" href={r.programs}>{c.latest}</a></div><div class="program-grid">{programs.map((program,index)=><a class="program-card" href={`/${lang}/${lang==='id'?'program':'programs'}/${program.data.slug}/`}><img src={programPhotos[index].src} alt={programPhotos[index][lang]} width="900" height="600" loading="lazy"/><div class="program-copy"><span>0{index+1}</span><h3>{program.data.title}</h3><p>{excerpt(program.data.summary,150)}</p><span class="program-action">{lang==='id'?'Jelajahi program':'Explore program'} <b aria-hidden="true">→</b></span></div></a>)}</div></div></section>
 
@@ -105,4 +113,5 @@ const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1
 .hero-figure img{height:100%;width:100%;object-fit:cover}
 .hero-figure figcaption{position:absolute;bottom:0;left:0;width:100%;height:auto;clip-path:none;padding:.8rem 1rem;background:#123c30dc;color:white;font-size:.75rem}
 @media(max-width:850px){.hero-grid{grid-template-columns:1fr;gap:1.5rem}.hero{padding:1.75rem 0}.hero h1{font-size:1.75rem}.hero-figure{height:250px}.hero-figure img{height:100%;object-fit:cover}.hero-actions{display:flex}}
+.impact-section .metrics-date{font-size:.8rem;color:var(--muted)}.impact-section .archive-heading-actions{gap:.65rem}.impact-section .impact-grid>a{background:transparent;border-radius:0;border-top:1px solid var(--line);padding:1.5rem 0}.impact-section .impact-grid strong{font-size:clamp(2.6rem,4vw,3.5rem);font-weight:700;letter-spacing:-.04em}.impact-section .impact-grid p{font-size:1rem}.impact-section .impact-grid small{font-size:.85rem;line-height:1.5}.impact-section .impact-grid b{top:1.5rem}.impact-section .metric-context{max-width:43rem}@media(min-width:680px){.impact-section .impact-grid{gap:2.5rem}}
 </style>
