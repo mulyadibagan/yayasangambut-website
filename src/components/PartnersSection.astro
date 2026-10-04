@@ -27,7 +27,9 @@ const partners=[
 
 
 ] ;
-const featuredPartners=partners.filter(p=>!['BenihBaik.com','JPIK'].includes(p.short)).slice(0,12);
+const partnerOrder=['GEC','Aliansi Kolibri','Aramco Asia Singapore','PPCF','MA Earth','Yayasan Penabulu','JPIK','IFM Fund','BenihBaik.com','Pertamina Foundation','Fakultas Pertanian UNRI','BPDP','APRIL Group','Wilmar'];
+partners.sort((a,b)=>partnerOrder.indexOf(a.short)-partnerOrder.indexOf(b.short));
+const featuredPartners=partners.slice(0,12);
 ---
 <section class:list={["partner-section",{compact:!full}]} id="mitra"><div class="container">
 <header class="partner-heading"><div><p class="eyebrow">{t('Bekerja bersama','Working together')}</p>{full?<h1>{t('Mitra Kami','Our Partners')}</h1>:<h2>{t('Mitra Kami','Our Partners')}</h2>}<p>{t('Bersama masyarakat dan mitra, kami memperkuat pengelolaan ekosistem dan penghidupan yang berkelanjutan.','With communities and partners, we strengthen ecosystem management and sustainable livelihoods.')}</p></div></header>
