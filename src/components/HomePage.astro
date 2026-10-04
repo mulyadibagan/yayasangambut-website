@@ -20,12 +20,12 @@ const publications=[...(annualReport?[annualReport]:[]),...publicationPool.filte
 const publicationFallback=!nativePublications.length;
 
 const archiveMetrics=impactSnapshot[lang];
-const heroImage='https://yayasangambut.org/wp-content/uploads/2026/07/photo_7-1536x1143-1.jpeg';
+const heroImage='/images/community-mangrove-hero.webp';
 ---
 <BaseLayout title={lang==='id'?'Yayasan Gambut — Aksi bentang alam berbasis masyarakat':'Yayasan Gambut — Community-led landscape action'} description={c.heroText} schemaType="organization">
   <section class="hero">
-    <div class="container hero-grid"><div class="hero-copy"><p class="eyebrow">{lang==='id'?'Berakar di Riau. Bergerak bersama.':'Rooted in Riau. Working together.'}</p><h1>{lang==='id'?'Menjaga alam. Menguatkan masyarakat.':'Thriving nature. Stronger communities.'}</h1><p class="hero-text">{lang==='id'?'Bersama masyarakat dan mitra, kami menjaga lahan basah, memulihkan ekosistem, dan mendukung penghidupan berkelanjutan.':'Together with communities and partners, we protect wetlands, restore ecosystems, and support sustainable livelihoods.'}</p><div class="hero-actions"><a class="button primary" href={r.programs}>{lang==='id'?'Jelajahi Program':'Explore Our Work'}</a><a class="button secondary" href={r.contact}>{lang==='id'?'Bermitra dengan Kami':'Partner With Us'}</a></div><div class="hero-proof"><span><b>2019</b>{lang==='id'?'Berdiri di Indonesia':'Established in Indonesia'}</span><span><b>Riau</b>{lang==='id'?'Fokus bentang alam':'Landscape focus'}</span><span><b>5</b>{lang==='id'?'Program terhubung':'Connected programs'}</span></div></div>
-    <div class="hero-visual"><figure class="hero-figure"><img src={heroImage} width="1600" height="900" alt={lang==='id'?'Tapak pemulihan mangrove di Riau':'Mangrove restoration site in Riau'} fetchpriority="high" decoding="async"/><figcaption>{lang==='id'?'Dokumentasi program pemulihan mangrove di Riau. Sumber: arsip website Yayasan Gambut.':'Mangrove restoration program in Riau. Source: Yayasan Gambut website archive.'}</figcaption></figure><figure class="community-photo"><img src="https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Group-1024x683.jpg" width="1024" height="683" alt={lang==='id'?'Masyarakat dan mitra program mangrove di Desa Buruk Bakul, 2023':'Community members and mangrove program partners in Buruk Bakul, 2023'}/><figcaption>{lang==='id'?'Tumbuh bersama masyarakat':'Growing with communities'}</figcaption></figure></div></div>
+    <div class="container hero-grid"><div class="hero-copy"><p class="eyebrow">{lang==='id'?'Berakar di Riau. Bergerak bersama.':'Rooted in Riau. Working together.'}</p><h1>{lang==='id'?'Menjaga alam. Menguatkan masyarakat.':'Thriving nature. Stronger communities.'}</h1><p class="hero-text">{lang==='id'?'Bersama masyarakat dan mitra, kami menjaga lahan basah, memulihkan ekosistem, dan mendukung penghidupan berkelanjutan.':'Together with communities and partners, we protect wetlands, restore ecosystems, and support sustainable livelihoods.'}</p><div class="hero-actions"><a class="button primary" href={r.programs}>{lang==='id'?'Jelajahi Program':'Explore Our Work'}</a><a class="button secondary" href={r.contact}>{lang==='id'?'Bermitra dengan Kami':'Partner With Us'}</a></div></div>
+    <figure class="hero-figure"><img src={heroImage} width="1920" height="1280" alt={lang==='id'?'Anak-anak dan orang dewasa bersama membawa bibit mangrove di lokasi penanaman':'Children and adults holding mangrove seedlings together at a planting site'} fetchpriority="high" decoding="async"/></figure></div>
   </section>
 
   <section class="section impact-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">{lang==='id'?'Jejak kerja dalam data':'Our work in data'}</p><h2>{lang==='id'?'Dokumentasi kerja, terbuka untuk ditelusuri.':'Our work, documented and open.'}</h2><p class="metric-context">{lang==='id'?'Angka berikut merangkum dokumentasi program dalam basis data publik, bukan ukuran dampak ekologis.':'These figures describe program records in our public database, rather than measured ecological outcomes.'}</p></div><div class="archive-heading-actions"><span class="notice archive">{c.temporary}</span><a class="text-link" href={r.impact}>{lang==='id'?'Metode pelaporan dampak':'Impact reporting method'}</a></div></div><div class="impact-grid">{archiveMetrics.map(item=><a href={item.href} target="_blank" rel="noreferrer"><strong>{item.value}</strong><div><p>{item.label}</p><small>{item.note}</small></div><b aria-hidden="true">↗</b><span class="sr-only"> — {lang==='id'?'buka sumber data':'open data source'}</span></a>)}</div></div></section>
@@ -63,4 +63,22 @@ const heroImage='https://yayasangambut.org/wp-content/uploads/2026/07/photo_7-15
 .publication-grid{display:grid;gap:1.25rem;margin-top:1.5rem}.publication-grid article{grid-template-columns:7rem minmax(0,1fr);gap:1.5rem;padding:1.5rem;border:1px solid var(--line);border-radius:1rem;background:var(--paper);align-items:start}.publication-cover{height:10rem;object-fit:contain;object-position:top}.publication-copy{min-width:0}.publication-grid h3{margin-top:.7rem}.publication-grid p{font-size:.9rem}.document-language{display:block;font-size:.75rem;color:var(--muted);margin-top:1rem}.publication-copy .text-link{margin-top:.3rem}.partner-montage{max-width:46rem;max-height:19rem;padding:1rem}.gec-partner{gap:1rem 2rem}.gec-partner>a{flex-basis:10rem}
 @media(min-width:980px){.hero-grid{grid-template-columns:.95fr 1.05fr}.publication-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:679px){.hero{padding:2rem 0 2.5rem}.hero-grid{gap:2rem}.hero h1{font-size:clamp(2.4rem,10vw,3.5rem)}.hero-visual{padding:0;display:grid;gap:.8rem}.hero-figure{height:21rem}.community-photo{position:static;width:100%;display:flex;align-items:center;gap:1rem;padding:.5rem;box-shadow:none;border:1px solid var(--line)}.community-photo img{width:35%;aspect-ratio:3/2}.community-photo figcaption{font-size:.8rem;padding:.4rem}.hero-proof{gap:.8rem;justify-content:space-between}.hero-proof span{font-size:.72rem}.hero-actions{display:grid;grid-template-columns:1fr}.publication-grid article{grid-template-columns:5rem minmax(0,1fr);gap:1rem;padding:1rem}.publication-cover{height:7rem}.partner-montage{padding:.5rem}.story-grid{gap:1.25rem}}
+/* One full-width documentary photograph; keep faces clear of text. */
+.hero{padding:0;background:#fff}
+.hero-grid{position:relative;display:grid;gap:0;max-width:none;width:100%;padding:0}
+.hero-copy{position:relative;z-index:1;padding:2rem max(1.25rem,calc((100vw - 1200px)/2));background:#fff}
+.hero h1{font-size:clamp(2.25rem,4vw,3.5rem);max-width:22ch;margin:0 0 1rem;line-height:1.08}
+.hero-text{max-width:36rem;font-size:1rem;line-height:1.65;margin-bottom:0}
+.hero-actions{margin-top:1.1rem}
+.hero-figure{height:auto;margin:0;border-radius:0;background:#edf2ec;overflow:hidden}
+.hero-figure img{display:block;width:100%;height:auto;object-fit:contain}
+@media(min-width:1100px){
+.hero-copy{position:absolute;inset:0 0 auto;padding-top:2rem;padding-bottom:5rem;background:linear-gradient(#fffffffa 0%,#fffffff0 60%,#ffffff00 100%);display:grid;grid-template-columns:1.1fr 1fr;column-gap:3rem;align-items:start}
+.hero-copy .eyebrow{grid-column:1/-1;margin-bottom:.7rem}
+.hero h1{grid-column:1;grid-row:2/4}
+.hero-text{grid-column:2;grid-row:2}
+.hero-actions{grid-column:2;grid-row:3}
+.hero-figure img{max-height:850px;object-fit:cover;object-position:center bottom}
+}
+@media(max-width:679px){.hero-copy{padding:1.75rem 1.25rem}.hero h1{font-size:2.4rem}.hero-actions{display:flex}.hero-actions .button{font-size:.85rem;padding:.75rem 1rem}}
 </style>
