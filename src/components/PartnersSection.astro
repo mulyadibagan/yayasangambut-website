@@ -4,6 +4,8 @@ const {lang,full=false}=Astro.props as {lang:Lang;full?:boolean};
 const id=lang==='id';
 const t=(a:string,b:string)=>id?a:b;
 const partners=[
+ // MCF invited YG to the China–ASEAN workshop, Shenzhen, 16–18 July 2026. Logo from en.mcf.org.cn.
+ {name:'Mangrove Conservation Foundation',short:'MCF',logo:'/images/partners/mcf.png',url:'https://en.mcf.org.cn/',body:t('Mitra pertukaran pengetahuan internasional. MCF mengundang Yayasan Gambut untuk berbagi pengalaman restorasi mangrove berbasis masyarakat dalam program China–ASEAN di Shenzhen, 16–18 Juli 2026.','International knowledge-exchange partner. MCF invited Yayasan Gambut to share its experience in community-based mangrove restoration at the China–ASEAN programme in Shenzhen, 16–18 July 2026.')},
  // Public WebGIS YG dashboard: funding partners and programme summaries, checked 2026-10-05.
  {name:'APRIL Group',short:'APRIL Group',logo:'/images/partners/april-group.png',url:'https://www.aprilasia.com/',body:t('Dukungan penguatan perhutanan sosial dan pengembangan usaha masyarakat di Dayun.','Support for social forestry and community enterprise development in Dayun.')},
  {name:'Pertamina Foundation',short:'Pertamina Foundation',logo:'/images/partners/pertamina-foundation.svg',url:'https://www.pertaminafoundation.org/',body:t('Dukungan pengelolaan hutan dan pengembangan penghidupan bersama KTH Siarang-arang Lestari di Rokan Hilir.','Support for forest management and livelihoods with KTH Siarang-arang Lestari in Rokan Hilir.')},
@@ -27,7 +29,7 @@ const partners=[
 
 
 ] ;
-const partnerOrder=['GEC','Aliansi Kolibri','Aramco Asia Singapore','PPCF','MA Earth','Yayasan Penabulu','JPIK','IFM Fund','BenihBaik.com','Pertamina Foundation','Fakultas Pertanian UNRI','BPDP','APRIL Group','Wilmar'];
+const partnerOrder=['GEC','Aliansi Kolibri','Aramco Asia Singapore','PPCF','MA Earth','Yayasan Penabulu','JPIK','IFM Fund','MCF','BenihBaik.com','Pertamina Foundation','Fakultas Pertanian UNRI','BPDP','APRIL Group','Wilmar'];
 partners.sort((a,b)=>partnerOrder.indexOf(a.short)-partnerOrder.indexOf(b.short));
 ---
 <section class:list={["partner-section",{compact:!full}]} id="mitra"><div class="container">
