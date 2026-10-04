@@ -1,4 +1,5 @@
 ---
+import ContactPage from './ContactPage.astro';
 import LocationsPage from './LocationsPage.astro';
 import ImpactPage from './ImpactPage.astro';
 import WorkAreaMap from './WorkAreaMap.astro';
@@ -11,24 +12,8 @@ const data=(pageContent as any)[lang][page];
 const isAbout=page==='tentang-kami'||page==='about';
 const isLocations=page==='lokasi-kerja'||page==='where-we-work';
 const isImpact=page==='dampak'||page==='impact';
-const Layout = isAbout || isImpact || isLocations ? BaseLayout : ContentLayout;
 const isContact=page==='hubungi-kami'||page==='contact';
-const contactTopics={
-  id:[
-    {title:'Kemitraan dan program',body:'Untuk peluang kolaborasi, dukungan program, kegiatan bersama, dan pengembangan lokasi kerja.',subject:'Kemitraan dan program — Yayasan Gambut'},
-    {title:'Riset, data, dan publikasi',body:'Untuk pertanyaan mengenai riset, data publik, YG GeoPortal, laporan, atau bahan pembelajaran.',subject:'Riset, data, dan publikasi — Yayasan Gambut'},
-    {title:'Media dan informasi umum',body:'Untuk permintaan informasi organisasi, wawancara, dokumentasi, atau komunikasi publik.',subject:'Media dan informasi umum — Yayasan Gambut'},
-  ],
-  en:[
-    {title:'Partnerships and programs',body:'For collaboration opportunities, program support, joint activities, and work-site development.',subject:'Partnerships and programs — Yayasan Gambut'},
-    {title:'Research, data, and publications',body:'For enquiries about research, public data, the YG GeoPortal, reports, or learning resources.',subject:'Research, data, and publications — Yayasan Gambut'},
-    {title:'Media and general information',body:'For organisational information, interviews, documentation, or public communications.',subject:'Media and general information — Yayasan Gambut'},
-  ],
-} as const;
-const offices={
-  id:[{title:'Kantor Pusat — Pekanbaru',role:'Administrasi organisasi, koordinasi kemitraan, dan pelaksanaan program',address:organisation.headOffice}],
-  en:[{title:'Head Office — Pekanbaru',role:'Organisational administration, partnership coordination, and program implementation',address:organisation.headOffice}],
-} as const;
+const Layout = isAbout || isImpact || isLocations || isContact ? BaseLayout : ContentLayout;
 const ownTeam=await getCollection('team',({data})=>data.language===lang&&data.status==='published');
 const team=(ownTeam.length?ownTeam:await getCollection('team',({data})=>data.language==='id'&&data.status==='published')).sort((a,b)=>a.data.order-b.data.order);
 const ownLocations=await getCollection('locations',({data})=>data.language===lang&&data.status==='published'&&Boolean(data.legacyCategorySlug));
@@ -61,9 +46,8 @@ const groupLabels={
 
   {isImpact&&<ImpactPage lang={lang}/>}
 
-  {isContact&&<><section class="contact-main section"><div class="container"><div class="contact-intro"><div><p class="eyebrow">{lang==='id'?'Satu alamat email resmi':'One official email address'}</p><h2>{organisation.email}</h2></div><a class="button primary" href={`mailto:${organisation.email}`}>{lang==='id'?'Kirim email':'Send an email'}</a></div><p class="contact-guidance">{lang==='id'?'Agar pesan dapat diteruskan kepada tim yang tepat, pilih tujuan berikut dan sertakan nama organisasi, lokasi, tujuan, serta kebutuhan Anda.':'Choose the relevant purpose below and include your organisation, location, objective, and request so the message can be directed to the appropriate team.'}</p><div class="contact-topic-grid">{contactTopics[lang].map(topic=><article><h3>{topic.title}</h3><p>{topic.body}</p><a class="text-link" href={`mailto:${organisation.email}?subject=${encodeURIComponent(topic.subject)}`}>{lang==='id'?'Tulis email':'Compose email'}</a></article>)}</div></div></section><section class="office-section section"><div class="container"><p class="eyebrow">{lang==='id'?'Alamat kantor':'Office address'}</p><h2>{lang==='id'?'Temui kami di Pekanbaru':'Visit us in Pekanbaru'}</h2><div class="office-grid">{offices[lang].map(office=><article><h3>{office.title}</h3><p class="office-role">{office.role}</p><address>{office.address}</address><a class="text-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(office.address)}`} target="_blank" rel="noreferrer">{lang==='id'?'Cari di Google Maps ↗':'Find on Google Maps ↗'}</a></article>)}</div></div></section></>}
+  {isContact&&<ContactPage lang={lang}/>}
 
-  {isContact&&<section class="contact-band"><div class="container"><p class="eyebrow">{lang==='id'?'Kanal resmi':'Official channels'}</p><div class="contact-links"><a href={`mailto:${organisation.email}`}>{organisation.email}</a><a href={organisation.facebook} target="_blank" rel="noreferrer">Facebook ↗</a><a href={organisation.instagram} target="_blank" rel="noreferrer">Instagram ↗</a><a href={organisation.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a href={organisation.youtube} target="_blank" rel="noreferrer">YouTube ↗</a></div><p>{lang==='id'?'Jangan kirim kata sandi, data keuangan, atau dokumen identitas melalui pesan media sosial. Gunakan email resmi untuk korespondensi organisasi.':'Do not send passwords, financial information, or identity documents through social-media messages. Use the official email address for organisational correspondence.'}</p></div></section>}
 </Layout>
 <style>
   .info-grid{border-top:1px solid var(--line)}.info-grid>article{display:grid;grid-template-columns:3rem 1fr;gap:1rem;padding:2rem 0;border-bottom:1px solid var(--line)}.info-grid>article>span{color:var(--coast-700);font-weight:800}.info-grid h2{font-size:clamp(1.4rem,2vw,2rem)}.info-grid p{max-width:55rem;color:var(--muted)}
