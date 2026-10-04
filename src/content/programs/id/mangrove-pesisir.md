@@ -3,7 +3,7 @@ title: Mangrove dan Pesisir
 slug: mangrove-pesisir
 translationKey: mangroves-coasts
 eyebrow: Pesisir tangguh
-summary: Pemulihan mangrove berbasis kondisi tapak bersama masyarakat untuk memperkuat perlindungan pesisir, keanekaragaman hayati, dan penghidupan.
+summary: Memulihkan mangrove bersama masyarakat untuk mendukung perlindungan pesisir, keanekaragaman hayati, dan penghidupan.
 reviewedAt: 2026-09-26
 language: id
 status: published

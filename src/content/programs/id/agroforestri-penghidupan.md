@@ -3,7 +3,7 @@ title: Agroforestri dan Penghidupan
 slug: agroforestri-penghidupan
 translationKey: agroforestry-livelihoods
 eyebrow: Ekonomi bentang alam
-summary: Mengembangkan sistem agroforestri dan usaha berbasis sumber daya lokal yang menjaga fungsi ekologis serta memperkuat penghidupan masyarakat.
+summary: Mengembangkan agroforestri dan usaha berbasis sumber daya lokal untuk mendukung penghidupan masyarakat dan kelestarian ekosistem.
 reviewedAt: 2026-09-26
 language: id
 status: published

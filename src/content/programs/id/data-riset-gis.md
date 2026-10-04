@@ -3,7 +3,7 @@ title: Data, Riset, dan GIS
 slug: data-riset-gis
 translationKey: data-research-gis
 eyebrow: Bukti untuk tindakan
-summary: Memadukan data lapangan, riset, dan analisis spasial menjadi informasi yang dapat digunakan untuk perencanaan, pemantauan, dan pengambilan keputusan.
+summary: Menggunakan data lapangan, riset, dan pemetaan untuk mendukung perencanaan, pemantauan, dan pengambilan keputusan.
 reviewedAt: 2026-09-26
 language: id
 status: published

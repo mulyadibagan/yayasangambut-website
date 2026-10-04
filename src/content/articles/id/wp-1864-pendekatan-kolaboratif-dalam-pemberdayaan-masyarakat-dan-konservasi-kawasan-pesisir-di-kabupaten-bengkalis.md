@@ -1,10 +1,10 @@
 ---
-title: "Pendekatan Kolaboratif dalam Pemberdayaan Masyarakat dan Konservasi Kawasan Pesisir di Kabupaten Bengkalis."
+title: "Kolaborasi untuk Konservasi Mangrove dan Penguatan Masyarakat Pesisir Bengkalis"
 slug: "pendekatan-kolaboratif-dalam-pemberdayaan-masyarakat-dan-konservasi-kawasan-pesisir-di-kabupaten-bengkalis"
 date: "2025-05-20T21:44:00"
 modified: "2025-09-10T07:37:21"
 author: "YayasanGambut (YG)"
-summary: "Setelah dua tahap rehabilitasi mangrove yang sukses di Kabupaten Bengkalis, Aramco Asia Singapore, Global Environment Centre (GEC) dan Yayasan Gambut (YG) telah mengumumkan perluasan Program Konservasi Mangrove Berbasis Masyarakat yang ambisius ke empat desa di Kabupaten Bengkali"
+summary: "Kerja sama Yayasan Gambut, GEC, dan Aramco Asia Singapore dalam konservasi mangrove dan penguatan kapasitas masyarakat pesisir Bengkalis."
 category: "artikel · Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2025/07/P2120077-1024x683.jpg"
 imageAlt: "Pendekatan Kolaboratif dalam Pemberdayaan Masyarakat dan Konservasi Kawasan Pesisir di Kabupaten Bengkalis."

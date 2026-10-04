@@ -1,10 +1,10 @@
 ---
-title: "Antara Konservasi, Budaya dan Peluang Ekonomi melalui Potensi Gula Nipah"
+title: "Gula Nipah: Konservasi, Budaya, dan Peluang Usaha Masyarakat"
 slug: "antara-konservasi-budaya-dan-peluang-ekonomi-melalui-potensi-gula-nipah"
 date: "2025-04-28T10:41:52"
 modified: "2025-04-29T04:20:35"
 author: "YayasanGambut (YG)"
-summary: "“Bertekstur lembut, dengan rasa campuran manis serta gurih dengan warna coklat kekuningan” adalah gambaran awal setelah mencicipi rasa dari air nira tanaman nipah yang telah dimasak. Nipah (Nypa fruiticans) merupakan sejenis palem yang tumbuh di lingkungan hutan bakau atau wilaya"
+summary: "Pelatihan pengolahan gula nipah di Buruk Bakul mempertemukan pengetahuan lokal dan pengembangan usaha masyarakat pesisir."
 category: "artikel · Desa Buruk Bakul · Desa Sepahat · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2025/04/IMG_2065-1024x683.jpg"
 imageAlt: "Antara Konservasi, Budaya dan Peluang Ekonomi melalui Potensi Gula Nipah"

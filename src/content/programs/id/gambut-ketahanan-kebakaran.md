@@ -3,7 +3,7 @@ title: Gambut dan Ketahanan Kebakaran
 slug: gambut-ketahanan-kebakaran
 translationKey: peatlands-fire-resilience
 eyebrow: Lanskap basah
-summary: Memadukan pencegahan dan kesiapsiagaan kebakaran hutan dan lahan dengan pemulihan fungsi gambut, koordinasi lintas desa, dan data lapangan.
+summary: Memulihkan ekosistem gambut serta memperkuat pencegahan dan kesiapsiagaan masyarakat menghadapi kebakaran hutan dan lahan.
 reviewedAt: 2026-09-26
 language: id
 status: published

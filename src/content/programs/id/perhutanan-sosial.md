@@ -3,7 +3,7 @@ title: Perhutanan Sosial
 slug: perhutanan-sosial
 translationKey: social-forestry
 eyebrow: Kelola bersama
-summary: Memperkuat tata kelola, kelembagaan, perencanaan, dan pemanfaatan hutan yang bertanggung jawab oleh kelompok perhutanan sosial.
+summary: Mendampingi kelompok perhutanan sosial dalam penguatan kelembagaan, perencanaan, pengelolaan hutan, dan pengembangan usaha.
 reviewedAt: 2026-09-26
 language: id
 status: published

@@ -1,10 +1,10 @@
 ---
-title: "Yayasan Gambut Paparkan Terobosan Pengelolaan Gambut Berbasis Agroforestri pada Kegiatan Seminar Nasional Pertanian Berkelanjutan (SENAPELAN) ke-3"
+title: "Yayasan Gambut Paparkan Agroforestri Kelapa–Kopi pada SENAPELAN ke-3"
 slug: "yayasan-gambut-paparkan-terobosan-pengelolaan-gambut-berbasis-agroforestri-pada-kegiatan-seminar-nasional-pertanian-berkelanjutan-senapelan-ke-3"
 date: "2025-12-06T07:22:34"
 modified: "2025-12-06T07:24:19"
 author: "YayasanGambut (YG)"
-summary: "Pekanbaru, 6 Desember 2025 — Fakultas Pertanian Universitas Riau kembali menggelar Seminar Nasional Pertanian Berkelanjutan (SENAPELAN) ke-3 dengan mengusung tema “Inovasi dan Kolaborasi untuk Meningkatkan Daya Saing Kelapa Indonesia: Tantangan dan Peluang di Era Globalisasi da"
+summary: "Yayasan Gambut berbagi pengalaman pengelolaan gambut melalui agroforestri kelapa dan kopi Liberika pada SENAPELAN ke-3 di Universitas Riau."
 category: "artikel · Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2025/12/Yayasangambut-SENAPELAN-ke-3-1024x682.jpeg"
 imageAlt: "Yayasan Gambut Paparkan Terobosan Pengelolaan Gambut Berbasis Agroforestri pada Kegiatan Seminar Nasional Pertanian Berkelanjutan (SENAPELAN) ke-3"
