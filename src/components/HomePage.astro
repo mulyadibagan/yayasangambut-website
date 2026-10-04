@@ -29,7 +29,7 @@ const archiveMetrics=impactSnapshot[lang].map((item,index)=>({...item,...(lang==
 {label:'Field reports',note:'Activity and monitoring documentation.'},
 {label:'Documented flora & fauna',note:'29 flora and 11 fauna or other mangrove biota.'}
 ])[index]}));
-const heroImage=programPhotos[0].src;
+const heroImage='/images/community-mangrove-main.webp';
 const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1];
 ---
 <BaseLayout title={lang==='id'?'Yayasan Gambut — Aksi bentang alam berbasis masyarakat':'Yayasan Gambut — Community-led landscape action'} description={c.heroText} schemaType="organization">
@@ -41,7 +41,7 @@ const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1
         <p class="hero-text">{lang==='id'?'Kami mempromosikan konservasi keanekaragaman hayati, pengelolaan hutan dan lahan basah berkelanjutan, serta penguatan kapasitas dan kemitraan bersama masyarakat.':'We promote biodiversity conservation, sustainable forest and wetland management, and stronger capacities and partnerships with communities.'}</p>
         <div class="hero-actions"><a class="button primary" href={lang==='id'?'/id/tentang-kami/':'/en/about/'}>{lang==='id'?'Tentang Yayasan Gambut':'About Yayasan Gambut'}</a><a class="button secondary" href="#wilayah-kerja">{lang==='id'?'Jelajahi Wilayah Kerja':'Explore Our Work Locations'}</a></div>
       </div>
-      <figure class="hero-figure"><img src={heroImage} width="549" height="412" alt={programPhotos[0][lang]} fetchpriority="high" decoding="async"/><figcaption>{lang==='id'?'Bentang mangrove Buruk Bakul, Riau · Dokumentasi Yayasan Gambut':'Buruk Bakul mangroves, Riau · Yayasan Gambut documentation'}</figcaption></figure>
+      <figure class="hero-figure"><img src={heroImage} width="1920" height="1281" alt={lang==='id'?'Masyarakat dan mitra Yayasan Gambut bersama di lokasi pemulihan mangrove':'Community members and Yayasan Gambut partners at a mangrove restoration site'} fetchpriority="high" decoding="async"/><figcaption>{lang==='id'?'Bersama masyarakat dan mitra · Dokumentasi Yayasan Gambut':'Together with communities and partners · Yayasan Gambut documentation'}</figcaption></figure>
     </div>
   </section>
 
@@ -114,4 +114,13 @@ const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1
 .hero-figure figcaption{position:absolute;bottom:0;left:0;width:100%;height:auto;clip-path:none;padding:.8rem 1rem;background:#123c30dc;color:white;font-size:.75rem}
 @media(max-width:850px){.hero-grid{grid-template-columns:1fr;gap:1.5rem}.hero{padding:1.75rem 0}.hero h1{font-size:1.75rem}.hero-figure{height:250px}.hero-figure img{height:100%;object-fit:cover}.hero-actions{display:flex}}
 .impact-section .metrics-date{font-size:.8rem;color:var(--muted)}.impact-section .archive-heading-actions{gap:.65rem}.impact-section .impact-grid>a{background:transparent;border-radius:0;border-top:1px solid var(--line);padding:1.5rem 0}.impact-section .impact-grid strong{font-size:clamp(2.6rem,4vw,3.5rem);font-weight:700;letter-spacing:-.04em}.impact-section .impact-grid p{font-size:1rem}.impact-section .impact-grid small{font-size:.85rem;line-height:1.5}.impact-section .impact-grid b{top:1.5rem}.impact-section .metric-context{max-width:43rem}@media(min-width:680px){.impact-section .impact-grid{gap:2.5rem}}
+
+/* The original community photograph blends into the hero without cropping. */
+.hero{background:#edf3ed;overflow:hidden}
+.hero-grid{grid-template-columns:1fr 1.12fr;gap:1.8rem}
+.hero-figure{height:auto;overflow:visible;border-radius:0;background:transparent;isolation:isolate}
+.hero-figure img{display:block;height:auto;width:100%;max-height:none;object-fit:contain;border-radius:0;mask-image:linear-gradient(to right,transparent 0%,#000 5%,#000 95%,transparent 100%);-webkit-mask-image:linear-gradient(to right,transparent 0%,#000 5%,#000 95%,transparent 100%)}
+.hero-figure::after{content:"";position:absolute;inset:0 0 1.8rem;pointer-events:none;background:linear-gradient(to bottom,#edf3ed 0%,transparent 10%,transparent 94%,#edf3ed 100%)}
+.hero-figure figcaption{position:static;width:auto;height:auto;clip-path:none;padding:.5rem 1rem 0;background:transparent;color:var(--muted);font-size:.72rem;text-align:center}
+@media(max-width:850px){.hero-grid{grid-template-columns:1fr;gap:1.25rem}.hero-figure{height:auto;width:min(100%,560px);margin-inline:auto}.hero-figure img{height:auto;object-fit:contain}.hero-figure::after{background:linear-gradient(to bottom,#edf3ed 0%,transparent 8%,transparent 95%,#edf3ed 100%)}}
 </style>
