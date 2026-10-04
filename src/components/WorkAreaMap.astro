@@ -1,0 +1,17 @@
+---
+import type { Lang } from '../data/site';
+const { lang = 'id' } = Astro.props as { lang?: Lang };
+const id = lang === 'id';
+const mapUrl = 'https://webgisyg.id/webgis.html';
+---
+<div class="work-area-map">
+  <div class="map-heading">
+    <div><p class="eyebrow">{id ? 'Wilayah kerja · Riau' : 'Where we work · Riau'}</p><h2>{id ? 'Jelajahi lokasi aksi kami.' : 'Explore our work on the map.'}</h2><p>{id ? 'Telusuri lokasi program dan pilih objek pada peta untuk melihat informasi kegiatan di YG GeoPortal.' : 'Explore program locations and select map objects to see activity details in the YG GeoPortal.'}</p></div>
+    <a class="button primary" href={mapUrl} target="_blank" rel="noreferrer">{id ? 'Buka peta penuh ↗' : 'Open full map ↗'}</a>
+  </div>
+  <iframe src={mapUrl} title={id ? 'Peta interaktif wilayah kerja Yayasan Gambut dari YG GeoPortal' : 'Interactive Yayasan Gambut work-area map from YG GeoPortal'} loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+  <p class="map-note">{id ? 'Sumber: peta publik YG GeoPortal. Jika peta tidak tampil, gunakan tombol Buka peta penuh.' : 'Source: the YG GeoPortal public map. If the map does not appear, use Open full map.'}</p>
+</div>
+<style>
+.work-area-map{min-width:0;width:100%}.map-heading{display:flex;justify-content:space-between;align-items:center;gap:1.5rem;margin-bottom:1.5rem}.map-heading h2{margin:.4rem 0 .8rem}.map-heading p:not(.eyebrow){max-width:44rem;color:var(--muted);margin:0}.map-heading .button{flex-shrink:0}.work-area-map iframe{display:block;width:100%;height:620px;border:1px solid var(--line);border-radius:1rem;background:#e7eee4}.map-note{font-size:.8rem;color:var(--muted);margin:.8rem 0 0}@media(max-width:679px){.map-heading{display:block}.map-heading .button{margin-top:1rem}.work-area-map iframe{height:520px}.map-heading h2{font-size:1.8rem}}
+</style>

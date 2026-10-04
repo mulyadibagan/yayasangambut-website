@@ -1,4 +1,5 @@
 ---
+import WorkAreaMap from './WorkAreaMap.astro';
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import ContentLayout from '../layouts/ContentLayout.astro';
@@ -40,6 +41,7 @@ const groupLabels={
 } as const;
 ---
 <Layout title={data.title} description={data.intro} intro={data.intro} eyebrow={isAbout?(lang==='id'?'Memetakan aksi. Merekam perubahan.':'Mapping action. Recording change.'):undefined}>
+  {isLocations&&<section class="section" id="wilayah-kerja"><div class="container"><WorkAreaMap lang={lang}/></div></section>}
   {!isContact&&!isAbout&&<section class="section"><div class="container info-grid">{data.sections.map((section:string[],index:number)=><article id={section[0].toLowerCase().replaceAll(' ','-').replace(/[^a-z0-9-]/g,'')}><span>{String(index+1).padStart(2,'0')}</span><div><h2>{section[0]}</h2>{section[0]==='Email'?<p><a href={`mailto:${section[1]}`}>{section[1]}</a></p>:<p>{section[1]}</p>}</div></article>)}</div></section>}
 
   {isAbout&&<>
