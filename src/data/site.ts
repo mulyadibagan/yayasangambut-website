@@ -12,6 +12,7 @@ export const routeMap = {
 } as const;
 
 export const pagePairs: Record<string, string> = {
+  '/id/mitra/': '/en/partners/', '/en/partners/': '/id/mitra/',
   '/id/': '/en/', '/en/': '/id/', '/id/tentang-kami/': '/en/about/', '/en/about/': '/id/tentang-kami/',
   '/id/program/': '/en/programs/', '/en/programs/': '/id/program/', '/id/lokasi-kerja/': '/en/where-we-work/', '/en/where-we-work/': '/id/lokasi-kerja/',
   '/id/dampak/': '/en/impact/', '/en/impact/': '/id/dampak/', '/id/cerita/': '/en/field-stories/', '/en/field-stories/': '/id/cerita/',
