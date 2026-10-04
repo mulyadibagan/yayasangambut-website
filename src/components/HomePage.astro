@@ -141,4 +141,25 @@ const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1
 @media(min-width:1600px){.hero-grid{min-height:560px}}
 @media(max-width:1000px){.hero-copy{width:46%;padding-left:1.5rem}.hero h1{font-size:2.5rem}.hero-figure{width:56%}.program-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem}.program-card{padding:0;border:0}}
 @media(max-width:700px){.hero-grid{min-height:0;display:flex;flex-direction:column}.hero-copy{width:100%;padding:2rem 1.25rem 1.5rem}.hero h1{font-size:2.65rem;max-width:16ch}.hero-text{font-size:.95rem}.hero-figure{position:relative;inset:auto;width:100%;height:auto;max-width:none}.hero-figure img{height:auto;width:100%;object-fit:contain}.hero-figure::after{background:linear-gradient(180deg,#0c2b22 0%,transparent 12%)}.program-grid{grid-template-columns:1fr;gap:0}.program-card,.program-card:first-child,.program-card:last-child{padding:1rem 0;border:0;border-bottom:1px solid var(--line)}.programs{padding:2rem 0}}
+
+/* A continuous landscape hero with a soft diagonal blend and curved lower edge. */
+.hero{isolation:isolate;padding-bottom:2rem}
+.hero::after{content:"";position:absolute;z-index:3;pointer-events:none;left:-5%;bottom:-3rem;width:110%;height:5rem;background:#fff;border-radius:50% 50% 0 0;transform:rotate(-1.5deg)}
+.hero-grid{min-height:560px}
+.hero-copy{width:46%;padding-top:3.6rem;padding-bottom:4rem}
+.hero-figure{inset:0;width:100%;height:100%;background:#0c2b22}
+.hero-figure img{width:78%;margin-left:auto;height:100%;object-fit:cover;object-position:62% 48%;mask-image:linear-gradient(108deg,transparent 0%,rgba(0,0,0,.12) 12%,rgba(0,0,0,.7) 31%,#000 48%);-webkit-mask-image:linear-gradient(108deg,transparent 0%,rgba(0,0,0,.12) 12%,rgba(0,0,0,.7) 31%,#000 48%)}
+.hero-figure::after{background:linear-gradient(90deg,#0c2b22 0%,rgba(12,43,34,.88) 24%,rgba(12,43,34,.3) 47%,transparent 68%),linear-gradient(0deg,rgba(12,43,34,.45),transparent 35%)}
+@media(min-width:1600px){.hero-grid{min-height:600px}}
+@media(max-width:1000px) and (min-width:701px){.hero-copy{width:50%}.hero-figure img{width:85%;object-position:60% center}}
+@media(max-width:700px){
+.hero{padding-bottom:1rem}
+.hero-grid{min-height:0;display:block}
+.hero-copy{width:100%;padding:2rem 1.25rem 0}
+.hero-figure{position:relative;inset:auto;width:100%;height:auto;margin-top:-.5rem}
+.hero-figure img{width:100%;height:auto;object-fit:contain;mask-image:linear-gradient(180deg,transparent,#000 30%);-webkit-mask-image:linear-gradient(180deg,transparent,#000 30%)}
+.hero-figure::after{background:linear-gradient(180deg,#0c2b22 0%,rgba(12,43,34,.35) 15%,transparent 40%)}
+.hero::after{height:3rem;bottom:-2rem}
+}
+
 </style>
