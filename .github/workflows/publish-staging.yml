@@ -26,10 +26,14 @@ jobs:
       - run: npm ci
       - name: Build and validate website
         env:
-          SITE_ORIGIN: https://mulyadibagan.github.io
+          SITE_ORIGIN: https://yayasangambut.org
+          GH_TOKEN: ${{ github.token }}
         run: |
-          npm run build
-          node scripts/prepare-github-pages.mjs
+          npm run build:production
+          gh release download media-archive-2026-10-04 --pattern wordpress-media.tar.gz --dir /tmp/yg-media
+          echo 'baf90fa597e4bae878803cf473a0780f69e8bf85a69e756408e51f3c66cf3bcb  /tmp/yg-media/wordpress-media.tar.gz' | sha256sum --check
+          tar -xzf /tmp/yg-media/wordpress-media.tar.gz -C dist
+          node scripts/prepare-production-pages.mjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

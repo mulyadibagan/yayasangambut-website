@@ -1,5 +1,23 @@
 # Yayasan Gambut — Official Website
 
+## Produksi GitHub Pages (4 Oktober 2026)
+
+Deployment terbaru memakai GitHub Pages dengan domain `yayasangambut.org`.
+Workflow `.github/workflows/publish-staging.yml` kini menjalankan build production
+tanpa prefix repository. Sebanyak 242 gambar/PDF publik yang dirujuk website
+diarsipkan pada release `media-archive-2026-10-04` sebagai `wordpress-media.tar.gz`.
+Workflow memverifikasi SHA-256 dan mengekstraknya ke `dist/wp-content/uploads/`,
+sehingga URL media lama tetap tersedia tanpa menjalankan WordPress. Media besar
+tidak dimasukkan ke riwayat Git. Pertahankan release ini untuk build berikutnya.
+
+`scripts/prepare-production-pages.mjs` memvalidasi seluruh referensi media dan
+menghasilkan halaman redirect statis dari `public/_redirects`, karena GitHub
+Pages tidak menjalankan format redirect Cloudflare. Ini berupa redirect HTML,
+bukan respons HTTP 301. Jalankan `npm run build:production`, ekstrak arsip media
+ke `dist`, lalu jalankan script tersebut untuk memvalidasi build lokal.
+
+Bagian Cloudflare Pages/R2 di bawah mencatat rencana dan konfigurasi sebelumnya.
+
 Repository mandiri untuk website resmi `yayasangambut.org`. Proyek ini tidak memuat, menyalin, atau mengubah aplikasi maupun dataset WebGIS di `webgisyg.id`. Konten publik website WordPress lama sudah dimigrasikan melalui REST API dan sitemap; website sumber tidak diubah.
 
 ## Teknologi dan prinsip
