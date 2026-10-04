@@ -55,7 +55,8 @@ export const copy = {
 
 export const organisation = {
   email: 'official@yayasangambut.org',
-  headOffice: 'Taman Puri Bintaro PB.11 Nomor 16, Bintaro Sektor 9, RT 002 RW 009, Kelurahan Sawah Baru, Kecamatan Ciputat, Kota Tangerang Selatan 15413',
+  foundingAddress: 'Taman Puri Bintaro PB.11 Nomor 16, Bintaro Sektor 9, RT 002 RW 009, Kelurahan Sawah Baru, Kecamatan Ciputat, Kota Tangerang Selatan 15413',
+  headOffice: 'Jalan Gulama No. 8, RT 01/RW 09, Kelurahan Tangkerang Barat, Kecamatan Marpoyan Damai, Kota Pekanbaru, Riau 28282',
   pekanbaruOffice: 'Jalan Gulama No. 8 RT 01 RW 09, Kelurahan Tangkerang Barat, Kecamatan Marpoyan Damai, Kota Pekanbaru 28282',
   facebook: 'https://www.facebook.com/YayasanGambut', linkedin: 'https://www.linkedin.com/company/yayasangambut/', instagram: 'https://www.instagram.com/yayasangambut/', youtube: 'https://www.youtube.com/@YayasanGambut',
 };
@@ -100,7 +101,7 @@ export const programApproaches = {
 export const pageContent = {
   id: {
     'tentang-kami': { title: 'Tentang Yayasan Gambut', intro: 'Yayasan Gambut bekerja bersama masyarakat untuk melindungi dan memulihkan gambut, mangrove, hutan, serta bentang alam produktif melalui aksi lapangan, penguatan kapasitas, riset, dan teknologi geospasial.', sections: [
-      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang didirikan pada 24 April 2019 dan berkedudukan di Kota Tangerang Selatan. Dari kantor pusat di Tangerang Selatan dan kantor operasional di Pekanbaru, kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
+      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang didirikan pada 24 April 2019 dan berkedudukan di Kota Tangerang Selatan. Dari kantor pusat di Pekanbaru, kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
       ['Visi', 'Mendukung Pengelolaan Sumber Daya Alam Lahan Basah dan Ekosistem Lain yang Berkelanjutan melalui kemitraan strategis dengan berbagai stakeholder dan masyarakat lokal.'],
       ['Misi 01', 'Mempromosikan pengelolaan terpadu keanekaragaman hayati dan sumber daya air alam dengan fokus pada keterlibatan masyarakat dan konservasi keanekaragaman hayati;'],
       ['Misi 02', 'Mempromosikan perlindungan dan pemanfaatan berkelanjutan dari ekosistem termasuk hutan dan lahan basah dengan fokus pada manajemen terpadu untuk keanekaragaman hayati dan perubahan iklim; dan'],
@@ -123,13 +124,13 @@ export const pageContent = {
       ['Batas penggunaan data', 'Cakupan dan frekuensi pembaruan berbeda menurut program. Setiap angka harus dibaca bersama definisi, periode, lokasi, dan sumbernya; data model atau analisis satelit tetap memerlukan verifikasi lapangan.'],
     ]},
     'hubungi-kami': { title: 'Hubungi Kami', intro: 'Mari membicarakan kolaborasi, riset, publikasi, atau pertanyaan tentang kerja Yayasan Gambut.', sections: [
-      ['Kantor Pekanbaru', organisation.pekanbaruOffice], ['Kantor Pusat', organisation.headOffice], ['Email', organisation.email],
+      ['Kantor Pusat — Pekanbaru', organisation.headOffice], ['Email', organisation.email],
       ['Kolaborasi', 'Sertakan nama organisasi, lokasi, tujuan, dan kebutuhan kolaborasi agar tim kami dapat menindaklanjuti dengan tepat.'],
     ]},
   },
   en: {
     about: { title: 'About Yayasan Gambut', intro: 'Yayasan Gambut works with communities to protect and restore peatlands, mangroves, forests, and productive landscapes through field action, capacity strengthening, research, and geospatial technology.', sections: [
-      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established on 24 April 2019 and domiciled in South Tangerang. From our head office in South Tangerang and operational office in Pekanbaru, we focus primarily on Riau through programs covering mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
+      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established on 24 April 2019 and domiciled in South Tangerang. From our head office in Pekanbaru, we focus primarily on Riau through programs covering mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
       ['Vision', 'To support the sustainable management of natural resources in wetlands and other ecosystems through strategic partnerships with diverse stakeholders and local communities.'],
       ['Mission 01', 'To promote the integrated management of biodiversity and natural water resources, with a focus on community involvement and biodiversity conservation;'],
       ['Mission 02', 'To promote the protection and sustainable use of ecosystems, including forests and wetlands, with a focus on integrated management for biodiversity and climate change; and'],
@@ -152,7 +153,7 @@ export const pageContent = {
       ['Data-use limits', 'Coverage and update frequency vary by program. Each figure should be read with its definition, period, location, and source; modelled or satellite-derived analysis still requires field verification.'],
     ]},
     contact: { title: 'Contact Us', intro: 'Let’s discuss collaboration, research, publications, or questions about Yayasan Gambut’s work.', sections: [
-      ['Pekanbaru Office', organisation.pekanbaruOffice], ['Head Office', organisation.headOffice], ['Email', organisation.email],
+      ['Head Office — Pekanbaru', organisation.headOffice], ['Email', organisation.email],
       ['Collaboration', 'Please include your organisation, location, purpose, and collaboration needs so our team can follow up appropriately.'],
     ]},
   },
