@@ -20,12 +20,12 @@ const publications=[...(annualReport?[annualReport]:[]),...publicationPool.filte
 const publicationFallback=!nativePublications.length;
 
 const archiveMetrics=impactSnapshot[lang];
-const heroImage='/images/community-mangrove-hero.webp';
+const heroImage='/images/community-mangrove-main.webp';
 ---
 <BaseLayout title={lang==='id'?'Yayasan Gambut — Aksi bentang alam berbasis masyarakat':'Yayasan Gambut — Community-led landscape action'} description={c.heroText} schemaType="organization">
   <section class="hero">
     <div class="container hero-grid"><div class="hero-copy"><p class="eyebrow">{lang==='id'?'Berakar di Riau. Bergerak bersama.':'Rooted in Riau. Working together.'}</p><h1>{lang==='id'?'Menjaga alam. Menguatkan masyarakat.':'Thriving nature. Stronger communities.'}</h1><p class="hero-text">{lang==='id'?'Bersama masyarakat dan mitra, kami menjaga lahan basah, memulihkan ekosistem, dan mendukung penghidupan berkelanjutan.':'Together with communities and partners, we protect wetlands, restore ecosystems, and support sustainable livelihoods.'}</p><div class="hero-actions"><a class="button primary" href={r.programs}>{lang==='id'?'Jelajahi Program':'Explore Our Work'}</a><a class="button secondary" href={r.contact}>{lang==='id'?'Bermitra dengan Kami':'Partner With Us'}</a></div></div>
-    <figure class="hero-figure"><img src={heroImage} width="1920" height="1280" alt={lang==='id'?'Anak-anak dan orang dewasa bersama membawa bibit mangrove di lokasi penanaman':'Children and adults holding mangrove seedlings together at a planting site'} fetchpriority="high" decoding="async"/></figure></div>
+    <figure class="hero-figure"><img src={heroImage} width="1920" height="1281" alt={lang==='id'?'Anak-anak dan orang dewasa berfoto bersama di antara bibit dan pepohonan mangrove':'Children and adults together among mangrove seedlings and trees'} fetchpriority="high" decoding="async"/></figure></div>
   </section>
 
   <section class="section impact-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">{lang==='id'?'Jejak kerja dalam data':'Our work in data'}</p><h2>{lang==='id'?'Dokumentasi kerja, terbuka untuk ditelusuri.':'Our work, documented and open.'}</h2><p class="metric-context">{lang==='id'?'Angka berikut merangkum dokumentasi program dalam basis data publik, bukan ukuran dampak ekologis.':'These figures describe program records in our public database, rather than measured ecological outcomes.'}</p></div><div class="archive-heading-actions"><span class="notice archive">{c.temporary}</span><a class="text-link" href={r.impact}>{lang==='id'?'Metode pelaporan dampak':'Impact reporting method'}</a></div></div><div class="impact-grid">{archiveMetrics.map(item=><a href={item.href} target="_blank" rel="noreferrer"><strong>{item.value}</strong><div><p>{item.label}</p><small>{item.note}</small></div><b aria-hidden="true">↗</b><span class="sr-only"> — {lang==='id'?'buka sumber data':'open data source'}</span></a>)}</div></div></section>
@@ -73,12 +73,12 @@ const heroImage='/images/community-mangrove-hero.webp';
 .hero-figure{height:auto;margin:0;border-radius:0;background:#edf2ec;overflow:hidden}
 .hero-figure img{display:block;width:100%;height:auto;object-fit:contain}
 @media(min-width:1100px){
-.hero-copy{position:absolute;inset:0 0 auto;padding-top:2rem;padding-bottom:5rem;background:linear-gradient(#fffffffa 0%,#fffffff0 60%,#ffffff00 100%);display:grid;grid-template-columns:1.1fr 1fr;column-gap:3rem;align-items:start}
+.hero-copy{position:relative;padding-top:2rem;padding-bottom:2rem;background:#fff;display:grid;grid-template-columns:1.1fr 1fr;column-gap:3rem;align-items:start}
 .hero-copy .eyebrow{grid-column:1/-1;margin-bottom:.7rem}
 .hero h1{grid-column:1;grid-row:2/4}
 .hero-text{grid-column:2;grid-row:2}
 .hero-actions{grid-column:2;grid-row:3}
-.hero-figure img{max-height:850px;object-fit:cover;object-position:center bottom}
+.hero-figure img{height:auto;object-fit:contain}
 }
 @media(max-width:679px){.hero-copy{padding:1.75rem 1.25rem}.hero h1{font-size:2.4rem}.hero-actions{display:flex}.hero-actions .button{font-size:.85rem;padding:.75rem 1rem}}
 </style>
