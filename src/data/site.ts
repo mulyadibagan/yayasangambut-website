@@ -99,13 +99,13 @@ export const programApproaches = {
 export const pageContent = {
   id: {
     'tentang-kami': { title: 'Tentang Yayasan Gambut', intro: 'Yayasan Gambut bekerja bersama masyarakat untuk melindungi dan memulihkan gambut, mangrove, hutan, serta bentang alam produktif melalui aksi lapangan, penguatan kapasitas, riset, dan teknologi geospasial.', sections: [
-      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang berdiri pada 2019. Dari kantor pusat di Tangerang Selatan dan kantor operasional di Pekanbaru, kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
+      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang didirikan pada 24 April 2019 dan berkedudukan di Kota Tangerang Selatan. Dari kantor pusat di Tangerang Selatan dan kantor operasional di Pekanbaru, kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
       ['Visi', 'Terwujudnya gambut, mangrove, hutan, dan ekosistem terkait yang sehat serta tangguh melalui pengelolaan sumber daya alam yang berkelanjutan bersama masyarakat.'],
       ['Misi 01', 'Melindungi dan memulihkan gambut, mangrove, hutan, dan lahan basah melalui aksi berbasis tapak serta partisipasi masyarakat.'],
       ['Misi 02', 'Memperkuat kapasitas, kelembagaan, dan penghidupan masyarakat untuk mengelola sumber daya alam secara berkelanjutan.'],
       ['Misi 03', 'Menghasilkan dan membagikan pengetahuan, data lapangan, riset, dan informasi geospasial untuk mendukung keputusan, kemitraan, dan akuntabilitas.'],
       ['Pendekatan', 'Kerja kami dimulai dari kebutuhan di tingkat tapak. Bersama masyarakat dan mitra, kami merancang aksi, menggabungkan pengetahuan lokal dengan riset dan data geospasial, memantau hasil, lalu membagikan pembelajaran untuk memperkuat kerja berikutnya.'],
-      ['Legalitas', 'Yayasan Gambut merupakan badan hukum yayasan Indonesia yang didirikan berdasarkan Akta Notaris Nomor 11 tanggal 24 April 2019, dibuat di hadapan Nunik Rudiawati, S.H., M.Kn., dan disahkan melalui Keputusan Menteri Hukum dan Hak Asasi Manusia Republik Indonesia Nomor AHU-0004650.AH.01.04.Tahun 2019.'],
+      ['Legalitas', 'Yayasan Gambut merupakan badan hukum yayasan Indonesia yang didirikan berdasarkan Akta Notaris Nomor 11 tanggal 24 April 2019, dibuat di hadapan Nunik Rudiawati, S.H., M.Kn., dan disahkan melalui Keputusan Menteri Hukum dan Hak Asasi Manusia Republik Indonesia Nomor AHU-0006450.AH.01.04.Tahun 2019 tanggal 25 April 2019.'],
       ['Kemitraan', 'Kami bekerja bersama kelompok masyarakat, pemerintah, perguruan tinggi, organisasi masyarakat sipil, dan sektor swasta. Kemitraan ini menyatukan pengetahuan lokal, keahlian teknis, data, dan sumber daya untuk mendukung pemulihan ekosistem serta penghidupan berkelanjutan.'],
     ]},
     'lokasi-kerja': { title: 'Lokasi Kerja', intro: 'Kerja Yayasan Gambut berfokus di Provinsi Riau, dari pesisir dan mangrove hingga gambut, perhutanan sosial, agroforestri, dan penghidupan masyarakat.', sections: [
@@ -128,13 +128,13 @@ export const pageContent = {
   },
   en: {
     about: { title: 'About Yayasan Gambut', intro: 'Yayasan Gambut works with communities to protect and restore peatlands, mangroves, forests, and productive landscapes through field action, capacity strengthening, research, and geospatial technology.', sections: [
-      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established in 2019. From our head office in South Tangerang and operational office in Pekanbaru, we focus primarily on Riau through programs covering mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
+      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established on 24 April 2019 and domiciled in South Tangerang. From our head office in South Tangerang and operational office in Pekanbaru, we focus primarily on Riau through programs covering mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
       ['Vision', 'A future in which peatlands, mangroves, forests, and connected ecosystems are healthy and resilient through sustainable natural resource management undertaken with local communities.'],
       ['Mission 01', 'Protect and restore peatlands, mangroves, forests, and wetlands through site-based action and community participation.'],
       ['Mission 02', 'Strengthen community capacity, institutions, and livelihoods for the sustainable management of natural resources.'],
       ['Mission 03', 'Generate and share knowledge, field data, research, and geospatial information to support decision-making, partnerships, and accountability.'],
       ['Approach', 'Our work starts with site-level needs. Together with communities and partners, we design action, combine local knowledge with research and geospatial data, monitor results, and share lessons to strengthen future work.'],
-      ['Legal status', 'Yayasan Gambut is an Indonesian foundation with legal-entity status under Notarial Deed No. 11 dated 24 April 2019, drawn up before Nunik Rudiawati, S.H., M.Kn., and Ministry of Law and Human Rights Decision No. AHU-0004650.AH.01.04.Tahun 2019.'],
+      ['Legal status', 'Yayasan Gambut is an Indonesian foundation with legal-entity status under Notarial Deed No. 11 dated 24 April 2019, drawn up before Nunik Rudiawati, S.H., M.Kn., and Ministry of Law and Human Rights Decision No. AHU-0006450.AH.01.04.Tahun 2019 dated 25 April 2019.'],
       ['Partnerships', 'We work with community groups, government, universities, civil-society organisations, and the private sector. These partnerships bring together local knowledge, technical expertise, data, and resources to support ecosystem recovery and sustainable livelihoods.'],
     ]},
     'where-we-work': { title: 'Where We Work', intro: 'Yayasan Gambut focuses its work in Riau Province, from coasts and mangroves to peatlands, social forestry, agroforestry, and community livelihoods.', sections: [
