@@ -3,7 +3,7 @@ import WorkAreaMap from './WorkAreaMap.astro';
 import { getCollection } from 'astro:content';
 import { programPhotos } from '../data/program-photos';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { copy, impactSnapshot, routeMap, type Lang } from '../data/site';
+import { copy, impactSnapshot, pageContent, routeMap, type Lang } from '../data/site';
 import { categoryLabel, excerpt } from '../utils/text';
 const { lang } = Astro.props as { lang: Lang }; const c=copy[lang]; const r=routeMap[lang];
 const [allPrograms,allArticles,allPublications]=await Promise.all([
@@ -21,12 +21,20 @@ const publications=[...(annualReport?[annualReport]:[]),...publicationPool.filte
 const publicationFallback=!nativePublications.length;
 
 const archiveMetrics=impactSnapshot[lang];
-const heroImage='/images/community-mangrove-main.webp';
+const heroImage=programPhotos[0].src;
+const vision=pageContent[lang][lang==='id'?'tentang-kami':'about'].sections[1][1];
 ---
 <BaseLayout title={lang==='id'?'Yayasan Gambut — Aksi bentang alam berbasis masyarakat':'Yayasan Gambut — Community-led landscape action'} description={c.heroText} schemaType="organization">
   <section class="hero">
-    <div class="container hero-grid"><div class="hero-copy"><p class="eyebrow">{lang==='id'?'Berakar di Riau. Bergerak bersama.':'Rooted in Riau. Working together.'}</p><h1>{lang==='id'?'Menjaga alam. Menguatkan masyarakat.':'Thriving nature. Stronger communities.'}</h1><p class="hero-text">{lang==='id'?'Bersama masyarakat dan mitra, kami menjaga lahan basah, memulihkan ekosistem, dan mendukung penghidupan berkelanjutan.':'Together with communities and partners, we protect wetlands, restore ecosystems, and support sustainable livelihoods.'}</p><div class="hero-actions"><a class="button primary" href={r.programs}>{lang==='id'?'Jelajahi Program':'Explore Our Work'}</a><a class="button secondary" href={r.contact}>{lang==='id'?'Bermitra dengan Kami':'Partner With Us'}</a></div></div>
-    <figure class="hero-figure"><img src={heroImage} width="1920" height="1281" alt={lang==='id'?'Anak-anak dan orang dewasa berfoto bersama di antara bibit dan pepohonan mangrove':'Children and adults together among mangrove seedlings and trees'} fetchpriority="high" decoding="async"/></figure></div>
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">{lang==='id'?'Visi Yayasan Gambut':'Our vision'}</p>
+        <h1>{vision}</h1>
+        <p class="hero-text">{lang==='id'?'Kami mempromosikan konservasi keanekaragaman hayati, pengelolaan hutan dan lahan basah berkelanjutan, serta penguatan kapasitas dan kemitraan bersama masyarakat.':'We promote biodiversity conservation, sustainable forest and wetland management, and stronger capacities and partnerships with communities.'}</p>
+        <div class="hero-actions"><a class="button primary" href={lang==='id'?'/id/tentang-kami/':'/en/about/'}>{lang==='id'?'Tentang Yayasan Gambut':'About Yayasan Gambut'}</a><a class="button secondary" href="#wilayah-kerja">{lang==='id'?'Jelajahi Wilayah Kerja':'Explore Our Work Locations'}</a></div>
+      </div>
+      <figure class="hero-figure"><img src={heroImage} width="549" height="412" alt={programPhotos[0][lang]} fetchpriority="high" decoding="async"/><figcaption>{lang==='id'?'Bentang mangrove Buruk Bakul, Riau · Dokumentasi Yayasan Gambut':'Buruk Bakul mangroves, Riau · Yayasan Gambut documentation'}</figcaption></figure>
+    </div>
   </section>
 
   <section class="section impact-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">{lang==='id'?'Jejak kerja dalam data':'Our work in data'}</p><h2>{lang==='id'?'Dokumentasi kerja, terbuka untuk ditelusuri.':'Our work, documented and open.'}</h2><p class="metric-context">{lang==='id'?'Angka berikut merangkum dokumentasi program dalam basis data publik, bukan ukuran dampak ekologis.':'These figures describe program records in our public database, rather than measured ecological outcomes.'}</p></div><div class="archive-heading-actions"><span class="notice archive">{c.temporary}</span><a class="text-link" href={r.impact}>{lang==='id'?'Metode pelaporan dampak':'Impact reporting method'}</a></div></div><div class="impact-grid">{archiveMetrics.map(item=><a href={item.href} target="_blank" rel="noreferrer"><strong>{item.value}</strong><div><p>{item.label}</p><small>{item.note}</small></div><b aria-hidden="true">↗</b><span class="sr-only"> — {lang==='id'?'buka sumber data':'open data source'}</span></a>)}</div></div></section>
@@ -85,4 +93,16 @@ const heroImage='/images/community-mangrove-main.webp';
 @media(max-width:679px){.hero-copy{padding:1.75rem 1.25rem}.hero h1{font-size:2.4rem}.hero-actions{display:flex}.hero-actions .button{font-size:.85rem;padding:.75rem 1rem}}
 .recognition{background:#edf2e9}.recognition h2{margin-bottom:1.5rem}.recognition-grid{display:grid;gap:2rem}.recognition-grid article{border-top:2px solid #77916a;padding-top:1rem}.award-year{color:var(--forest-650);font-size:.9rem;font-weight:800}.recognition-grid h3{font-size:1.4rem;margin:.5rem 0 .8rem}.recognition-grid p{color:var(--muted);font-size:.95rem;max-width:42rem}.recognition-grid .text-link{font-size:.85rem}@media(min-width:760px){.recognition-grid{grid-template-columns:1.3fr 1fr;gap:3rem}}
 .recognition-feature{display:grid;gap:2rem;align-items:start}.recognition-photo{margin:0}.recognition-photo img{display:block;width:100%;height:auto;border-radius:.75rem}.recognition-photo figcaption{font-size:.75rem;color:var(--muted);margin-top:.6rem}.recognition-feature .recognition-grid{grid-template-columns:1fr;gap:1.5rem}.recognition-grid h3{font-size:1.2rem}.recognition-grid p{font-size:.9rem}@media(min-width:980px){.recognition-feature{grid-template-columns:1.15fr 1fr;gap:2.5rem}}
+
+/* Compact vision-led opening. */
+.hero{padding:2.5rem 0;background:linear-gradient(115deg,#f7f8f2,#e5eee6)}
+.hero-grid{width:min(1200px,calc(100% - 2.5rem));max-width:1200px;margin-inline:auto;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:center}
+.hero-copy{display:block;padding:0;background:transparent}
+.hero h1{max-width:none;font-size:clamp(1.65rem,2.35vw,2.15rem);line-height:1.24;letter-spacing:-.025em;margin:0 0 1rem}
+.hero-text{font-size:.95rem;line-height:1.65;margin:0;max-width:38rem}
+.hero-actions{display:flex;gap:.7rem;margin-top:1.4rem}.hero-actions .button{font-size:.85rem}
+.hero-figure{height:390px;border-radius:1rem;position:relative;background:#dce8db}
+.hero-figure img{height:100%;width:100%;object-fit:cover}
+.hero-figure figcaption{position:absolute;bottom:0;left:0;width:100%;height:auto;clip-path:none;padding:.8rem 1rem;background:#123c30dc;color:white;font-size:.75rem}
+@media(max-width:850px){.hero-grid{grid-template-columns:1fr;gap:1.5rem}.hero{padding:1.75rem 0}.hero h1{font-size:1.75rem}.hero-figure{height:250px}.hero-figure img{height:100%;object-fit:cover}.hero-actions{display:flex}}
 </style>
