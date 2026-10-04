@@ -3,7 +3,6 @@ import type { Lang } from '../data/site';
 const {lang,full=false}=Astro.props as {lang:Lang;full?:boolean};
 const id=lang==='id';
 const t=(a:string,b:string)=>id?a:b;
-const report='/wp-content/uploads/2023/04/Compilation-Capaian_Yayasan-Gambut_2022.pdf#page=7';
 const partners=[
  {name:'Global Environment Centre',short:'GEC',logo:'/images/partners/gec.webp',url:'https://gec.org.my/',body:t('Kolaborasi restorasi lahan gambut dan mangrove bersama masyarakat.','Collaboration on community-based peatland and mangrove restoration.')},
  {name:'BenihBaik.com',short:'BenihBaik.com',logo:'/images/partners/benihbaik.png',url:'https://benihbaik.com/',body:t('Dukungan penanaman pohon dan pemulihan lingkungan.','Support for tree planting and environmental restoration.')},
@@ -33,10 +32,9 @@ const partners=[
 <dt>Suvarnabhumi</dt><dd>{t('Fasilitasi pengemasan dan pemasaran kopi Liberika masyarakat Sungai Linau.','Facilitation of packaging and marketing for community-grown Liberica coffee from Sungai Linau.')}</dd>
 </dl></div></div>
 <div class="community"><div><p class="eyebrow">{t('Jejaring kolaborasi','Collaboration network')}</p><h2>{t('Berbagi pengetahuan dan memperluas kerja bersama.','Sharing knowledge and extending collaboration.')}</h2></div><div><dl class="collaborator-list">
-<dt>SMPEI Project–IFAD · DLHK Riau</dt><dd>{t('Keterlibatan dalam evaluasi proyek, pembelajaran, dan kunjungan lapangan.','Participation in project evaluation, learning, and field visits.')}</dd>
 <dt>KKMD · POKJA PS Riau</dt><dd>{t('Keanggotaan dalam Kelompok Kerja Mangrove Daerah dan Kelompok Kerja Perhutanan Sosial Provinsi Riau.','Membership in Riau’s regional mangrove and social forestry working groups.')}</dd>
 <dt>riaucerdas.com · nadariau.com</dt><dd>{t('Kerja sama media untuk diseminasi informasi.','Media collaboration for information dissemination.')}</dd>
-</dl><div class="partner-sources"><a href={report} target="_blank" rel="noreferrer">{t('Dokumentasi kolaborasi 2022','Collaboration documentation 2022')} ↗</a><a href="/wp-content/uploads/2024/07/2023_ANNUAL_REPORT-YAYASAN-GAMBUT.pdf#page=29" target="_blank" rel="noreferrer">{t('Dokumentasi kolaborasi 2023','Collaboration documentation 2023')} ↗</a></div></div></div>
+</dl></div></div>
 </>}
 <div class="partner-bottom"><p>{t('Kemitraan lintas tahun yang tumbuh bersama upaya menjaga ekosistem dan kesejahteraan masyarakat.','Partnerships across the years, growing through shared efforts to protect ecosystems and community well-being.')}</p><a class="button primary" href={full?t('/id/hubungi-kami/','/en/contact/'):t('/id/mitra/','/en/partners/')}>{full?t('Bangun kolaborasi','Collaborate with us'):t('Lihat Semua Mitra','View all partners')}</a></div>
 </div></section>
