@@ -1,10 +1,10 @@
 ---
-title: "FGD Review Asean Peatland Management Strategy"
+title: "Diskusi Tinjauan Strategi Pengelolaan Gambut ASEAN"
 slug: "fgd-review-asean-peatland-management-strategy"
 date: "2020-05-11T20:13:13"
 modified: "2020-05-11T22:18:14"
 author: "YayasanGambut (YG)"
-summary: "Tim Ahli Yayasan Gambut bersama Global Environment Centre pada 13 Maret 2020 melaksanakan Agenda Fokus Grup Diskusi terkait Review Asean Peatland Management Strategy (APMS) di Kantor Kementrian Lingkungan Hidup dan Kehutanan, Agenda ini dihadiri para pihak diantaranya perwakilan"
+summary: "Tim ahli Yayasan Gambut dan Global Environment Centre mengikuti diskusi tinjauan Strategi Pengelolaan Gambut ASEAN pada 13 Maret 2020."
 category: "Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/05/FGD-Review-Asean-Peatland-Management-Strategy.jpg"
 imageAlt: "FGD Review Asean Peatland Management Strategy"
@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/fgd-review-asean-peatland-management-strat
 legacy: true
 ---
 
-Tim Ahli Yayasan Gambut bersama Global Environment Centre pada 13 Maret 2020 melaksanakan Agenda Fokus Grup Diskusi terkait Review Asean Peatland Management Strategy (APMS) di Kantor Kementrian Lingkungan Hidup dan Kehutanan, Agenda ini dihadiri para pihak diantaranya perwakilan dari Kementrian Pertanian, Badan Restorasi Gambut, Badan Meteorologi, Klimatologi dan Geofisika, Wetland International serta berbagai bidand di dalam lingkup Kementrian Lingkungan Hidup dan Kehutanan.
+Tim Ahli Yayasan Gambut bersama Global Environment Centre pada 13 Maret 2020 melaksanakan Agenda Fokus Grup Diskusi terkait Review Asean Peatland Management Strategy (APMS) di Kantor Kementerian Lingkungan Hidup dan Kehutanan, Agenda ini dihadiri para pihak diantaranya perwakilan dari Kementerian Pertanian, Badan Restorasi Gambut, Badan Meteorologi, Klimatologi dan Geofisika, Wetland International serta berbagai bidand di dalam lingkup Kementerian Lingkungan Hidup dan Kehutanan.
 
 Goal di dalam dokumen APMS yaitu pengelolaan lahan gambut berkelanjutan di kawasan ASEAN melalui tindakan kolektif dan peningkatan kerja sama untuk mendukung dan mempertahankan mata pencaharian lokal, mengurangi resiko kebakaran dan kabut asap serta berkontribusi terhadap manajemen lingkungan global, serta memiliki 4 Tujuan Umum diantaranya;
 

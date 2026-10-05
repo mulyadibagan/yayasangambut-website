@@ -1,10 +1,10 @@
 ---
-title: "Yayasan Gambut, GEC dan masyarakat lokal bekerjasama dengan Aramco untuk mengatasi erosi pantai di Provinsi Riau, Indonesia"
+title: "Kolaborasi YG, GEC, dan Aramco untuk Konservasi Mangrove"
 slug: "yayasan-gambut-gec-dan-masyarakat-lokal-bekerjasama-dengan-aramco-untuk-mengatasi-erosi-pantai-di-provinsi-riau-indonesia"
 date: "2023-10-31T07:08:01"
 modified: "2023-10-31T07:10:33"
 author: "YayasanGambut (YG)"
-summary: "BUKIT BATU, RIAU, 26 Oktober, 2023: Kelompok Sekat Bakau di Desa Buruk Bakul, Kecamatan Bukit Batu, Riau, Indonesia, dan Yayasan Gambut (YG), dengan dukungan dari Global Environment Center (GEC) dan Aramco, telah meluncurkan Program Konservasi Mangrove Berbasis Masyarakat untuk m"
+summary: "Yayasan Gambut, Global Environment Centre, Aramco, dan Kelompok Sekat Bakau bekerja sama dalam konservasi mangrove berbasis masyarakat di Buruk Bakul."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2023/10/AAS-CSR-Indonesia-Group-1024x683.jpg"
 imageAlt: "Yayasan Gambut, GEC dan masyarakat lokal bekerjasama dengan Aramco untuk mengatasi erosi pantai di Provinsi Riau, Indonesia"
@@ -25,7 +25,7 @@ legacy: true
 
 _Sekitar 100 relawan dari masyarakat lokal, sekolah, pemerintah daerah, Yayasan Gambut, Global Environment Centre dan Aramco merayakan peluncuran Program Konservasi Mangrove Berbasis Masyarakat dengan menanam 8.000 pohon mangrove di Buruk Bakul, Provinsi Riau, Indonesia._
 
-BUKIT BATU, RIAU, 26 Oktober, 2023: Kelompok Sekat Bakau di Desa Buruk Bakul, Kecamatan Bukit Batu, Riau, Indonesia, dan Yayasan Gambut (YG), dengan dukungan dari Global Environment Center (GEC) dan Aramco, telah meluncurkan Program Konservasi Mangrove Berbasis Masyarakat untuk melibatkan dan memberdayakan masyarakat lokal dalam melakukan rehabilitasi dan konservasi mangrove.
+BUKIT BATU, RIAU, 26 Oktober, 2023: Kelompok Sekat Bakau di Desa Buruk Bakul, Kecamatan Bukit Batu, Riau, Indonesia, dan Yayasan Gambut (YG), dengan dukungan dari Global Environment Centre (GEC) dan Aramco, telah meluncurkan Program Konservasi Mangrove Berbasis Masyarakat untuk melibatkan dan memberdayakan masyarakat lokal dalam melakukan rehabilitasi dan konservasi mangrove.
 
 Untuk memulai program ini, 100 relawan dari Kelompok Sekat Bakau, masyarakat lokal, sekolah, pemerintah daerah, YG, GEC dan Aramco menanam 200 bibit pohon Bakau Minyak (Rhizophora apiculata) di kawasan hutan bakau yang terdegradasi di Desa Buruk Bakul.
 

@@ -1,10 +1,10 @@
 ---
-title: "Inisiatif dan Kolaboratif : Upaya Mengembalikan dan Menjaga Kawasan Pesisir Desa Buruk Bakul dari Kerusakan Lingkungan."
+title: "Kolaborasi Pemulihan Pesisir Buruk Bakul"
 slug: "inisiatif-dan-kolaboratif-upaya-mengembalikan-dan-menjaga-kawasan-pesisir-desa-buruk-bakul-dari-kerusakan-lingkungan"
 date: "2024-01-15T09:08:55"
 modified: "2024-01-16T08:21:44"
 author: "YayasanGambut (YG)"
-summary: "Desa Buruk Bakul adalah desa yang berlokasi di wilayah pesisir Indonesia yang mana secara administrasi masuk kedalam Kabupaten Bengkalis Provinsi Riau. didalam kawasan ekosistem mangrove Desa Buruk Bakul terdapat beberapa spesies tumbuhan yang hidup, anara lain Rhizopora sp, Avic"
+summary: "Masyarakat dan mitra bekerja sama dalam pemulihan kawasan pesisir Desa Buruk Bakul melalui kegiatan konservasi mangrove."
 category: "artikel · Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/01/DJI_0056.jpg"
 imageAlt: "Inisiatif dan Kolaboratif : Upaya Mengembalikan dan Menjaga Kawasan Pesisir Desa Buruk Bakul dari Kerusakan Lingkungan."

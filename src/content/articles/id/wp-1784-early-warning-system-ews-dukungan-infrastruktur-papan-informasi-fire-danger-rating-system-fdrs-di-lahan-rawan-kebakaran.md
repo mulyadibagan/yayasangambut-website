@@ -1,10 +1,10 @@
 ---
-title: "EARLY WARNING SYSTEM (EWS) : DUKUNGAN INFRASTRUKTUR PAPAN INFORMASI FIRE DANGER RATING SYSTEM (FDRS) DI LAHAN RAWAN KEBAKARAN"
+title: "Pemasangan Papan Informasi Bahaya Kebakaran di Lahan Gambut"
 slug: "early-warning-system-ews-dukungan-infrastruktur-papan-informasi-fire-danger-rating-system-fdrs-di-lahan-rawan-kebakaran"
 date: "2025-01-17T06:37:29"
 modified: "2025-01-17T07:10:16"
 author: "YayasanGambut (YG)"
-summary: "FDRS ini bertujuan untuk memantau risiko kebakaran hutan dan lahan gambut serta memberikan peringatan dini melalui indikator real-time dengan menggunakan data ketinggian air di lokasi. Informasi yang ditampilkan di papan FDRS diharapkan dapat berfungsi sebagai Sistem Peringatan D"
+summary: "Papan informasi Sistem Peringkat Bahaya Kebakaran (FDRS) mendukung penyampaian informasi risiko dan kesiapsiagaan masyarakat di lokasi rawan kebakaran."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2025/01/IMG20241213160152-1024x771.jpg"
 imageAlt: "EARLY WARNING SYSTEM (EWS) : DUKUNGAN INFRASTRUKTUR PAPAN INFORMASI FIRE DANGER RATING SYSTEM (FDRS) DI LAHAN RAWAN KEBAKARAN"

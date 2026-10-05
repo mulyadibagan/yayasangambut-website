@@ -1,10 +1,10 @@
 ---
-title: "Adopsi Pohon Salah Satu Langkah Bersama Menuju Riau Hijau"
+title: "Program Adopsi Pohon di Riau"
 slug: "adopsi-pohon-salah-satu-langkah-bersama-menuju-riau-hijau"
 date: "2021-09-24T06:52:06"
 modified: "2021-09-24T06:52:10"
 author: "YayasanGambut (YG)"
-summary: "Pemerintah Provinsi Riau Melalui Dinas Lingkungan Hidup dan Kehutanan (DLHK) menginisiasi program adopsi pohon yang bertujuan agar masyarakat tetap menjaga pohon di wilayah mereka tinggal dan mendapatkan insentif. Program ini menggalang donasi publik yang akan disalurkan langsung"
+summary: "Program adopsi pohon yang diinisiasi DLHK Riau menghubungkan dukungan publik dengan upaya masyarakat menjaga pohon di wilayahnya."
 category: "Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2021/09/Launching-Adopsi-Pohon-1024x517.png"
 imageAlt: "Adopsi Pohon Salah Satu Langkah Bersama Menuju Riau Hijau"

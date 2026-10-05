@@ -1,10 +1,10 @@
 ---
-title: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut: Transformasi Pengetahuan dalam Pengembangan Kopi Liberika"
+title: "Pelatihan Pengembangan Kopi Liberika di Lahan Gambut"
 slug: "optimalisasi-pertanian-berkelanjutan-di-lahan-gambut-transformasi-pengetahuan-dalam-pengembangan-kopi-liberika"
 date: "2024-10-31T03:34:43"
 modified: "2024-10-31T03:36:10"
 author: "YayasanGambut (YG)"
-summary: "Di tengah meningkatnya kebutuhan hasil pertanian dan ancaman perubahan iklim, optimalisasi lahan gambut untuk pertanian berkelanjutan menjadi langkah penting untuk memenuhi kebutuhan sekaligus menjaga kelestarian ekosistem."
+summary: "Peningkatan pengetahuan budidaya kopi Liberika mendukung pengembangan agroforestri dan pengelolaan lahan gambut bersama masyarakat."
 category: "artikel · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/10/WhatsApp-Image-2024-10-30-at-11.31.32-1024x577.jpeg"
 imageAlt: "Optimalisasi Pertanian Berkelanjutan di Lahan Gambut: Transformasi Pengetahuan dalam Pengembangan Kopi Liberika"

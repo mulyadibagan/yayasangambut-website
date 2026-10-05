@@ -2,29 +2,29 @@
 title: Agroforestri dan Penghidupan
 slug: agroforestri-penghidupan
 translationKey: agroforestry-livelihoods
-eyebrow: Ekonomi bentang alam
+eyebrow: Budidaya dan usaha masyarakat
 summary: Mengembangkan agroforestri dan usaha berbasis sumber daya lokal untuk mendukung penghidupan masyarakat dan kelestarian ekosistem.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: id
 status: published
 order: 4
 featured: true
 ---
-## Penghidupan yang selaras dengan ekologi
+## Tujuan
 
-Program ini bertujuan memperkuat penghidupan masyarakat melalui sistem penggunaan lahan dan usaha yang produktif, sesuai dengan kondisi ekosistem, serta realistis terhadap kemampuan kelompok dan peluang pasar.
+Mengembangkan budidaya dan usaha masyarakat yang sesuai dengan kondisi lahan serta peluang pasar. Agroforestri memadukan tanaman berkayu dengan komoditas pertanian untuk mendukung penghidupan dan pemeliharaan fungsi ekosistem.
 
-## Fokus kerja
+## Kegiatan utama
 
-- Perencanaan tapak, komoditas, dan pola tanam secara partisipatif.
-- Praktik budidaya, pemeliharaan, dan pengelolaan tanah serta air tanpa bakar.
-- Pengembangan tanaman serbaguna, hortikultura, hasil hutan bukan kayu, dan pengolahan produk.
-- Penguatan pencatatan usaha, mutu produk, jejaring pasar, dan kapasitas kelompok.
+- Perencanaan komoditas, jarak tanam, dan area budidaya bersama kelompok.
+- Pembibitan, penanaman, pemeliharaan, dan pengelolaan lahan tanpa bakar.
+- Pendampingan panen, pengolahan hasil, dan mutu produk.
+- Pencatatan usaha serta pengembangan pemasaran.
 
-## Cara kerja dan hasil yang dilacak
+## Wilayah dan pelaksanaan
 
-Blok dan area tanam dipetakan, kemudian dihubungkan dengan riwayat penanaman, pemeliharaan, kondisi tanaman, gangguan hama dan penyakit, serta panen. Pemantauan mencakup luas dan sebaran tanam, jenis dan kondisi tanaman, pelaksanaan pemeliharaan, catatan panen, perkembangan produk, dan akses pasar. Data pendapatan rumah tangga tidak dipublikasikan tanpa dasar dan persetujuan yang jelas.
+Di Dayun, pendampingan KUPS Rimba Sejahtera mencakup nanas, tanaman serbaguna, dan hortikultura. Kopi Liberika dikembangkan di wilayah Bengkalis dan Siak, termasuk Temiang, Sepahat, Pematang Duku, dan Tanjung Kuras. Pelatihan pembibitan kopi pada 2026 dilaksanakan di Pedekik dan Dayun.
 
-## Contoh kerja Yayasan Gambut
+## Hasil dan pemantauan
 
-Dukungan yang direncanakan mulai Oktober 2026 bersama KUPS Rimba Sejahtera di Dayun mencakup pengelolaan nanas, tanaman serbaguna, dan hortikultura. Contoh pembelajaran dari lokasi lain meliputi agroforestri pada lahan gambut di Sepahat, Temiang, dan Tanjung Kuras, serta pertanian tanpa bakar dari Penampi.
+Pemantauan mencakup luas dan kondisi tanaman, pemeliharaan, gangguan hama, panen, dan penjualan. Catatan tersebut digunakan untuk menyusun kebutuhan budidaya dan mengevaluasi perkembangan usaha kelompok.

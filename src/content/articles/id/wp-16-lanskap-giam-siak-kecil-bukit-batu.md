@@ -1,10 +1,10 @@
 ---
-title: "Lanskap Giam Siak Kecil Bukit Batu"
+title: "Lanskap Giam Siak Kecil–Bukit Batu"
 slug: "lanskap-giam-siak-kecil-bukit-batu"
 date: "2020-05-11T20:17:18"
 modified: "2020-05-11T20:17:18"
 author: "YayasanGambut (YG)"
-summary: "Lanskap Giam Siak Kecil – Bukit Batu (GSK-BB) terletak antara 101° 6’ 44.96’’ -102° 9’ 55.52’’ BT dan 1° 40’ 19.99’’ LU- 0° 32’ 23.52’’ LU. Lanskap seluas 941.200 hektar ini berada di Kabupaten Bengkalis, Dumai, Kampar, Pekanbaru, Rokan Hilir dan Siak, dengan total 23 kecamatan d"
+summary: "Pengenalan lanskap Giam Siak Kecil–Bukit Batu sebagai wilayah penting bagi ekosistem gambut dan keanekaragaman hayati di Riau."
 category: "Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/05/Lanskap-Giam-Siak-Kecil-Bukit-Batu.jpg"
 imageAlt: "Lanskap Giam Siak Kecil Bukit Batu"

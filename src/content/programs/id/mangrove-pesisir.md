@@ -2,30 +2,29 @@
 title: Mangrove dan Pesisir
 slug: mangrove-pesisir
 translationKey: mangroves-coasts
-eyebrow: Pesisir tangguh
+eyebrow: Pemulihan pesisir
 summary: Memulihkan mangrove bersama masyarakat untuk mendukung perlindungan pesisir, keanekaragaman hayati, dan penghidupan.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: id
 status: published
 order: 1
 featured: true
 ---
-## Menjaga pesisir bersama
+## Tujuan
 
-Program ini bertujuan memulihkan fungsi ekologis mangrove sekaligus memperkuat kemampuan kelompok masyarakat untuk merencanakan, melaksanakan, merawat, dan memantau pemulihan pesisir dalam jangka panjang.
+Memulihkan fungsi mangrove dan mendukung perlindungan pesisir melalui pengelolaan bersama kelompok masyarakat. Kegiatan disesuaikan dengan kondisi tapak, termasuk abrasi, genangan pasang surut, dan kemampuan tumbuh tanaman.
 
-## Fokus kerja
+## Kegiatan utama
 
-- Penilaian kondisi tapak dan penyusunan rencana pemulihan.
-- Pembibitan, penanaman, penyulaman adaptif, dan dukungan terhadap regenerasi alami sesuai kondisi lokasi.
-- Pemeliharaan serta pemantauan vegetasi, garis pantai, dan sedimentasi.
-- Penguatan kelompok pengelola dan penghidupan yang selaras dengan perlindungan mangrove.
+- Penilaian kondisi lokasi dan penyusunan rencana pemulihan.
+- Pembibitan, penanaman, penyulaman, dan pemeliharaan mangrove.
+- Pemantauan pertumbuhan tanaman, sedimentasi, dan perubahan garis pantai.
+- Pendampingan kelompok pengelola dan pengembangan usaha yang mendukung konservasi.
 
-## Cara kerja dan hasil yang dilacak
+## Wilayah dan pelaksanaan
 
-Setiap lokasi dipetakan dan didokumentasikan berdasarkan kondisi awal, jenis tindakan, waktu pelaksanaan, dan penanggung jawab. Pemantauan mencakup lokasi dan luas area intervensi, jenis dan jumlah bibit, kelangsungan hidup dan pertumbuhan tanaman, kondisi vegetasi, perubahan garis pantai atau sedimentasi apabila datanya tersedia, serta partisipasi dan kesiapan kelompok.
+Program dilaksanakan di Buruk Bakul, Kelapa Pati, dan Sepahat di Kabupaten Bengkalis, serta Tanjung Kuras di Kabupaten Siak. Penanaman mangrove juga dilakukan bersama masyarakat di Teluk Piyai Pesisir, Kabupaten Rokan Hilir. Kelompok setempat terlibat dalam pembibitan, pemeliharaan, dan pemantauan.
 
-## Contoh kerja Yayasan Gambut
+## Hasil dan pemantauan
 
-Program konservasi mangrove berbasis masyarakat dilaksanakan di Buruk Bakul, Kelapa Pati, dan Sepahat di Kabupaten Bengkalis, serta Tanjung Kuras di Kabupaten Siak. Kegiatannya mencakup rumah bibit masyarakat, penanaman dan pemeliharaan, pemantauan berkala, penyulaman adaptif, dan perlindungan pantai sesuai kondisi tapak.
-
+Capaian dicatat berdasarkan lokasi, luas penanaman, jumlah dan jenis bibit, serta keterlibatan masyarakat. Pemantauan tanaman digunakan untuk menilai kelangsungan hidup dan pertumbuhannya. Jumlah bibit ditanam dan jumlah tanaman hidup disajikan secara terpisah.

@@ -1,10 +1,10 @@
 ---
-title: "Keberlanjutan pengelolaan dan pemanfaatan lahan gambut melalui agroforestri kopi : Pendekatan Holistik untuk pertanian berkelanjutan.( Desa Temiang, Desa Sepahat – Kabupaten Bengkalis dan Kampung Tanjung Kuras- Kabupaten Siak)"
+title: "Agroforestri Kopi di Temiang, Sepahat, dan Tanjung Kuras"
 slug: "keberlanjutan-pengelolaan-dan-pemanfaatan-lahan-gambut-melalui-agroforestri-kopi-pendekatan-holistik-untuk-pertanian-berkelanjutan-desa-temiang-desa-sepahat-kabupaten-bengkalis-dan-kampung-tanj"
 date: "2024-01-05T04:29:39"
 modified: "2024-01-05T04:31:52"
 author: "YayasanGambut (YG)"
-summary: "Pada umumnya, praktik agroforestri di lahan gambut memiliki tantangan tersendiri. Lahan gambut cenderung memiliki kandungan air yang tinggi dan kadar asam yang tinggi pula, sehingga pengelolaannya memerlukan pendekatan khusus untuk menjaga kesuburan tanah dan meminimalkan risiko"
+summary: "Agroforestri kopi dikembangkan bersama masyarakat di Bengkalis dan Siak untuk mendukung pengelolaan lahan gambut serta penghidupan."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/01/IMG-20240105-WA0023-1024x771.jpg"
 imageAlt: "Keberlanjutan pengelolaan dan pemanfaatan lahan gambut melalui agroforestri kopi : Pendekatan Holistik untuk pertanian berkelanjutan.( Desa Temiang, Desa Sepahat – Kabupaten Bengkalis dan Kampung Tanjung Kuras- Kabupaten Siak)"

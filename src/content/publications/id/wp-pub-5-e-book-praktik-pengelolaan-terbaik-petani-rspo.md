@@ -1,5 +1,5 @@
 ---
-title: "e-book Praktik Pengelolaan Terbaik Petani RSPO"
+title: "Praktik Pengelolaan Terbaik Petani RSPO"
 slug: "e-book-praktik-pengelolaan-terbaik-petani-rspo"
 year: 2024
 category: "Panduan"
@@ -13,4 +13,4 @@ featured: false
 sourceUrl: "https://yayasangambut.org/dokumen/"
 legacy: true
 ---
-Dokumen ini merupakan bagian dari arsip publikasi resmi Yayasan Gambut.
+Dokumen lengkap tersedia melalui tautan PDF di bawah.

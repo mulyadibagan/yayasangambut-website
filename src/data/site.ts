@@ -12,6 +12,18 @@ export const routeMap = {
 } as const;
 
 export const pagePairs: Record<string, string> = {
+  '/': '/en/',
+  '/id/publikasi/laporan-tahun-2024/': '/en/publications/annual-report-2024/', '/en/publications/annual-report-2024/': '/id/publikasi/laporan-tahun-2024/',
+  '/id/publikasi/panduan-pengelolaan-lahan-gambut-berkelanjutan-berbasis-masyarakat/': '/en/publications/community-peatland-management-guide/', '/en/publications/community-peatland-management-guide/': '/id/publikasi/panduan-pengelolaan-lahan-gambut-berkelanjutan-berbasis-masyarakat/',
+  '/id/publikasi/pertanian-lahan-gambut-tanpa-bakar-oleh-masyarakat/': '/en/publications/community-zero-burning-agriculture/', '/en/publications/community-zero-burning-agriculture/': '/id/publikasi/pertanian-lahan-gambut-tanpa-bakar-oleh-masyarakat/',
+  '/id/publikasi/laporan-tahun-2023/': '/en/publications/annual-report-2023/', '/en/publications/annual-report-2023/': '/id/publikasi/laporan-tahun-2023/',
+  '/id/publikasi/kopi-gambut-dan-model-restorasi-berbasis-masyarakat/': '/en/publications/peatland-coffee-community-restoration/', '/en/publications/peatland-coffee-community-restoration/': '/id/publikasi/kopi-gambut-dan-model-restorasi-berbasis-masyarakat/',
+  '/id/publikasi/laporan-tahun-2022/': '/en/publications/annual-report-2022/', '/en/publications/annual-report-2022/': '/id/publikasi/laporan-tahun-2022/',
+  '/id/publikasi/e-book-praktik-pengelolaan-terbaik-petani-rspo/': '/en/publications/rspo-smallholder-best-management-practices/', '/en/publications/rspo-smallholder-best-management-practices/': '/id/publikasi/e-book-praktik-pengelolaan-terbaik-petani-rspo/',
+  '/id/publikasi/laporan-tahun-2025/': '/en/publications/annual-report-2025/', '/en/publications/annual-report-2025/': '/id/publikasi/laporan-tahun-2025/',
+  '/id/cerita/pelatihan-pembibitan-kopi-pedekik-2026/': '/en/field-stories/coffee-nursery-training-pedekik-2026/', '/en/field-stories/coffee-nursery-training-pedekik-2026/': '/id/cerita/pelatihan-pembibitan-kopi-pedekik-2026/',
+  '/id/cerita/pelatihan-pembibitan-kopi-dayun-2026/': '/en/field-stories/coffee-nursery-training-dayun-2026/', '/en/field-stories/coffee-nursery-training-dayun-2026/': '/id/cerita/pelatihan-pembibitan-kopi-dayun-2026/',
+  '/id/cerita/sekat-kanal-temiang-september-2026/': '/en/field-stories/canal-block-temiang-september-2026/', '/en/field-stories/canal-block-temiang-september-2026/': '/id/cerita/sekat-kanal-temiang-september-2026/',
   '/id/mitra/': '/en/partners/', '/en/partners/': '/id/mitra/',
   '/id/': '/en/', '/en/': '/id/', '/id/tentang-kami/': '/en/about/', '/en/about/': '/id/tentang-kami/',
   '/id/program/': '/en/programs/', '/en/programs/': '/id/program/', '/id/lokasi-kerja/': '/en/where-we-work/', '/en/where-we-work/': '/id/lokasi-kerja/',
@@ -28,13 +40,13 @@ export const pagePairs: Record<string, string> = {
 
 export const copy = {
   id: {
-    nav: ['Tentang Kami', 'Program', 'Lokasi Kerja', 'Dampak', 'Cerita Lapangan', 'Publikasi'],
+    nav: ['Tentang Kami', 'Program', 'Wilayah Kerja', 'Dampak', 'Cerita Lapangan', 'Publikasi'],
     heroKicker: 'Pengelolaan sumber daya alam berbasis kemitraan', heroTitle: 'Bersama masyarakat menjaga gambut, hutan, dan pesisir Indonesia.',
     heroText: 'Yayasan Gambut mendukung pengelolaan sumber daya alam lahan basah dan ekosistem lainnya melalui kemitraan strategis dengan masyarakat, pemerintah, akademisi, dan sektor swasta.',
     seePrograms: 'Jelajahi Program', exploreWebgis: 'Buka YG GeoPortal', impactEyebrow: 'Dampak berbasis bukti', impactTitle: 'Aksi lapangan yang dapat ditelusuri.',
-    programEyebrow: 'Program utama', programTitle: 'Satu bentang alam, lima jalur kerja yang saling terhubung.', locationEyebrow: 'Lokasi kerja', locationTitle: 'Berakar di Riau, belajar dari setiap tapak.',
+    programEyebrow: 'Program utama', programTitle: 'Lima Bidang Program', locationEyebrow: 'Lokasi kerja', locationTitle: 'Wilayah Kerja di Riau',
     locationText: 'Kerja yang dipublikasikan mencakup ekosistem gambut, hutan, dan pesisir di sejumlah desa di Riau. Data spasial lengkap tetap tersedia melalui YG GeoPortal.',
-    storyEyebrow: 'Cerita terbaru', storyTitle: 'Suara, praktik, dan pembelajaran dari lapangan.', publicationEyebrow: 'Publikasi terbaru', publicationTitle: 'Pengetahuan untuk dipakai bersama.',
+    storyEyebrow: 'Cerita terbaru', storyTitle: 'Kegiatan dan Cerita Lapangan', publicationEyebrow: 'Publikasi terbaru', publicationTitle: 'Laporan dan Panduan',
     dataTitle: 'Memetakan aksi. Merekam perubahan.', dataText: 'YG GeoPortal adalah ruang khusus untuk data spasial, pemantauan, dasbor, dan analisis. Situs ini menautkan ke sana tanpa memuat aplikasi GIS penuh.',
     partners: 'Bekerja melalui kemitraan', partnersText: 'Kolaborasi dibangun bersama komunitas, pemerintah, akademisi, organisasi masyarakat sipil, dan mitra pembangunan.',
     temporary: 'DATA PUBLIK · 28 SEP 2026', latest: 'Lihat semua', read: 'Baca cerita', view: 'Lihat publikasi',
@@ -44,9 +56,9 @@ export const copy = {
     heroKicker: 'Partnership-based natural resource management', heroTitle: 'Working with communities to protect Indonesia’s peatlands, forests, and coasts.',
     heroText: 'Yayasan Gambut supports the sustainable management of wetlands and other ecosystems through strategic partnerships with communities, government, academia, and the private sector.',
     seePrograms: 'Explore programs', exploreWebgis: 'Open YG GeoPortal', impactEyebrow: 'Evidence-led impact', impactTitle: 'Field action you can trace.',
-    programEyebrow: 'Core programs', programTitle: 'One landscape, five connected ways of working.', locationEyebrow: 'Where we work', locationTitle: 'Rooted in Riau, learning from every site.',
+    programEyebrow: 'Core programs', programTitle: 'Five Program Areas', locationEyebrow: 'Where we work', locationTitle: 'Where We Work in Riau',
     locationText: 'Published work spans peatland, forest, and coastal ecosystems across villages in Riau. Complete spatial data remains available through the YG GeoPortal.',
-    storyEyebrow: 'Latest stories', storyTitle: 'Voices, practice, and lessons from the field.', publicationEyebrow: 'Latest publications', publicationTitle: 'Knowledge made to be shared.',
+    storyEyebrow: 'Latest stories', storyTitle: 'Activities and Field Stories', publicationEyebrow: 'Latest publications', publicationTitle: 'Reports and Guides',
     dataTitle: 'Mapping action. Recording change.', dataText: 'The YG GeoPortal is the dedicated space for spatial data, monitoring, dashboards, and analysis. This website links there without embedding the full GIS application.',
     partners: 'Working through partnership', partnersText: 'Collaboration brings together communities, government, academia, civil society, and development partners.',
     temporary: 'PUBLIC DATA · 28 SEP 2026', latest: 'View all', read: 'Read story', view: 'View publication',
@@ -60,28 +72,6 @@ export const organisation = {
   pekanbaruOffice: 'Jalan Gulama No. 8 RT 01 RW 09, Kelurahan Tangkerang Barat, Kecamatan Marpoyan Damai, Kota Pekanbaru 28282',
   facebook: 'https://www.facebook.com/YayasanGambut', linkedin: 'https://www.linkedin.com/company/yayasangambut/', instagram: 'https://www.instagram.com/yayasangambut/', youtube: 'https://www.youtube.com/@YayasanGambut',
 };
-
-export const impactSnapshot = {
-  reviewedAt: '28 September 2026',
-  sourceGeneratedAt: '28 September 2026, 10.44 WIB',
-  id: [
-    { value: '173', label: 'objek program terpetakan', note: 'Objek dalam snapshot basis data publik YG GeoPortal.', href: 'https://webgisyg.id/webgis.html' },
-    { value: '77', label: 'laporan lapangan terpublikasi', note: 'Laporan kegiatan dan pemantauan yang tersedia dalam snapshot publik.', href: 'https://webgisyg.id/monitoring.html' },
-    { value: '40', label: 'taksa atau jenis terdokumentasi', note: 'Baseline biodiversitas mangrove: 29 flora dan 11 fauna atau biota.', href: 'https://webgisyg.id/biodiversity.html' },
-  ],
-  en: [
-    { value: '173', label: 'mapped program objects', note: 'Objects in the YG GeoPortal public database snapshot.', href: 'https://webgisyg.id/webgis.html' },
-    { value: '77', label: 'published field reports', note: 'Activity and monitoring reports available in the public snapshot.', href: 'https://webgisyg.id/monitoring.html' },
-    { value: '40', label: 'documented taxa or species', note: 'Mangrove biodiversity baseline: 29 flora and 11 fauna or biota.', href: 'https://webgisyg.id/biodiversity.html' },
-  ],
-} as const;
-
-export const legacyProjects = [
-  { year: 2020, id: 'Pengelolaan gambut berkelanjutan di desa penyangga Giam Siak Kecil dan dukungan bagi petani gambut terpadu di KHG Pulau Bengkalis', en: 'Sustainable peatland management in Giam Siak Kecil buffer villages and support for integrated peatland farming in the Bengkalis Island Peat Hydrological Unit' },
-  { year: 2020, id: 'Restorasi lahan gambut melalui agroforestri di Desa Sepahat, Kecamatan Bandar Laksamana, Kabupaten Bengkalis', en: 'Peatland restoration through agroforestry in Sepahat Village, Bandar Laksamana District, Bengkalis Regency' },
-  { year: 2020, id: 'Tim teknis kajian Strategi Pengelolaan Gambut ASEAN', en: 'Technical review team for the ASEAN Peatland Management Strategy' },
-  { year: 2021, id: 'Restorasi lahan gambut terdegradasi dan pertanian tanpa bakar di Kabupaten Bengkalis', en: 'Restoration of degraded peatlands and zero-burning agriculture in Bengkalis Regency' },
-] as const;
 
 export const programApproaches = {
   id: [
@@ -101,7 +91,7 @@ export const programApproaches = {
 export const pageContent = {
   id: {
     'tentang-kami': { title: 'Tentang Yayasan Gambut', intro: 'Yayasan Gambut bekerja bersama masyarakat untuk melindungi dan memulihkan gambut, mangrove, hutan, serta bentang alam produktif melalui aksi lapangan, penguatan kapasitas, riset, dan teknologi geospasial.', sections: [
-      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang didirikan pada 24 April 2019 dan berkedudukan di Kota Tangerang Selatan. Dari kantor pusat di Pekanbaru, kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
+      ['Profil', 'Yayasan Gambut adalah organisasi nirlaba Indonesia yang didirikan pada 24 April 2019 dengan kedudukan hukum di Kota Tangerang Selatan. Kantor pusat dan koordinasi program berada di Pekanbaru. Kami menjalankan program mangrove dan pesisir, gambut dan ketahanan kebakaran, perhutanan sosial, agroforestri dan penghidupan, serta data, riset, dan GIS dengan fokus utama di Riau.'],
       ['Visi', 'Mendukung Pengelolaan Sumber Daya Alam Lahan Basah dan Ekosistem Lain yang Berkelanjutan melalui kemitraan strategis dengan berbagai stakeholder dan masyarakat lokal.'],
       ['Misi 01', 'Mempromosikan pengelolaan terpadu keanekaragaman hayati dan sumber daya air alam dengan fokus pada keterlibatan masyarakat dan konservasi keanekaragaman hayati;'],
       ['Misi 02', 'Mempromosikan perlindungan dan pemanfaatan berkelanjutan dari ekosistem termasuk hutan dan lahan basah dengan fokus pada manajemen terpadu untuk keanekaragaman hayati dan perubahan iklim; dan'],
@@ -110,14 +100,14 @@ export const pageContent = {
       ['Legalitas', 'Yayasan Gambut merupakan badan hukum yayasan Indonesia yang didirikan berdasarkan Akta Notaris Nomor 11 tanggal 24 April 2019, dibuat di hadapan Nunik Rudiawati, S.H., M.Kn., dan disahkan melalui Keputusan Menteri Hukum dan Hak Asasi Manusia Republik Indonesia Nomor AHU-0006450.AH.01.04.Tahun 2019 tanggal 25 April 2019.'],
       ['Kemitraan', 'Kami bekerja bersama kelompok masyarakat, pemerintah, perguruan tinggi, organisasi masyarakat sipil, dan sektor swasta. Kemitraan ini menyatukan pengetahuan lokal, keahlian teknis, data, dan sumber daya untuk mendukung pemulihan ekosistem serta penghidupan berkelanjutan.'],
     ]},
-    'lokasi-kerja': { title: 'Lokasi Kerja', intro: 'Kerja Yayasan Gambut berfokus di Provinsi Riau, dari pesisir dan mangrove hingga gambut, perhutanan sosial, agroforestri, dan penghidupan masyarakat.', sections: [
-      ['Kabupaten Bengkalis', 'Buruk Bakul, Kelapa Pati, Sepahat, Temiang, dan Penampi menghubungkan pemulihan mangrove, perlindungan pesisir, pengelolaan gambut, ketahanan kebakaran, serta agroforestri berbasis masyarakat.'],
+    'lokasi-kerja': { title: 'Wilayah Kerja', intro: 'Kerja Yayasan Gambut berfokus di Provinsi Riau, dari pesisir dan mangrove hingga gambut, perhutanan sosial, agroforestri, dan penghidupan masyarakat.', sections: [
+      ['Kabupaten Bengkalis', 'Kegiatan di Bengkalis meliputi pemulihan mangrove di Buruk Bakul, Kelapa Pati, dan Sepahat; pengelolaan gambut dan agroforestri di Temiang dan Pematang Duku; serta pelatihan pembibitan kopi dan pemasangan FDRS di Pedekik. Penampi menjadi lokasi pendampingan pertanian tanpa bakar.'],
       ['Kabupaten Siak', 'Tanjung Kuras dan Dayun menjadi lokasi kerja untuk mangrove dan pesisir, pemulihan gambut, perhutanan sosial, agroforestri, penguatan kelompok, dan pemantauan berbasis data.'],
-      ['Kabupaten Rokan Hilir', 'Kerja dan pembelajaran yang dipublikasikan mencakup Siarang Arang, Teluk Piyai Pesisir, Panipahan Laut, serta Labuhan Tangga, dengan perhatian pada mangrove, gambut, ketahanan kebakaran, dan penghidupan lokal.'],
-      ['Kabupaten Kampar', 'Hutan Adat Ghimbo Pomuan menjadi salah satu lokasi penanaman kopi agroforestri, yang menghubungkan pemulihan ekosistem, penguatan kelembagaan lokal, dan penghidupan.'],
+      ['Kabupaten Rokan Hilir', 'Kegiatan di Siarang Arang, Teluk Piyai Pesisir, Panipahan Laut, dan Labuhan Tangga mencakup pengelolaan hutan dan gambut, penanaman mangrove, pencegahan kebakaran, serta pengembangan usaha masyarakat.'],
+      ['Kabupaten Kampar', 'Di Kampar, Yayasan Gambut mendampingi restorasi Hutan Adat Imbo Putui di Petapahan dan penanaman kopi Liberika di Hutan Adat Ghimbo Pomuan. Kegiatan dilakukan bersama lembaga pengelola hutan adat dan masyarakat setempat.'],
       ['Cakupan yang terus diperbarui', 'Daftar ini menampilkan lokasi terpilih yang telah dipublikasikan, bukan seluruh jangkauan kerja Yayasan Gambut. Peta, objek program, pemantauan, dan informasi spasial terbaru tersedia melalui YG GeoPortal.'],
     ]},
-    dampak: { title: 'Dampak', intro: 'Kami membuka bukti yang dapat ditelusuri—dari objek program dan laporan lapangan hingga perubahan ekosistem yang dipantau dari waktu ke waktu.', sections: [
+    dampak: { title: 'Dampak', intro: 'Capaian restorasi dan pelibatan masyarakat dari data publik YG GeoPortal, dilengkapi kegiatan terbaru di wilayah kerja.', sections: [
       ['Keluaran terverifikasi', 'Penanaman, pelatihan, infrastruktur restorasi, dan objek program dicatat bersama lokasi, waktu, serta dokumentasi yang tersedia. Angka pada halaman ini adalah snapshot bukti publik, bukan akumulasi seluruh kerja Yayasan Gambut.'],
       ['Perubahan yang dipantau', 'Laporan lapangan dan pemantauan berkala membantu menilai perkembangan vegetasi, kondisi hidrologi, risiko kebakaran, pesisir, serta praktik pengelolaan masyarakat.'],
       ['Dampak bentang alam', 'Pemulihan ekosistem dan penghidupan yang tangguh memerlukan waktu. Karena itu, kami membedakan keluaran kegiatan, perubahan jangka menengah, dan dampak ekologis jangka panjang.'],
@@ -130,7 +120,7 @@ export const pageContent = {
   },
   en: {
     about: { title: 'About Yayasan Gambut', intro: 'Yayasan Gambut works with communities to protect and restore peatlands, mangroves, forests, and productive landscapes through field action, capacity strengthening, research, and geospatial technology.', sections: [
-      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established on 24 April 2019 and domiciled in South Tangerang. From our head office in Pekanbaru, we focus primarily on Riau through programs covering mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
+      ['Profile', 'Yayasan Gambut is an Indonesian nonprofit established on 24 April 2019, with its legal domicile in South Tangerang and its head office and program coordination in Pekanbaru. Our work focuses primarily on Riau and covers mangroves and coasts, peatlands and fire resilience, social forestry, agroforestry and livelihoods, and data, research, and GIS.'],
       ['Vision', 'To support the sustainable management of natural resources in wetlands and other ecosystems through strategic partnerships with diverse stakeholders and local communities.'],
       ['Mission 01', 'To promote the integrated management of biodiversity and natural water resources, with a focus on community involvement and biodiversity conservation;'],
       ['Mission 02', 'To promote the protection and sustainable use of ecosystems, including forests and wetlands, with a focus on integrated management for biodiversity and climate change; and'],
@@ -140,13 +130,13 @@ export const pageContent = {
       ['Partnerships', 'We work with community groups, government, universities, civil-society organisations, and the private sector. These partnerships bring together local knowledge, technical expertise, data, and resources to support ecosystem recovery and sustainable livelihoods.'],
     ]},
     'where-we-work': { title: 'Where We Work', intro: 'Yayasan Gambut focuses its work in Riau Province, from coasts and mangroves to peatlands, social forestry, agroforestry, and community livelihoods.', sections: [
-      ['Bengkalis Regency', 'Buruk Bakul, Kelapa Pati, Sepahat, Temiang, and Penampi connect community-based mangrove recovery, coastal protection, peatland management, fire resilience, and agroforestry.'],
+      ['Bengkalis Regency', 'Work in Bengkalis includes mangrove restoration in Buruk Bakul, Kelapa Pati, and Sepahat; peatland management and agroforestry in Temiang and Pematang Duku; and coffee nursery training and FDRS installation in Pedekik. Penampi is a location for zero-burning agriculture support.'],
       ['Siak Regency', 'Tanjung Kuras and Dayun are locations for work on mangroves and coasts, peatland recovery, social forestry, agroforestry, group strengthening, and evidence-based monitoring.'],
-      ['Rokan Hilir Regency', 'Published work and learning include Siarang Arang, Teluk Piyai Pesisir, Panipahan Laut, and Labuhan Tangga, with attention to mangroves, peatlands, fire resilience, and local livelihoods.'],
-      ['Kampar Regency', 'Ghimbo Pomuan Customary Forest is one location for coffee agroforestry planting that connects ecosystem recovery, stronger local institutions, and livelihoods.'],
+      ['Rokan Hilir Regency', 'Activities in Siarang Arang, Teluk Piyai Pesisir, Panipahan Laut, and Labuhan Tangga cover forest and peatland management, mangrove planting, fire prevention, and community enterprise development.'],
+      ['Kampar Regency', 'In Kampar, Yayasan Gambut supports restoration of Imbo Putui Customary Forest in Petapahan and Liberica coffee planting in Ghimbo Pomuan Customary Forest, working with customary forest management institutions and local communities.'],
       ['An evolving footprint', 'This is a selection of published locations, not the full extent of Yayasan Gambut’s work. Current program objects, monitoring, maps, and spatial information are available through the YG GeoPortal.'],
     ]},
-    impact: { title: 'Impact', intro: 'We make evidence traceable—from program objects and field reports to ecosystem change monitored over time.', sections: [
+    impact: { title: 'Impact', intro: 'Restoration and community engagement results from public YG GeoPortal data, with recent activities across our work areas.', sections: [
       ['Verified outputs', 'Planting, training, restoration infrastructure, and program objects are recorded with the available location, date, and documentation. Figures on this page are a snapshot of public evidence, not a cumulative total of all Yayasan Gambut work.'],
       ['Change monitored over time', 'Field reports and periodic monitoring help assess vegetation, hydrology, fire risk, coastal conditions, and community management practices.'],
       ['Landscape impact', 'Ecosystem recovery and resilient livelihoods take time. We therefore distinguish activity outputs, medium-term change, and long-term ecological impact.'],
@@ -158,3 +148,4 @@ export const pageContent = {
     ]},
   },
 } as const;
+

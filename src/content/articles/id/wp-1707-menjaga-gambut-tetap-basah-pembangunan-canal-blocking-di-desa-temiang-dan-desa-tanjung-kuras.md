@@ -1,10 +1,10 @@
 ---
-title: "Menjaga Gambut Tetap Basah: Pembangunan Canal Blocking di Desa Temiang dan Desa Tanjung Kuras"
+title: "Pembangunan Sekat Kanal di Temiang dan Tanjung Kuras"
 slug: "menjaga-gambut-tetap-basah-pembangunan-canal-blocking-di-desa-temiang-dan-desa-tanjung-kuras"
 date: "2024-11-12T10:10:17"
 modified: "2024-11-12T10:10:28"
 author: "YayasanGambut (YG)"
-summary: "Dalam upaya untuk menjaga ekosistem gambut agar tetap sehat dan terlindungi, Yayasan Gambut bersama masyarakat di Desa Temiang, Kabupaten Bengkalis, dan Desa Tanjung Kuras, Kabupaten Siak, telah melakukan pembangunan sekat parit atau canal blocking. Program ini bertujuan untuk me"
+summary: "Masyarakat terlibat dalam pembangunan sekat kanal untuk mendukung pengelolaan air gambut di Temiang dan Tanjung Kuras."
 category: "artikel · Desa Temiang · Kampung Tanjung Kuras"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/11/WhatsApp-Image-2024-11-10-at-13.35.50-1024x576.jpeg"
 imageAlt: "Menjaga Gambut Tetap Basah: Pembangunan Canal Blocking di Desa Temiang dan Desa Tanjung Kuras"

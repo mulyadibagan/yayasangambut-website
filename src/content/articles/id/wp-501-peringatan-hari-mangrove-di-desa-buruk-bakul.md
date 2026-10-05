@@ -1,10 +1,10 @@
 ---
-title: "Peringatan Hari Mangrove di Desa Buruk Bakul"
+title: "Peringatan Hari Mangrove Sedunia di Buruk Bakul"
 slug: "peringatan-hari-mangrove-di-desa-buruk-bakul"
 date: "2022-08-04T09:20:15"
 modified: "2022-08-04T09:21:11"
 author: "YayasanGambut (YG)"
-summary: "Dalam rangka memperingati Hari Mangrove Sedunia, Gubernur Riau, H Syamsuar bersama Bupati Bengkalis Kasmarni melakukan pencanangan penanaman 200.000 bibit Mangrove dan Peluncuran Kelompok Kerja Mangrove Daerah (KKMD) Provinsi Riau, di Kuala Sungai Sekat Bakau, Desa Buruk Bakul, K"
+summary: "Peringatan Hari Mangrove Sedunia di Buruk Bakul mencakup pencanangan penanaman mangrove dan peluncuran Kelompok Kerja Mangrove Daerah Provinsi Riau."
 category: "Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2022/08/IMG_1017-1024x683.jpg"
 imageAlt: "Peringatan Hari Mangrove di Desa Buruk Bakul"

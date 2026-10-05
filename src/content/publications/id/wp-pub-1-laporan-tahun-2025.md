@@ -13,4 +13,5 @@ featured: true
 sourceUrl: "https://yayasangambut.org/dokumen/"
 legacy: true
 ---
-Dokumen ini merupakan bagian dari arsip publikasi resmi Yayasan Gambut.
+Dokumen lengkap tersedia melalui tautan PDF di bawah.
+

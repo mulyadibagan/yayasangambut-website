@@ -1,31 +1,30 @@
 ---
-title: Gambut dan Ketahanan Kebakaran
+title: Gambut dan Pencegahan Kebakaran
 slug: gambut-ketahanan-kebakaran
 translationKey: peatlands-fire-resilience
-eyebrow: Lanskap basah
+eyebrow: Pengelolaan gambut
 summary: Memulihkan ekosistem gambut serta memperkuat pencegahan dan kesiapsiagaan masyarakat menghadapi kebakaran hutan dan lahan.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: id
 status: published
 order: 2
 featured: true
 ---
-## Menjaga gambut tetap basah
+## Tujuan
 
-Program ini bertujuan menurunkan risiko kebakaran hutan dan lahan, menjaga kondisi gambut, serta mendukung pemulihan fungsi hidrologis dan ekologis melalui aksi masyarakat dan koordinasi pada tingkat bentang alam.
+Menjaga tata air gambut dan mengurangi risiko kebakaran hutan dan lahan. Pendampingan menggabungkan pembangunan sarana pengelolaan air, praktik pertanian tanpa bakar, serta kesiapsiagaan masyarakat.
 
-## Fokus kerja
+## Kegiatan utama
 
-- Informasi risiko dan peringatan dini berdasarkan cuaca kebakaran, hotspot, dan pengamatan lapangan.
-- Pencegahan dan kesiapsiagaan masyarakat, termasuk pengelolaan lahan tanpa bakar.
-- Pengelolaan air, pembasahan kembali, dan rehabilitasi yang disesuaikan dengan kondisi tapak.
-- Pemantauan lapangan, pembelajaran lintas desa, dan koordinasi multipihak.
+- Survei kanal dan pembangunan sekat kanal sesuai kondisi lokasi.
+- Pemasangan dan pemanfaatan sistem peringkat bahaya kebakaran (FDRS).
+- Pelatihan pengelolaan lahan tanpa bakar dan pencegahan kebakaran.
+- Pemantauan muka air, kondisi sarana, cuaca, dan titik panas.
 
-## Cara kerja dan hasil yang dilacak
+## Wilayah dan pelaksanaan
 
-Analisis menggabungkan data cuaca kebakaran, hotspot, tutupan lahan, dan laporan lapangan. Hotspot diperlakukan sebagai indikasi yang perlu ditafsirkan dan, bila memungkinkan, diverifikasi—bukan sebagai bukti kebakaran dengan sendirinya. Hasil yang dilacak meliputi tingkat risiko, hasil verifikasi lapangan, tindakan pencegahan dan pemulihan, kondisi sarana pengelolaan air dan peringatan dini, kejadian kebakaran, serta estimasi area terdampak apabila data dan metodologinya memadai.
+Kegiatan meliputi pembangunan sekat kanal dan pemasangan FDRS di wilayah Bengkalis dan Siak, antara lain Temiang, Pematang Duku, Pedekik, Tanjung Kuras, dan Dayun. Pendampingan pertanian tanpa bakar juga dilakukan di Penampi. Jenis kegiatan berbeda menurut kebutuhan setiap lokasi.
 
-## Contoh kerja Yayasan Gambut
+## Hasil dan pemantauan
 
-Contoh inisiatif mencakup pengelolaan lahan tanpa bakar di Penampi, pembangunan sekat kanal dan dukungan sistem peringatan risiko kebakaran di Temiang dan Tanjung Kuras, serta penyediaan informasi cuaca kebakaran dan hotspot melalui YG GeoPortal.
-
+Pemantauan mencakup jumlah dan kondisi sekat kanal serta FDRS, muka air gambut, dan tindakan pencegahan masyarakat. Estimasi pembasahan diberi label tersendiri. Informasi titik panas digunakan sebagai indikasi untuk pemeriksaan lebih lanjut, bukan sebagai konfirmasi kejadian kebakaran.

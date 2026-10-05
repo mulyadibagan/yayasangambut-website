@@ -1,10 +1,10 @@
 ---
-title: "Peningkatan Kapasitas Kelompok Sekat Bakau Untuk Keberlanjutan Rehabilitasi Ekosistem Mangrove Desa Buruk Bakul"
+title: "Pelatihan Pengelolaan Mangrove bagi Kelompok Sekat Bakau"
 slug: "peningkatan-kapasitas-kelompok-sekat-bakau-untuk-keberlanjutan-rehabilitasi-ekosistem-mangrove-desa-buruk-bakul"
 date: "2024-03-08T08:11:09"
 modified: "2024-03-08T08:11:20"
 author: "YayasanGambut (YG)"
-summary: "Kelompok Sekat Bakau merupakan aktor kunci dan menjadi garda terdepan dalam menjaga ekosistem mangrove di Desa Buruk Bakul, seiring kegiatan yang telah berlangsung Yayasan Gambut melalui dukungan GEC dan Aramco Asia Singapore memberikan pelatihan untuk peningkatan kapasitas anggo"
+summary: "Yayasan Gambut, dengan dukungan GEC dan Aramco Asia Singapore, mendampingi peningkatan kapasitas Kelompok Sekat Bakau dalam pengelolaan mangrove di Buruk Bakul."
 category: "artikel · Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/03/IMG_1420-1024x683.jpg"
 imageAlt: "Peningkatan Kapasitas Kelompok Sekat Bakau Untuk Keberlanjutan Rehabilitasi Ekosistem Mangrove Desa Buruk Bakul"
@@ -55,4 +55,4 @@ Proses monitoring mencakup dua hal. Pertama, faktor internal yang meliputi sebar
 
 _Setiap pohon yang ditemukan akan di data dan dicatat oleh peserta yang nantinya akan di analisis_
 
-Kemudian pelatihan dilanjutkan praktik lapangan, peserta di bagi menjadi 2 kelompok yang sebelunya telah menentukan lokasi transek. Dilokasi survei setiap kelompok membuat garis dan jalur seluas 10 x 10 meter, kemudian membagi kembali menjadi 5 x 5 meter. identifikasi di mulai dari mengidentifikasi jenis – jenis vegetasi dan fauna yang ditemukan didalam areal yang telah di tandai, setiap batang pohon yang di temukan kemudian di lakukan pengukuran diameter serta ketinggiannya. Data yang telah diperoleh kemudian akan diolah dengan memanfaatkan Teknologi Informasi & Komunikasi (TIK) yang telah tersedia untuk memudahkan dalam melakukan pengolahan. Pemanfaatan TIK ini merupakan transformasi pengetahuan ke kelompok sekat bakau sebagai bentuk mengikuti perkembangan pada era digital saat ini.
+Kemudian pelatihan dilanjutkan praktik lapangan, peserta di bagi menjadi 2 kelompok yang sebelunya telah menentukan lokasi transek. Dilokasi survei setiap kelompok membuat garis dan jalur seluas 10 x 10 meter, kemudian membagi kembali menjadi 5 x 5 meter. identifikasi di mulai dari mengidentifikasi jenis – jenis vegetasi dan fauna yang ditemukan didalam areal yang telah di tandai, setiap batang pohon yang di temukan kemudian dilakukan pengukuran diameter serta ketinggiannya. Data yang telah diperoleh kemudian akan diolah dengan memanfaatkan Teknologi Informasi & Komunikasi (TIK) yang telah tersedia untuk memudahkan dalam melakukan pengolahan. Pemanfaatan TIK ini merupakan transformasi pengetahuan ke kelompok sekat bakau sebagai bentuk mengikuti perkembangan pada era digital saat ini.

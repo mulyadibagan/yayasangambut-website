@@ -1,10 +1,10 @@
 ---
-title: "Project Visit : Keberlanjutan Upaya Pemulihan Kawasan Pesisir Desa Buruk Bakul"
+title: "Kunjungan Pemantauan Program Mangrove di Buruk Bakul"
 slug: "project-visit-keberlanjutan-upaya-pemulihan-kawasan-pesisir-desa-buruk-bakul"
 date: "2024-06-11T08:54:26"
 modified: "2024-06-13T07:24:57"
 author: "YayasanGambut (YG)"
-summary: "Global Environment Center (GEC) bekerja sama dengan Yayasan Gambut (YG), Komunitas Sekat Bakau dan pemerintah daerah Kabupaten Bengkalis, provinsi Riau, Indonesia, disponsori oleh Aramco Asia Singapura (AAS), melaksanakan implementasi Mangrove Berbasis Komunitas Aramco Perlindung"
+summary: "Kunjungan program meninjau kegiatan konservasi mangrove berbasis masyarakat di Buruk Bakul bersama Yayasan Gambut, GEC, Kelompok Sekat Bakau, dan mitra."
 category: "artikel · Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/06/WhatsApp-Image-2024-05-27-at-22.44.54_7522ccc5-1024x576.jpg"
 imageAlt: "Project Visit : Keberlanjutan Upaya Pemulihan Kawasan Pesisir Desa Buruk Bakul"
@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/project-visit-keberlanjutan-upaya-pemuliha
 legacy: true
 ---
 
-Global Environment Center (GEC) bekerja sama dengan Yayasan Gambut (YG), Komunitas Sekat Bakau dan pemerintah daerah Kabupaten Bengkalis, provinsi Riau, Indonesia, disponsori oleh Aramco Asia Singapura (AAS), melaksanakan implementasi Mangrove Berbasis Komunitas Aramco Perlindungan dan Penanaman di Desa Buruk Bakul. Proyek ini bertujuan untuk berkontribusi pada konservasi dan rehabilitasi Ekosistem Mangrove Buruk Bakul selama periode 12 bulan dari Juni 2023 hingga Mei 2024.
+Global Environment Centre (GEC) bekerja sama dengan Yayasan Gambut (YG), Komunitas Sekat Bakau dan pemerintah daerah Kabupaten Bengkalis, provinsi Riau, Indonesia, disponsori oleh Aramco Asia Singapura (AAS), melaksanakan implementasi Mangrove Berbasis Komunitas Aramco Perlindungan dan Penanaman di Desa Buruk Bakul. Proyek ini bertujuan untuk berkontribusi pada konservasi dan rehabilitasi Ekosistem Mangrove Buruk Bakul selama periode 12 bulan dari Juni 2023 hingga Mei 2024.
 
 ![](https://yayasangambut.org/wp-content/uploads/2024/06/WhatsApp-Image-2024-05-27-at-22.37.15_a36146d9-1024x771.jpg)
 

@@ -1,10 +1,10 @@
 ---
-title: "Pemanfaatan Teknologi Informasi dan Komunikasi bagi Kelompok Mayarakat dalam Pendistribusian Informasi"
+title: "Pelatihan Teknologi Informasi bagi Kelompok Masyarakat"
 slug: "pemanfaatan-teknologi-informasi-dan-komunikasi-bagi-kelompok-mayarakat-dalam-pendistribusian-informasi"
 date: "2024-06-08T00:09:24"
 modified: "2024-06-08T00:15:13"
 author: "YayasanGambut (YG)"
-summary: "Di era digital ini, Teknologi Informasi dan Komunikasi (TIK) telah menjadi bagian tak terpisahkan dari kehidupan masyarakat. Namun, di desa-desa, akses dan pemanfaatan TIK masih tertinggal dibandingkan dengan di perkotaan. Hal ini menyebabkan kesenjangan digital yang berakibat pa"
+summary: "Pemanfaatan teknologi informasi dan komunikasi membantu kelompok masyarakat mendokumentasikan kegiatan dan membagikan informasi."
 category: "artikel · Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/06/IMG-20240608-WA0068-1024x768.jpg"
 imageAlt: "Pemanfaatan Teknologi Informasi dan Komunikasi bagi Kelompok Mayarakat dalam Pendistribusian Informasi"

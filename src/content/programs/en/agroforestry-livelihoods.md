@@ -2,29 +2,29 @@
 title: Agroforestry and Livelihoods
 slug: agroforestry-livelihoods
 translationKey: agroforestry-livelihoods
-eyebrow: Landscape economies
+eyebrow: Cultivation and community enterprises
 summary: Developing agroforestry systems and locally rooted enterprises that maintain ecological functions and strengthen community livelihoods.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: en
 status: published
 order: 4
 featured: true
 ---
-## Livelihoods aligned with ecology
+## Purpose
 
-This program aims to strengthen community livelihoods through productive land-use systems and enterprises that fit local ecosystems, group capacity, and realistic market opportunities.
+Develop community cultivation systems and enterprises suited to local land conditions and market opportunities. Agroforestry combines trees with agricultural crops to support livelihoods and maintain ecosystem functions.
 
-## Focus areas
+## Main activities
 
-- Participatory site, commodity, and planting-system planning.
-- Zero-burning cultivation, maintenance, and soil and water management.
-- Multipurpose trees, horticulture, non-timber forest products, and product development.
-- Stronger business records, product quality, market networks, and group capacity.
+- Joint planning of commodities, planting distances, and cultivation areas.
+- Nurseries, planting, maintenance, and zero-burning land management.
+- Support for harvesting, processing, and product quality.
+- Business record keeping and market development.
 
-## How we work and what we track
+## Locations and implementation
 
-Management blocks and planting areas are mapped and connected to planting histories, maintenance records, plant condition, pest and disease observations, and harvests. Monitoring covers the extent and distribution of planting, crop types and condition, maintenance implementation, harvest records, product development, and market access. Household-income data are not published without a clear basis and appropriate consent.
+Support for the Rimba Sejahtera KUPS in Dayun covers pineapple, multipurpose trees, and horticulture. Liberica coffee is developed across Bengkalis and Siak, including Temiang, Sepahat, Pematang Duku, and Tanjung Kuras. Coffee nursery training in 2026 took place in Pedekik and Dayun.
 
-## Examples from Yayasan Gambut
+## Results and monitoring
 
-Support planned from October 2026 with the Rimba Sejahtera group in Dayun includes pineapple, multipurpose tree, and horticulture management. Learning from other locations includes peatland agroforestry in Sepahat, Temiang, and Tanjung Kuras, as well as zero-burning farming in Penampi.
+Monitoring covers crop areas and condition, maintenance, pest damage, harvests, and sales. These records inform cultivation needs and evaluation of group enterprises.

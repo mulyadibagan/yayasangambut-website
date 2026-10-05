@@ -2,30 +2,29 @@
 title: Data, Research, and GIS
 slug: data-research-gis
 translationKey: data-research-gis
-eyebrow: Evidence for action
+eyebrow: Mapping and monitoring
 summary: Turning field data, research, and spatial analysis into usable information for planning, monitoring, and decision-making.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: en
 status: published
 order: 5
 featured: true
 ---
-## Mapping action, documenting change
+## Purpose
 
-This program aims to ensure that each action is supported by reliable, traceable, and fit-for-purpose evidence while protecting sensitive operational and partner data.
+Provide information for program planning and results monitoring. Field data, research, and geographic information systems (GIS) help communities and partners understand site conditions and activity progress.
 
-## Focus areas
+## Main activities
 
-- Field-data standards, unique object identifiers, location information, and metadata.
-- Validation, duplicate detection, source documentation, and quality control.
-- Geographic information systems, mapping, monitoring, and visualisation.
-- Collaborative research, knowledge products, and public information.
+- Mapping program locations, planting areas, and restoration infrastructure.
+- Collecting and reviewing activity and field-monitoring data.
+- Analysing land cover, coasts, and indications of fire risk.
+- Producing maps, reports, and publications with research partners.
 
-## How we work and what we track
+## Locations and implementation
 
-Each dataset records its source, date, coverage, method, and limitations. Information is published only after review and validation, while public and internal access are separated according to sensitivity. System quality is tracked through completeness, timeliness, validation status, spatial coverage, revision history, and use in program decisions.
+Data is gathered across Yayasan Gambut’s work areas in Riau. The YG GeoPortal provides program maps, field monitoring, village profiles, biodiversity information, and weather and hotspot information.
 
-## Examples from Yayasan Gambut
+## Results and monitoring
 
-The YG GeoPortal presents program-intervention maps, mangrove monitoring, profiles of working areas, a social forestry directory, and fire-weather and hotspot information. Analyses containing sensitive operational or partner data remain within controlled internal access.
-
+Maps and reports connect locations, activities, dates, and documentation. Results on the Yayasan Gambut website follow the GeoPortal’s public data. Updates and data review help keep information consistent with field records.

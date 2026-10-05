@@ -5,3 +5,8 @@
 
 /* Shared readable rhythm, including narrow screens and long imported titles. */
 .container>*{min-width:0}h1,h2,h3,h4{overflow-wrap:break-word}h4{font-weight:750}.text-link{min-height:2.5rem;align-items:center}.section{padding:clamp(2.5rem,4vw,4rem) 0}.eyebrow{letter-spacing:.1em}.button{gap:.4rem}.notice{letter-spacing:.06em}
+
+
+/* Editorial readability across translated pages. */
+.hero h1{overflow-wrap:normal}.program-card p{font-size:.95rem}.impact-card dt,.impact-card .metric-label,.impact-card details p{font-size:.875rem}.partner-grid .partner-fullname{font-size:.875rem}.story-location{font-size:.9rem}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}

@@ -1,9 +1,11 @@
 import { getCollection } from 'astro:content';
+import { pagePairs } from '../data/site';
 export const prerender = true;
 export async function GET() {
   const base = 'https://yayasangambut.org';
   const staticPairs = [
     ['/id/', '/en/'],
+    ['/id/mitra/', '/en/partners/'],
     ['/id/tentang-kami/', '/en/about/'],
     ['/id/program/', '/en/programs/'],
     ['/id/lokasi-kerja/', '/en/where-we-work/'],
@@ -32,7 +34,7 @@ export async function GET() {
     const enPath = entry.data.language === 'en' ? path : counterpartPath;
     return `<url><loc>${base}${path}</loc>${alternates(idPath,enPath)}</url>`;
   });
-  const otherUrls = content.filter(entry => entry.collection !== 'programs').map(entry => `<url><loc>${base}${routeFor(entry)}</loc></url>`);
+  const otherUrls = content.filter(entry => entry.collection !== 'programs').map(entry => { const path=routeFor(entry); const pair=pagePairs[path]; return `<url><loc>${base}${path}</loc>${pair?alternates(entry.data.language==='id'?path:pair,entry.data.language==='en'?path:pair):''}</url>`; });
   const urls = [...staticUrls, ...programUrls, ...otherUrls].join('');
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls}</urlset>`, { headers: { 'Content-Type': 'application/xml' } });
 }

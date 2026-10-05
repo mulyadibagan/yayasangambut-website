@@ -1,10 +1,10 @@
 ---
-title: "Petani Desa Penampi Giat Mengkampanyekan Pengelolaan Lahan Tanpa Bakar"
+title: "Praktik Pengelolaan Lahan Tanpa Bakar di Penampi"
 slug: "petani-desa-penampi-giat-mengkampanyekan-pengelolaan-lahan-tanpa-bakar"
 date: "2020-11-24T12:18:14"
 modified: "2020-11-24T12:18:15"
 author: "YayasanGambut (YG)"
-summary: "Pak Rudiyanto (40) merupakan salah satu petani yang berada di Desa Penampi Kecamatan Bengkalis, awalnya pada tahun 2016 membuka lahan pertanian nenas dengan cara membakar karna saat itu masih minimnya sosialisasi terkait dampak dari kebakaran lahan gambut. kemudian setelah mendap"
+summary: "Pengalaman petani di Penampi memperlihatkan peralihan menuju pengelolaan lahan tanpa bakar dan penyebaran praktik tersebut kepada masyarakat."
 category: "Berita · Desa Penampi"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/11/FDRS-Penampi.jpeg"
 imageAlt: "Petani Desa Penampi Giat Mengkampanyekan Pengelolaan Lahan Tanpa Bakar"
@@ -33,7 +33,7 @@ Yayasan Gambut kemudian merasa semangat yang ada dalam pak rudi mesti di tularka
 
 **Terapkan F1 Mbio**
 
-Ada trik khusus bagi bang rudi dan rekannya sebelum menanam beliau menerapkan F1 Mbio hasil racikannya sendiri, dimana bahan-bahan yang pak rudi gunakan mudah di dapat di sekitar pulau bengkalis yang di percaya mampu mempercepat penguraian bahan organik dan mengurangi keasaman tanah yang menjadi masalah di lahan gambut.
+Ada trik khusus bagi bang rudi dan rekannya sebelum menanam beliau menerapkan F1 Mbio hasil racikannya sendiri, dimana bahan-bahan yang pak rudigunakan mudah di dapat di sekitar pulau bengkalis yang di percaya mampu mempercepat penguraian bahan organik dan mengurangi keasaman tanah yang menjadi masalah di lahan gambut.
 
 “Siapkan air 5 liter, dedak padi 1 kg, gula pasir 1 kg, Nenas 1 butir, udang 1/2 kg, tepung sagu sekitar 2 ons, kemudian semua bahan tersebut dimasak dan setelah dingin campurkan kotoran ayam kampung sekitar 1 sendok yang di ambil sebelum matahari terbit, kemudian di fermentasikan selama 1 hari 1 malam” bahan – bahan yang di sebutkan pak rudi saat di hubungi via telfon oleh Yayasan Gambut, Selasa (24/11/2020)
 

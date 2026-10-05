@@ -39,7 +39,7 @@ Dalam perjalanan kehidupan masyarakat riau, keberadaan tumbuhan nipah memiliki p
 
 _Daun Nipah dimanfaatkan sebagai atap bangunan_
 
-Pemanfaatan nipah sebagai sumber pangan telah di lakukan dari zaman dahulu dengan pengolahan secara tradisional, meskipun belum dimanfaatkan secara optimal, secara pengetahuan lokal dimasyarakat,  olahan dari buah nipah dapat dibuat menjadi beberapa produk seperti tepung, dodol, manisan buah, dan dari air nira sadapan dapat dibuat selai, gula cair dan permen.
+Pemanfaatan nipah sebagai sumber pangan telah dilakukan dari zaman dahulu dengan pengolahan secara tradisional, meskipun belum dimanfaatkan secara optimal, secara pengetahuan lokal dimasyarakat,  olahan dari buah nipah dapat dibuat menjadi beberapa produk seperti tepung, dodol, manisan buah, dan dari air nira sadapan dapat dibuat selai, gula cair dan permen.
 
 **Melirik Potensi gula nipah dan Peningkatan Kapasitas Kelompok Konservasi Mangrove**
 
@@ -86,3 +86,4 @@ Pelatihan ini menandai langkah penting dalam memperkenalkan mata pencaharian alt
 *Kubuai la kau tematu anak yatim nak menyusu”*
 
 (syair saat mengayunkan buah nipah)
+

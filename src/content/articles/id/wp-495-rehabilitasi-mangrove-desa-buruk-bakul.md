@@ -1,10 +1,10 @@
 ---
-title: "Rehabilitasi Mangrove Desa Buruk Bakul"
+title: "Rehabilitasi Mangrove di Buruk Bakul"
 slug: "rehabilitasi-mangrove-desa-buruk-bakul"
 date: "2022-07-15T09:12:43"
 modified: "2022-07-21T02:30:20"
 author: "YayasanGambut (YG)"
-summary: "Yayasan Gambut mendukung rehabilitasi mangrove di desa Buruk Bakul kecamatan Bukit Batu sebanyak 1000 bibit mangrove Rhizopora Apiculata pada Januari 2022, Komunitas Sekat Bakau memulai inisiatif sejak tahun 2019, hingga saat ini total bibit mangrove telah ditanam di sepanjang De"
+summary: "Yayasan Gambut mendukung penanaman 1.000 bibit mangrove di Buruk Bakul pada Januari 2022 bersama Kelompok Sekat Bakau."
 category: "Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2022/07/1657861600796-1024x682.jpg"
 imageAlt: "Rehabilitasi Mangrove Desa Buruk Bakul"

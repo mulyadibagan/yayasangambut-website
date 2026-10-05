@@ -1,10 +1,10 @@
 ---
-title: "Pertanian Zero Burning Kelompok Perempuan Desa Temiang"
+title: "Pertanian Tanpa Bakar oleh Kelompok Perempuan Temiang"
 slug: "pertanian-zero-burning-kelompok-perempuan-desa-temiang"
 date: "2020-11-30T01:45:17"
 modified: "2020-11-30T02:01:12"
 author: "YayasanGambut (YG)"
-summary: "Kelompok Tani Makmur Jaya yang berada di Desa Temiang Kecamatan Bandar Laksamana beranggotakan 11 orang perempuan berdiskusi dengan Yayasan Gambut pada Jumat, (27/11/2020). Dalam diskusi tersebut kelompok perempuan memiliki kesepakatan untuk mengembangkan pertanian zero burning,"
+summary: "Kelompok Tani Wanita Makmur Jaya mengembangkan budidaya jahe merah tanpa bakar di Desa Temiang dengan dukungan bibit dari Yayasan Gambut."
 category: "Berita · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/11/WhatsApp-Image-2020-11-30-at-9.31.19-AM-1024x576.jpeg"
 imageAlt: "Pertanian Zero Burning Kelompok Perempuan Desa Temiang"
@@ -29,7 +29,7 @@ Saat ini kelompok sudah mulai menanam 1000 bibit Jahe Merah di Dusun 2 Merambai,
 
 _Penanaman Jahe Merah media tanah gambut dalam karung_
 
-“Kami sangat membutuhkan selang air serta pelatihan – pelatihan untuk meningkatkan kapasitas kami, beberapa bulan lalu BRG telah memberikan pelatihan kepada kami tentang bagaimana cara membudidayakan jahe merah yang baik, salah satu unsur terpenting adalah penyiraman yang rutin di lakukan sehingga kami membutuhkan selang air” sebut salah satu kelompok Perempuan kepada Yayasan Gambut saat diskusi
+“Kami sangat membutuhkan selang air serta pelatihan – pelatihan untuk meningkatkan kapasitas kami, beberapa bulan lalu BRG telah memberikan pelatihan kepada kami tentang bagaimana cara membudidayakan jahe merah yang baik, salah satu unsur terpenting adalah penyiraman yang rutin dilakukan sehingga kami membutuhkan selang air” sebut salah satu kelompok Perempuan kepada Yayasan Gambut saat diskusi
 
 Kedepannya mereka juga akan mengembangkan pembibitan tanaman kopi liberika, yang saat ini Yayasan Gambut sedang mengusahakan mengalokasikan 1000 benih Kopi di datangkan dari Kabupaten Kepulauan Meranti yang memang sudah terbukti adaptif dan produktif tumbuh di lahan gambut.
 

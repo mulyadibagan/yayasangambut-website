@@ -1,10 +1,10 @@
 ---
-title: "Inisiatif Pengelolaan Lahan Tanpa Bakar dan Budidaya Madu Kelulut Desa Penampi, Kabupaten Bengkalis"
+title: "Pertanian Tanpa Bakar dan Budidaya Kelulut di Penampi"
 slug: "inisiatif-pengelolaan-lahan-tanpa-bakar-dan-budidaya-madu-kelulut-desa-penampi-kabupaten-bengkalis"
 date: "2020-11-18T09:27:06"
 modified: "2020-11-23T08:12:40"
 author: "YayasanGambut (YG)"
-summary: "Desa Penampi terletak di bagian utara Provinsi Riau tepatnya di Pulau Bengkalis. Posisi Desa Penampi berada di sebelah barat dari Ibukota Kecamatan dan Ibukota Kabupaten dengan rupa dataran rendah yang berketinggian antara 0-3 meter di atas permukaan laut (mdpl) yang terletak di"
+summary: "Masyarakat Penampi mengembangkan pengelolaan lahan tanpa bakar dan budidaya madu kelulut sebagai bagian dari usaha berbasis sumber daya lokal."
 category: "Berita · Desa Penampi"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/11/Peta-Desa-Penampi-1024x724.jpg"
 imageAlt: "Inisiatif Pengelolaan Lahan Tanpa Bakar dan Budidaya Madu Kelulut Desa Penampi, Kabupaten Bengkalis"
@@ -23,11 +23,11 @@ legacy: true
 
 Desa Penampi terletak di bagian utara Provinsi Riau tepatnya di Pulau Bengkalis. Posisi Desa Penampi berada di sebelah barat dari Ibukota Kecamatan dan Ibukota Kabupaten dengan rupa dataran rendah yang berketinggian antara 0-3 meter di atas permukaan laut (mdpl) yang terletak di pesisir Pulau Bengkalis yang menghadap langsung dengan Selat Bengkalis. Letak posisi Desa Penampi secara astronomis terletak pada titik koordinat 102.1752658 Bujur Timur, 1.4467929 Lintang Utara. Secara administrasi Desa Penampi terletak di Kecamatan Bengkalis, Kabupaten Bengkalis, Provinsi Riau.
 
-Berdasarkan hasil pemetaan partisipatif yang di laksanakan oleh Badan Restorasi Gambut pada Tahun 2019 Luas wilayah Desa Penampi 1.057 hektar, yang terdiri dari 3 dusun yaitu Dusun Makmur, Dusun Mekar dan Dusun Penampi dengan batas disebelah utara dengan Desa Resam , sebelah timur dengan Desa Kelebuk, selatan dengan Selat Bengkalis dan sebelah barat dengan Desa Kuala Alam dan Desa Sungai Alam.
+Berdasarkan hasil pemetaan partisipatif yang dilaksanakan oleh Badan Restorasi Gambut pada Tahun 2019 Luas wilayah Desa Penampi 1.057 hektar, yang terdiri dari 3 dusun yaitu Dusun Makmur, Dusun Mekar dan Dusun Penampi dengan batas disebelah utara dengan Desa Resam , sebelah timur dengan Desa Kelebuk, selatan dengan Selat Bengkalis dan sebelah barat dengan Desa Kuala Alam dan Desa Sungai Alam.
 
 Wilayah Desa Penampi didominasi oleh ekosistem mangrove, gambut, perkebunan dan pemukiman. Desa Penampi secara legal administrasi masuk ke dalam tiga kawasan, yaitu Kawasan APL (Area Penggunaan Lain), Kawasan Hidrologi Gambut (KHG) dan Kawasan Hutan Produksi Terbatas (HPT). Dalam Perda No 10 Tahun 2018 Tentang Rencana Tata Ruang Wilayah Provinsi Riau 2018 – 2038  Desa Penampi hampir secara keseluruhan masuk ke dalam status Kawasan APL, sedangkan untuk HPT secara legal administrasi menurut Nomor SK 903/MENLHK/SETJEN/PLA.02/12/2016 kawasan Desa Penampi terdapat daerah Hutan Produksi Terbatas berupa hutan mangrove di daerah pesisir. Untuk KHG dalam Keputusan Menteri Lingkungan Hidup dan Kehutanan Nomor SK. 129/MENLHK/SETJEN/PKL.0/2/2017 Tentang Penetapan Peta Kesatuan Hidrologis Gambut Nasional, Desa Penampi masuk dalam KHG Pulau Bengkalis
 
-Mata pencaharian masyarakat Desa Penampi di dominasi oleh sektor perkebunan karet, nenas dan pinang serta nelayan, kebakaran pada tahun 2014 mengakibatkan lahan gambut di Desa Penampi terdegradasi di tambah lagi batas antar desa yang dibangun kanal dapat menyebabkan subsidensi di lahan gambut dan rentan terhadap ancaman kebakaran lahan gambut, di tambah lagi mayoritas masyarakat petani di lahan gambut yang jika tidak di intervensi, besar kemungkinan melakukan pembukaan lahan dengan cara membakar karena secara kultural penyiapan lahan di lakukan setiap tahun setelah petani memanen buah nenas.
+Mata pencaharian masyarakat Desa Penampi di dominasi oleh sektor perkebunan karet, nenas dan pinang serta nelayan, kebakaran pada tahun 2014 mengakibatkan lahan gambut di Desa Penampi terdegradasi di tambah lagi batas antar desa yang dibangun kanal dapat menyebabkan subsidensi di lahan gambut dan rentan terhadap ancaman kebakaran lahan gambut, di tambah lagi mayoritas masyarakat petani di lahan gambut yang jika tidak di intervensi, besar kemungkinan melakukan pembukaan lahan dengan cara membakar karena secara kultural penyiapan lahan dilakukan setiap tahun setelah petani memanen buah nenas.
 
 Badan Restorasi Gambut pada tahun 2019 melaksanakan serangkaian pelatihan peningkatan kapasitas masyarakat di Desa Penampi dan mempromosikan pengelolaan lahan gambut tanpa bakar. Pak Rudi salah satu penggerak pertanian lahan tanpa bakar (PLTB) hasil binaan BRG sampai saat ini masih menyerukan untuk mengelola lahan tanpa bakar, karna mayoritas jenis tanah di Desa Penampi merupakan lahan gambut seluas 854 Hektar dengan kedalaman bisa mencapai 12 meter untuk bagian utara Desa Penampi.
 

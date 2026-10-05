@@ -1,10 +1,10 @@
 ---
-title: "Kolaborasi dalam Mitigasi Perubahan Iklim di Desa Temiang"
+title: "Kolaborasi Pengelolaan Gambut di Temiang"
 slug: "kolaborasi-dalam-mitigasi-perubahan-iklim-di-desa-temiang"
 date: "2023-05-15T18:06:39"
 modified: "2023-05-15T18:06:41"
 author: "YayasanGambut (YG)"
-summary: "Perubahan iklim saat ini menjadi tantangan yang tak dapat di hindari, dalam 10 tahun terakhir telah terjadi peningkatan pemanasan global yang memberikan dampak cuaca ekstrim yang berbeda – beda di setiap wilayah di dunia. Seperti yang di kutip dari brin.go.id Peneliti Pusris Ikli"
+summary: "Kolaborasi di Desa Temiang mendukung pengelolaan gambut dan keterlibatan masyarakat dalam upaya mitigasi perubahan iklim."
 category: "artikel · Berita"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2023/05/IMG20230509180817-scaled-e1684173986444-1024x711.jpg"
 imageAlt: "Kolaborasi dalam Mitigasi Perubahan Iklim di Desa Temiang"

@@ -1,10 +1,10 @@
 ---
-title: "Melirik Potensi Pengembangan Talas Beneng di Kabupaten Rokan Hilir"
+title: "Pengembangan Talas Beneng di Rokan Hilir"
 slug: "melirik-potensi-pengembangan-talas-beneng-di-kabupaten-rokan-hilir"
 date: "2020-12-08T05:47:40"
 modified: "2020-12-08T06:31:10"
 author: "YayasanGambut (YG)"
-summary: "Talas Beneng yang merupakan singkatan dari besar dan koneng yang berarti berukuran besar dan berwarna kuning merupakan talas yang banyak di budidayakan di Provinsi Banten, talas tersebut biasa dijadikan tepung tapioka yang saat ini di ekspor ke sejumlah negara seperti Australia,"
+summary: "Pengenalan talas beneng membuka pembahasan mengenai pilihan komoditas dan potensi pengembangannya di Kabupaten Rokan Hilir."
 category: "Berita · Kepenghuluan Labuhan Tangga Besar"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/12/Survey-Budidaya-Talas-Beneng-bersama-ASPUTABEN-di-Pekanbaru-1024x768.jpeg"
 imageAlt: "Melirik Potensi Pengembangan Talas Beneng di Kabupaten Rokan Hilir"
@@ -21,7 +21,7 @@ sourceUrl: "https://yayasangambut.org/melirik-potensi-pengembangan-talas-beneng-
 legacy: true
 ---
 
-Talas Beneng yang merupakan singkatan dari besar dan koneng yang berarti berukuran besar dan berwarna kuning merupakan talas yang banyak di budidayakan di Provinsi Banten, talas tersebut biasa dijadikan tepung tapioka yang saat ini di ekspor ke sejumlah negara seperti Australia, Malaysia, New Zealand, Korea Selatan, India, Turkey dan Jepang.
+Talas Beneng yang merupakan singkatan dari besar dan koneng yang berarti berukuran besar dan berwarna kuning merupakan talas yang banyak dibudidayakan di Provinsi Banten, talas tersebut biasa dijadikan tepung tapioka yang saat ini di ekspor ke sejumlah negara seperti Australia, Malaysia, New Zealand, Korea Selatan, India, Turkey dan Jepang.
 
 Talas Beneng di panen setelah berumur 2 tahun dengan produksi umbi sekitar 40-45 Kg, talas ini memiliki kadar protein, mineral dan serta pangan yang tinggi, dimana di daerah asalnya tepung talas tersebut sudah di formulasikan menjadi produk olahan brownies, Bakpao dan Kue Kering.
 

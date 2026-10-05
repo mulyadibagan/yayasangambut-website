@@ -1,10 +1,10 @@
 ---
-title: "Inisiatif Kelompok Sekat Bakau Peduli Mangrove Desa Buruk Bakul"
+title: "Inisiatif Kelompok Sekat Bakau di Buruk Bakul"
 slug: "inisiatif-kelompok-sekat-bakau-peduli-mangrove-desa-buruk-bakul"
 date: "2021-01-07T04:54:44"
 modified: "2021-01-07T04:58:57"
 author: "YayasanGambut (YG)"
-summary: "Buruk Bakul merupakan salah satu desa yang terletak di wilayah pesisir Indonesia yang secara administratif masuk ke dalam Kecamatan Bukit Batu Kabupaten Bengkalis Provinsi Riau. Buruk Bakul memiliki potensi mangrove yang cukup tinggi seperti desa-desa lain di sepanjang pesisir se"
+summary: "Kelompok Sekat Bakau mengembangkan kegiatan perlindungan dan pemulihan mangrove di Desa Buruk Bakul."
 category: "Berita · Desa Buruk Bakul"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2021/01/Peta-Mangrove-Buruk-Bakul-1024x722.jpg"
 imageAlt: "Inisiatif Kelompok Sekat Bakau Peduli Mangrove Desa Buruk Bakul"

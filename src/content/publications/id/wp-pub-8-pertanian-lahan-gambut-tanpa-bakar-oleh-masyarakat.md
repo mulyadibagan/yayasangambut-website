@@ -13,4 +13,4 @@ featured: false
 sourceUrl: "https://yayasangambut.org/pertanian-lahan-gambut-tanpa-bakar-oleh-masyarakat/"
 legacy: true
 ---
-Dokumen ini merupakan bagian dari arsip publikasi resmi Yayasan Gambut.
+Dokumen lengkap tersedia melalui tautan PDF di bawah.

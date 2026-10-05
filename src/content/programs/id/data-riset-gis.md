@@ -2,29 +2,29 @@
 title: Data, Riset, dan GIS
 slug: data-riset-gis
 translationKey: data-research-gis
-eyebrow: Bukti untuk tindakan
+eyebrow: Pemetaan dan pemantauan
 summary: Menggunakan data lapangan, riset, dan pemetaan untuk mendukung perencanaan, pemantauan, dan pengambilan keputusan.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: id
 status: published
 order: 5
 featured: true
 ---
-## Memetakan aksi, merekam perubahan
+## Tujuan
 
-Program ini bertujuan memastikan bahwa setiap tindakan didukung bukti yang andal, dapat ditelusuri, dan sesuai kebutuhan, dengan tetap melindungi data operasional maupun data mitra yang bersifat sensitif.
+Menyediakan informasi untuk perencanaan program dan pemantauan hasil. Pengumpulan data lapangan, riset, dan sistem informasi geografis (GIS) membantu masyarakat serta mitra memahami kondisi lokasi dan perkembangan kegiatan.
 
-## Fokus kerja
+## Kegiatan utama
 
-- Standar pengumpulan data lapangan, identitas unik objek, informasi lokasi, dan metadata.
-- Validasi, pemeriksaan duplikasi, dokumentasi sumber, dan pengendalian mutu.
-- Analisis sistem informasi geografis, pemetaan, pemantauan, dan visualisasi.
-- Riset kolaboratif, produk pengetahuan, dan penyajian informasi publik.
+- Pemetaan lokasi program, area tanam, dan sarana restorasi.
+- Pengumpulan dan pemeriksaan data kegiatan serta pemantauan lapangan.
+- Analisis tutupan lahan, pesisir, dan indikasi risiko kebakaran.
+- Penyusunan peta, laporan, dan publikasi bersama mitra penelitian.
 
-## Cara kerja dan hasil yang dilacak
+## Wilayah dan pelaksanaan
 
-Setiap himpunan data mencatat sumber, tanggal, cakupan, metode, dan keterbatasannya. Data diterbitkan setelah melalui pemeriksaan dan validasi, sedangkan akses publik dan internal dipisahkan berdasarkan tingkat sensitivitas. Mutu sistem dilacak melalui kelengkapan, ketepatan waktu, status validasi, cakupan spasial, riwayat pembaruan, dan penggunaannya dalam keputusan program.
+Data dihimpun dari wilayah kerja Yayasan Gambut di Riau. YG GeoPortal menyediakan peta program, pemantauan lapangan, profil desa, informasi keanekaragaman hayati, serta informasi cuaca dan titik panas.
 
-## Contoh kerja Yayasan Gambut
+## Hasil dan pemantauan
 
-YG GeoPortal menyajikan peta intervensi program, pemantauan mangrove, profil wilayah kerja, direktori perhutanan sosial, serta informasi cuaca kebakaran dan hotspot. Analisis yang memuat data operasional atau data mitra yang sensitif ditempatkan pada akses internal terkendali.
+Peta dan laporan menghubungkan lokasi, kegiatan, waktu, dan dokumentasi. Ringkasan capaian pada website Yayasan Gambut mengikuti data publik GeoPortal. Pembaruan dan pemeriksaan data dilakukan untuk menjaga kesesuaian informasi dengan catatan lapangan.

@@ -1,10 +1,10 @@
 ---
-title: "Desa Harapan Jaya Kembangkan Bibit Merica"
+title: "Pembibitan Merica di Harapan Jaya"
 slug: "desa-harapan-jaya-kembangkan-bibit-merica"
 date: "2020-12-11T05:20:40"
 modified: "2020-12-11T05:20:41"
 author: "YayasanGambut (YG)"
-summary: "Desa Harapan Jaya tak henti-hentinya terus mecoba menggali potensi ekonomi di desa nya, kali ini Pak Yusuf (43) mencoba mengembangkan pembibitan merica di Dusun Sungai Makam. hal tersebut beliau lakukan karna minimnya ketersediaan bibit untuk budidaya merica yang dapat mendongrak"
+summary: "Pembibitan merica dikembangkan di Desa Harapan Jaya sebagai upaya menyediakan bahan tanam dan memanfaatkan peluang usaha pertanian."
 category: "Berita · Desa Harapan Jaya"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/12/WhatsApp-Image-2020-12-11-at-1.05.26-PM-1024x576.jpeg"
 imageAlt: "Desa Harapan Jaya Kembangkan Bibit Merica"

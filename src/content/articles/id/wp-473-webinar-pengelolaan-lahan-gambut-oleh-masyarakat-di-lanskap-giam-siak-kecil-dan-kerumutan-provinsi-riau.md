@@ -1,10 +1,10 @@
 ---
-title: "Webinar Pengelolaan Lahan Gambut oleh Masyarakat di Lanskap Giam Siak Kecil dan Kerumutan Provinsi Riau"
+title: "Diskusi Pengelolaan Gambut di Giam Siak Kecil dan Kerumutan"
 slug: "webinar-pengelolaan-lahan-gambut-oleh-masyarakat-di-lanskap-giam-siak-kecil-dan-kerumutan-provinsi-riau"
 date: "2021-09-05T13:26:32"
 modified: "2021-09-06T11:23:02"
 author: "YayasanGambut (YG)"
-summary: "Webinar Pengelolaan Lahan Gambut oleh Masyarakat di Lanskap Giam Siak Kecil dan Kerumutan Provinsi Riau, pada Jumat 3 September 2021. Acara ini di Selenggarakan oleh Yayasan Gambut bekerja sama dengan Global Environment Centre (GEC) dan Dinas Lingkungan Hidup & Kehutanan Provinsi"
+summary: "Webinar membahas pengelolaan lahan gambut oleh masyarakat di lanskap Giam Siak Kecil dan Kerumutan, Provinsi Riau."
 category: "Berita · PUBLIKASI"
 imageAlt: "Webinar Pengelolaan Lahan Gambut oleh Masyarakat di Lanskap Giam Siak Kecil dan Kerumutan Provinsi Riau"
 imageSource: "https://yayasangambut.org/webinar-pengelolaan-lahan-gambut-oleh-masyarakat-di-lanskap-giam-siak-kecil-dan-kerumutan-provinsi-riau/"

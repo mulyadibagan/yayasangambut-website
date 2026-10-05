@@ -1,31 +1,30 @@
 ---
-title: Peatlands and Fire Resilience
+title: Peatlands and Fire Prevention
 slug: peatlands-fire-resilience
 translationKey: peatlands-fire-resilience
-eyebrow: Wet landscapes
+eyebrow: Peatland management
 summary: Combining forest and land fire prevention and preparedness with peatland restoration, cross-village coordination, and field data.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: en
 status: published
 order: 2
 featured: true
 ---
-## Keeping peatlands wet
+## Purpose
 
-This program aims to reduce forest and land fire risk, maintain peatland conditions, and support the recovery of hydrological and ecological functions through community action and landscape-level coordination.
+Maintain peatland water conditions and reduce forest and land fire risk. Support combines water-management infrastructure, zero-burning agriculture, and community preparedness.
 
-## Focus areas
+## Main activities
 
-- Risk information and early warning based on fire weather, hotspots, and field observations.
-- Community prevention and preparedness, including zero-burning land management.
-- Site-appropriate water management, rewetting, and rehabilitation.
-- Field monitoring, cross-village learning, and multi-stakeholder coordination.
+- Canal surveys and site-appropriate canal-block construction.
+- Installation and use of the Fire Danger Rating System (FDRS).
+- Training in zero-burning land management and fire prevention.
+- Monitoring water levels, infrastructure condition, weather, and hotspots.
 
-## How we work and what we track
+## Locations and implementation
 
-Analysis combines fire-weather information, hotspot data, land-cover information, and field reports. Hotspots are treated as indications that require interpretation and, where possible, field verification—not as proof of fire on their own. Results tracked include risk levels, field-verification findings, prevention and restoration actions, the condition of water-management and early-warning infrastructure, fire incidents, and estimated affected areas where data and methods allow.
+Activities include canal blocking and FDRS installation across Bengkalis and Siak, including Temiang, Pematang Duku, Pedekik, Tanjung Kuras, and Dayun. Zero-burning agriculture support also takes place in Penampi. Activities vary according to each location’s needs.
 
-## Examples from Yayasan Gambut
+## Results and monitoring
 
-Examples include zero-burning land management in Penampi, canal blocking and fire-risk warning support in Temiang and Tanjung Kuras, and fire-weather and hotspot information delivered through the YG GeoPortal.
-
+Monitoring covers canal-block and FDRS numbers and condition, peatland water levels, and community prevention activities. Estimated rewetting is labelled separately. Hotspots indicate the need for further checking and do not, by themselves, confirm a fire.

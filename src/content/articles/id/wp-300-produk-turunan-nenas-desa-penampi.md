@@ -1,10 +1,10 @@
 ---
-title: "Produk Turunan Nenas Desa Penampi"
+title: "Pengolahan Produk Nanas di Penampi"
 slug: "produk-turunan-nenas-desa-penampi"
 date: "2020-11-23T14:38:25"
 modified: "2020-11-25T14:38:05"
 author: "YayasanGambut (YG)"
-summary: "Desa Penampi merupakan salah satu desa pemasok buah nenas untuk pulau bengkalis dan sekitarnya, buah yang kaya akan vitamin C tersebut kini sudah mencapai 61 Ha total luas lahan yang tertanam di desa yang berada di kecamatan bengkalis tersebut, dimana mayoritas lahan desa merupak"
+summary: "Masyarakat Desa Penampi mengembangkan produk olahan nanas untuk menambah ragam pemanfaatan hasil pertanian setempat."
 category: "Berita · Desa Penampi"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/11/Nenas-1.png"
 imageAlt: "Produk Turunan Nenas Desa Penampi"

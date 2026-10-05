@@ -1,10 +1,10 @@
 ---
-title: "Sosialisasi dan Distribusi Buklet RSPO: Panduan Praktik Terbaik (Best Management Practices/BMP) untuk Petani Sawit Mandiri (Independent Smallholders/ISH) pada Penanaman Eksisting di Lahan Gambut di Kabupaten Siak"
+title: "Pengenalan Panduan RSPO bagi Petani Sawit Mandiri di Siak"
 slug: "sosialisasi-dan-distribusi-buklet-rspo-panduan-praktik-terbaik-best-management-practices-bmp-untuk-petani-sawit-mandiri-independent-smallholders-ish-pada-penanaman-eksisting-di-lahan-gambut-di-ka"
 date: "2024-12-27T06:54:57"
 modified: "2024-12-27T06:58:39"
 author: "YayasanGambut (YG)"
-summary: "Produksi minyak sawit memainkan peran penting dalam mata pencaharian petani kecil di Kabupaten Siak, Provinsi Riau. Namun, banyak petani kecil di wilayah ini menghadapi tantangan dalam menerapkan praktik berkelanjutan yang selaras dengan permintaan pasar global untuk minyak sawit"
+summary: "Sosialisasi dan pembagian buklet memperkenalkan praktik pengelolaan terbaik bagi petani sawit mandiri pada kebun yang telah ada di lahan gambut."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/12/IMG_1293-1024x768.jpg"
 imageAlt: "Sosialisasi dan Distribusi Buklet RSPO: Panduan Praktik Terbaik (Best Management Practices/BMP) untuk Petani Sawit Mandiri (Independent Smallholders/ISH) pada Penanaman Eksisting di Lahan Gambut di Kabupaten Siak"
@@ -39,7 +39,7 @@ _Peserta Sosialisasi di Ruang Pertemuan Pucuk Rebung Pemerintah Kabupaten Siak_
 
 kegiatan LOKAKARYA “Sosialisasi dan Distribusi Buklet RSPO: Panduan Praktik Terbaik (Best Management Practices/BMP) untuk Petani Sawit Mandiri (Independent Smallholders/ISH) pada Penanaman Eksisting di Lahan Gambut di Kabupaten Siak”pada Rabu, 04 Desember 2024 di Ruang Pertemuan Pucuk Rebung Pemerintah Kabupaten Siak. Dalam kegiatan ini di hadiri oleh 34 Peserta dari berbagai instansi secara offline dan dihadiri juga oleh 24 peserta secara online (via zoom) dan acara juga di buka langsung oleh Kepala Dinas Perkebunan Siak.
 
-Acara Lokakarya ini di laksanakan bertujuan untuk meningkatkan pemahaman para petani sawit mandiri terkait pentingnya keberlanjutan dalam praktik perkebunan kelapa sawit, khususnya melalui sertifikasi Roundtable on Sustainable Palm Oil (RSPO). Salah satu fokus utama lokakarya adalah pengenalan sertifikasi RSPO dan manfaatnya bagi petani sawit secara nyata,sehingga petani yang telah tersertifikasi mendapatkan jalur akses pasar yang lebih luas, peningkatan produktivitas, dan insentif ekonomi dari penjualan hasil Perkebunan yang bersertifikat RSPO.
+Acara Lokakarya ini dilaksanakan bertujuan untuk meningkatkan pemahaman para petani sawit mandiri terkait pentingnya keberlanjutan dalam praktik perkebunan kelapa sawit, khususnya melalui sertifikasi Roundtable on Sustainable Palm Oil (RSPO). Salah satu fokus utama lokakarya adalah pengenalan sertifikasi RSPO dan manfaatnya bagi petani sawit secara nyata,sehingga petani yang telah tersertifikasi mendapatkan jalur akses pasar yang lebih luas, peningkatan produktivitas, dan insentif ekonomi dari penjualan hasil Perkebunan yang bersertifikat RSPO.
 
 Dika Dwi Darmawan ( *Executive Smallholder Programme Indonesia *) memaparkan tentang “**Membangun Perkebunan Sawit yang Berkelanjutan Hari ini dan Masa mendatang**”. Dalam paparannya peserta yang hadir dijelaskan tentang apa itu RSPO dan poin-poin utama dalam Kelapa Sawit Berkelanjutan melalui sertifikasi RSPO. Sebagai perwakilan dari RSPO, Dika Dwi Darmawan menerangkan sejarah hadirnya RSPO yang didirikan pada tahun 2004. RSPO adalah organisasi keanggotaan internasional nirlaba yang menyatukan pemangku kepentingan dari sektor-sektor utama industri minyak sawit untuk mendorong pertumbuhan dan penggunaan minyak sawit berkelanjutan melalui standar global yang kredibel.
 

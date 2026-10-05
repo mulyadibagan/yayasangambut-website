@@ -1,10 +1,10 @@
 ---
-title: "Peer-to-Peer Learning: Forum Pembelajaran dan Kunjungan Jaringan Kerja Komuniti Global Environment Centre (JKGEC), Ipoh, Perak, Malaysia"
+title: "Pertukaran Pengalaman Jaringan Komunitas GEC di Malaysia"
 slug: "peer-to_peer-learning-forum-pembelajaran-dan-kunjungan-jaringan-kerja-komuniti-global-environment-center-jkgec-ipoh-perak-malaysia"
 date: "2024-08-27T08:30:24"
 modified: "2024-08-27T08:31:42"
 author: "YayasanGambut (YG)"
-summary: "Global Environment Centre (GEC), dengan dukungan “Airbnb Community Fund”, mengadakan forum yang mempertemukan berbagai komunitas peduli lingkungan. Dalam forum ini, para peserta yang tergabung dalam JKGEC saling berbagi pengalaman dan pengetahuan tentang upaya-upaya pelestarian l"
+summary: "Forum pembelajaran dan kunjungan di Ipoh, Perak, mempertemukan anggota Jaringan Kerja Komuniti Global Environment Centre untuk berbagi pengalaman."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/08/IMG-20240819-WA0066-1024x683.jpg"
 imageAlt: "Peer-to-Peer Learning: Forum Pembelajaran dan Kunjungan Jaringan Kerja Komuniti Global Environment Centre (JKGEC), Ipoh, Perak, Malaysia"

@@ -1,10 +1,10 @@
 ---
-title: "Peningkatan Pengetahuan Pengelolaan Ekosistem Mangrove Melalui Kunjung Belajar di Johor, Malaysia (Muar dan Pulau Tanjung Surat, Kota Tinggi)"
+title: "Kunjungan Belajar Pengelolaan Mangrove di Johor"
 slug: "peningkatan-pengetahuan-pengelolaan-ekosistem-mangrove-melalui-kunjung-belajar-di-johor-malaysia-muar-dan-pulau-tanjung-surat-kota-tinggi"
 date: "2023-12-06T19:55:45"
 modified: "2023-12-09T14:19:13"
 author: "YayasanGambut (YG)"
-summary: "Kunjungan pembelajaran ini merupakan serangkaian kegiatan program yang diselengarakan oleh Global Environment Centre (GEC) dan Aramco Asia Singapura. Kegiatan berlangsung selama 5 Hari ( 29 November s/d 3 Desember 2023) dengan tujuan memberikan paparan dan pengalaman kepada Tim Y"
+summary: "Kunjungan ke Muar dan Pulau Tanjung Surat di Johor, Malaysia, menjadi sarana pertukaran pengalaman pengelolaan ekosistem mangrove."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2023/12/IMG-20231129-WA0107-1024x768.jpg"
 imageAlt: "Peningkatan Pengetahuan Pengelolaan Ekosistem Mangrove Melalui Kunjung Belajar di Johor, Malaysia (Muar dan Pulau Tanjung Surat, Kota Tinggi)"

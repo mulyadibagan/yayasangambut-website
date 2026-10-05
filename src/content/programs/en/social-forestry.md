@@ -2,29 +2,29 @@
 title: Social Forestry
 slug: social-forestry
 translationKey: social-forestry
-eyebrow: Shared stewardship
+eyebrow: Forest institutions and management
 summary: Strengthening governance, institutions, planning, and responsible forest management by social forestry groups.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: en
 status: published
 order: 3
 featured: true
 ---
-## Forest access backed by capacity
+## Purpose
 
-This program aims to ensure that forest management access is accompanied by the capacity to make decisions, implement work plans, maintain ecological functions, and generate responsible livelihood benefits.
+Support social forestry groups and customary forest managers in protecting forests, implementing management plans, and developing enterprises. Support reflects management status, institutional needs, and forest conditions.
 
-## Focus areas
+## Main activities
 
-- Stronger group governance and implementation of management and work plans.
-- Participatory mapping, management zoning or block planning, and area monitoring.
-- Stronger Social Forestry Business Groups and enterprises compatible with forest functions.
-- Coordination with government, facilitators, and technical partners.
+- Strengthening organisations, defining roles, and preparing group work plans.
+- Participatory mapping and management-area planning.
+- Supporting Social Forestry Business Groups (KUPS).
+- Forest restoration and activity monitoring with local managers.
 
-## How we work and what we track
+## Locations and implementation
 
-Support begins with the group’s management status, collective agreements, institutional needs, and the area’s biophysical conditions. Results tracked include progress against work plans, organisational and decision-making functions, mapped management areas or blocks, implementation of field activities, enterprise development, and monitoring completeness. Sensitive management documents and records remain access-controlled.
+Support includes Mandiri Sejahtera Community Forest and the Rimba Sejahtera KUPS in Dayun, Siak Regency, alongside collaboration with customary forest management institutions in Kampar. Work in Imbo Putui and Ghimbo Pomuan customary forests includes vegetation restoration and agroforestry under group plans.
 
-## Examples from Yayasan Gambut
+## Results and monitoring
 
-Support planned from October 2026 for Mandiri Sejahtera Community Forest and the Rimba Sejahtera Social Forestry Business Group in Dayun Village includes institutional strengthening, agroforestry planning, mapping of management blocks and planting areas, and activity monitoring.
+Results are assessed through work-plan implementation, group activities, area management, and enterprise development. Activity records and field monitoring inform evaluations with group members.

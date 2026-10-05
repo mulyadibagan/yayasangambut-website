@@ -2,29 +2,29 @@
 title: Perhutanan Sosial
 slug: perhutanan-sosial
 translationKey: social-forestry
-eyebrow: Kelola bersama
+eyebrow: Kelembagaan dan pengelolaan hutan
 summary: Mendampingi kelompok perhutanan sosial dalam penguatan kelembagaan, perencanaan, pengelolaan hutan, dan pengembangan usaha.
-reviewedAt: 2026-09-26
+reviewedAt: 2026-10-05
 language: id
 status: published
 order: 3
 featured: true
 ---
-## Akses kelola yang ditopang kapasitas
+## Tujuan
 
-Program ini bertujuan memastikan bahwa akses kelola hutan diikuti kemampuan kelompok untuk mengambil keputusan, menjalankan rencana kerja, menjaga fungsi ekologis, dan memperoleh manfaat penghidupan secara bertanggung jawab.
+Mendukung kelompok perhutanan sosial dan pengelola hutan adat dalam menjaga hutan, menjalankan rencana pengelolaan, dan mengembangkan usaha. Pendampingan menyesuaikan status pengelolaan, kebutuhan kelembagaan, dan kondisi kawasan.
 
-## Fokus kerja
+## Kegiatan utama
 
-- Penguatan tata kelola kelompok serta pelaksanaan rencana pengelolaan dan rencana kerja.
-- Pemetaan partisipatif, pembagian ruang atau blok kelola, dan pemantauan wilayah.
-- Penguatan Kelompok Usaha Perhutanan Sosial dan pengembangan usaha yang sesuai dengan fungsi kawasan.
-- Koordinasi dengan pemerintah, pendamping, dan mitra teknis.
+- Penguatan organisasi, pembagian peran, dan perencanaan kerja kelompok.
+- Pemetaan partisipatif dan penataan area kelola.
+- Pendampingan Kelompok Usaha Perhutanan Sosial (KUPS).
+- Pemulihan hutan dan pemantauan kegiatan bersama pengelola setempat.
 
-## Cara kerja dan hasil yang dilacak
+## Wilayah dan pelaksanaan
 
-Pendampingan dimulai dari status akses kelola, kesepakatan kelompok, kebutuhan kelembagaan, dan kondisi biofisik wilayah. Hasil yang dilacak meliputi kemajuan rencana kerja, fungsi organisasi dan pengambilan keputusan, wilayah atau blok yang dipetakan, pelaksanaan kegiatan lapangan, perkembangan usaha kelompok, dan kelengkapan pemantauan. Dokumen pengelolaan serta data yang bersifat sensitif tetap berada pada akses terbatas.
+Pendampingan mencakup HKm Mandiri Sejahtera dan KUPS Rimba Sejahtera di Dayun, Kabupaten Siak, serta kerja bersama lembaga pengelola hutan adat di Kampar. Di Hutan Adat Imbo Putui dan Ghimbo Pomuan, kegiatan meliputi pemulihan vegetasi dan agroforestri sesuai rencana kelompok.
 
-## Contoh kerja Yayasan Gambut
+## Hasil dan pemantauan
 
-Dukungan yang direncanakan mulai Oktober 2026 bagi Hutan Kemasyarakatan Mandiri Sejahtera dan KUPS Rimba Sejahtera di Kampung Dayun mencakup penguatan kelembagaan, perencanaan agroforestri, pemetaan blok dan area tanam, serta pemantauan kegiatan.
+Hasil dinilai melalui pelaksanaan rencana kerja, kegiatan kelompok, pengelolaan area, dan perkembangan usaha. Pencatatan kegiatan dan pemantauan lapangan menjadi dasar evaluasi bersama anggota kelompok.

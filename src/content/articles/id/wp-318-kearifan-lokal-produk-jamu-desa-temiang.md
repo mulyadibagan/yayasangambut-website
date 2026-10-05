@@ -1,10 +1,10 @@
 ---
-title: "Kearifan Lokal Produk Jamu Desa Temiang"
+title: "Pengolahan Jamu Tradisional di Temiang"
 slug: "kearifan-lokal-produk-jamu-desa-temiang"
 date: "2020-11-25T16:17:40"
 modified: "2020-11-25T16:27:45"
 author: "YayasanGambut (YG)"
-summary: "Jika kita berkunjung ke Rumah Buk Tuti (36) di Desa Temiang akan banyak kita jumpai berbagai macam tanaman rimpang di sekitar pekarangan rumahnya, seperti yang kita ketahui bersama tanaman rimpang selain sebagai bumbu dapur juga memiliki khasiat sebagai tanaman obat. secara turun"
+summary: "Pemanfaatan tanaman rimpang di pekarangan mendukung pengolahan jamu tradisional dan usaha masyarakat Desa Temiang."
 category: "Berita · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2020/11/Kunjungan-tim-WWF-di-Rumah-Buk-Tuti.jpeg"
 imageAlt: "Kearifan Lokal Produk Jamu Desa Temiang"

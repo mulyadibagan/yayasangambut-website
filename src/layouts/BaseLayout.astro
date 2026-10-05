@@ -34,7 +34,7 @@ const {
 } = Astro.props;
 const lang = Astro.currentLocale ?? 'id';
 const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
-const canonical = new URL(currentPath, Astro.site).href;
+const canonical = new URL(currentPath === '/' ? '/id/' : currentPath, Astro.site).href;
 const alternatePath = pagePairs[currentPath];
 const alternateLang = lang === 'id' ? 'en' : 'id';
 const socialImage = image
@@ -139,3 +139,4 @@ const schema = article
     {!minimalChrome && <Footer />}
   </body>
 </html>
+

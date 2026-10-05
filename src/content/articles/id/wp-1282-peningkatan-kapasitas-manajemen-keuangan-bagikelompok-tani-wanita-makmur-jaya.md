@@ -1,10 +1,10 @@
 ---
-title: "Peningkatan Kapasitas Manajemen Keuangan bagi Kelompok Tani Wanita Makmur Jaya"
+title: "Pelatihan Manajemen Keuangan Kelompok Tani Wanita Makmur Jaya"
 slug: "peningkatan-kapasitas-manajemen-keuangan-bagikelompok-tani-wanita-makmur-jaya"
 date: "2023-07-13T05:45:03"
 modified: "2023-07-13T05:45:16"
 author: "YayasanGambut (YG)"
-summary: "Kelompok Tani Wanita Makmur Jaya (KTWMJ) merupakan kumpulan ibu-ibu yang bergerak untuk memajukan pertanian, khususnya pengelolaan hasil pertanian di lahan gambut. KTWMJ juga menjadi bagian dari pemanfaatan lahan gambut berkelanjutan di Desa Temiang."
+summary: "Kelompok Tani Wanita Makmur Jaya di Temiang mengikuti penguatan kapasitas manajemen keuangan untuk mendukung pengelolaan kegiatan dan usaha kelompok."
 category: "artikel · Desa Temiang"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2023/07/Yayasan-Gambut-KTWMJ-1024x461.jpg"
 imageAlt: "Peningkatan Kapasitas Manajemen Keuangan bagi Kelompok Tani Wanita Makmur Jaya"

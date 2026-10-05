@@ -1,10 +1,10 @@
 ---
-title: "Training Mangrove Restoration, Coastal Erosion, & Sea Level Rise Monitoring"
+title: "Pelatihan Restorasi Mangrove dan Pemantauan Pesisir"
 slug: "training-mangrove-restoration-coastal-erosion-sea-level-rise-monitoring"
 date: "2024-08-26T07:22:44"
 modified: "2024-08-26T07:22:53"
 author: "YayasanGambut (YG)"
-summary: "Tindak lanjut dari kunjungan lokasi pesisir di 2 (dua) desa di Kabupaten Bengkalis yaitu Desa Buruk Bakul dan Desa Kelapa Pati adalah dilaksanakannya pelatihan bagi kelompok pemerhati mangrove bagi dua desa tersebut. Kegiatan pelatihan ini merupakan rangkaian upaya penyelamatan d"
+summary: "Pelatihan membahas restorasi mangrove, erosi pantai, dan pemantauan kenaikan muka laut untuk mendukung pengelolaan kawasan pesisir."
 category: "artikel"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2024/08/P1000467-1024x683.jpg"
 imageAlt: "Training Mangrove Restoration, Coastal Erosion, & Sea Level Rise Monitoring"

@@ -1,10 +1,10 @@
 ---
-title: "Pemulihan Ekonomi melalui Penanaman Mangrove di Kepenghuluan Panipahan Laut"
+title: "Penanaman Mangrove di Panipahan Laut"
 slug: "pemulihan-ekonomi-melalui-penanaman-mangrove-di-kepenghuluan-panipahan-laut"
 date: "2021-01-11T07:11:38"
 modified: "2021-01-11T09:06:55"
 author: "YayasanGambut (YG)"
-summary: "Pandemi Corona Virus Disease 2019 (Covid-19) telah berdampak terhadap aspek sosial, ekonomi, dan kesejahteraan masyarakat yang menyebabkan penurunan berbagai aktivitas ekonomi yang membahayakan perekonomian nasional sehingga perlu upaya pemulihan ekonomi nasional. Salah satu stra"
+summary: "Kegiatan penanaman mangrove di Kepenghuluan Panipahan Laut melibatkan masyarakat dalam upaya pemulihan pesisir dan penghidupan."
 category: "Berita · Rokan Hilir"
 featuredImage: "https://yayasangambut.org/wp-content/uploads/2021/01/Peta-Penanaman-Mangrove.png"
 imageAlt: "Pemulihan Ekonomi melalui Penanaman Mangrove di Kepenghuluan Panipahan Laut"
@@ -37,4 +37,4 @@ Kegiatan Padat Karya Penanaman Mangrove tersebut juga berada di wilayah kerja BP
 
 _Kegiatan Penanaman Mangrove oleh Masyarakat (Dok : KPH Bagan Siapi – Api, 2020)_
 
-“Kegiatan Padat Karya Penanaman Mangrove tahun 2020 sebagai respon kebijakan yang ditempuh oleh pemerintah melalui Program Pemulihan Ekonomi Nasional dari Kementrian Lingkungan Hidup dan Kehutanan (KLHK)” Ujar Pak Arifin kepada Yayasan Gambut, Senin (11/01/2021)
+“Kegiatan Padat Karya Penanaman Mangrove tahun 2020 sebagai respon kebijakan yang ditempuh oleh pemerintah melalui Program Pemulihan Ekonomi Nasional dari Kementerian Lingkungan Hidup dan Kehutanan (KLHK)” Ujar Pak Arifin kepada Yayasan Gambut, Senin (11/01/2021)
