@@ -1,0 +1,32 @@
+name: Verify remaining official regulation PDF
+on:
+  push:
+    branches: [maintenance/regulation-source-check]
+permissions:
+  contents: read
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch official public copies and inspect PDF identity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,hashlib,subprocess
+          urls=[
+            'https://lss.lubuklinggaukota.go.id/uploads/produk_hukum/bb85d5fb1e0928f85a34b35d471d8102.pdf',
+            'https://peraturan.bpk.go.id/Download/411502/PP%20Nomor%208%20Tahun%202026.pdf',
+            'https://peraturan.go.id/files/pp-no-8-tahun-2026.pdf']
+          for n,url in enumerate(urls):
+            try:
+              b=urllib.request.urlopen(url,timeout=35).read()
+              if not b.startswith(b'%PDF-'): raise ValueError('Response is not a PDF')
+              path='/tmp/pp8-'+str(n)+'.pdf'
+              open(path,'wb').write(b)
+              print('VERIFIED_CANDIDATE',url,len(b),hashlib.sha256(b).hexdigest(),flush=True)
+              subprocess.run(['pdfinfo',path],check=True)
+              subprocess.run(['pdftotext','-f','1','-l','1',path,'-'],check=True)
+              break
+            except Exception as e: print('SOURCE_UNAVAILABLE',url,type(e).__name__,str(e),flush=True)
+          PY
