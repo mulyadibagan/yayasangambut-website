@@ -1,5 +1,5 @@
 ---
-name: "Rafi Mermabas"
+name: "Rafi Merbamas"
 position: "Program Manager"
 positionEn: "Program Manager"
 group: "Management & Program Team"
