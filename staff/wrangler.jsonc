@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "yg-staff",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "assets": {"directory":"./public", "binding":"ASSETS", "run_worker_first":true},
+  "vars": {
+    "APP_ORIGIN": "https://staff.yayasangambut.org",
+    "PUBLIC_SITE_ORIGIN": "https://yayasangambut.org",
+    "GOOGLE_WORKSPACE_DOMAIN": "yayasangambut.org",
+    "ADMIN_EMAIL": "mulyadi@yayasangambut.org",
+    "EDITOR_EMAIL": "zamharier@yayasangambut.org",
+    "GITHUB_REPOSITORY": "mulyadibagan/yayasangambut-website",
+    "GITHUB_BRANCH": "main",
+    "GA_PROPERTY_ID": "253733616"
+  },
+  // Run setup-config.mjs after creating the dedicated D1 database and R2 bucket.
+  // No existing WebGIS resources are reused.
+  "d1_databases": [{"binding":"DB", "database_name":"yg-staff", "database_id":"REPLACE_WITH_D1_DATABASE_ID", "migrations_dir":"migrations"}],
+  "r2_buckets": [{"binding":"MEDIA", "bucket_name":"yg-staff-media"}],
+  "routes": [{"pattern":"staff.yayasangambut.org", "custom_domain":true}]
+}
