@@ -7,8 +7,8 @@ const c = copy[lang];
 const r = routeMap[lang];
 const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 const alternate = pagePairs[currentPath] ?? (lang === 'id' ? '/en/' : '/id/');
-const nav = [r.about, r.programs, r.locations, r.impact, r.stories, r.publications];
-const isActive = (href: string) => currentPath === href || currentPath.startsWith(href);
+const nav = [r.about, r.programs, r.locations, r.impact, r.stories, r.knowledge];
+const isActive = (href: string) => currentPath === href || currentPath.startsWith(href) || (href === r.knowledge && currentPath.startsWith(r.publications));
 ---
 <header class="site-header"><div class="container bar"><Logo /><nav aria-label={lang === 'id' ? 'Navigasi utama' : 'Primary navigation'}><ul>{c.nav.map((label,index)=><li><a href={nav[index]} aria-current={isActive(nav[index])?'page':undefined}>{label}</a></li>)}</ul></nav><div class="actions"><a class="contact" href={r.contact}>{lang==='id'?'Kontak':'Contact'}</a><a class="lang" href={alternate} hreflang={lang === 'id' ? 'en' : 'id'} aria-label={pagePairs[currentPath] ? (lang === 'id' ? 'Buka versi bahasa Inggris halaman ini' : 'Open this page in Indonesian') : (lang === 'id' ? 'Buka beranda dalam bahasa Inggris' : 'Open the Indonesian homepage')}>{lang === 'id' ? 'EN' : 'ID'}</a><a class="webgis" href="https://webgisyg.id/" target="_blank" rel="noreferrer">YG GeoPortal <span aria-hidden="true">↗</span></a></div><details class="mobile-menu"><summary><span>Menu</span><span class="menu-icon" aria-hidden="true"></span></summary><nav aria-label={lang === 'id' ? 'Navigasi seluler' : 'Mobile navigation'}>{c.nav.map((label,index)=><a href={nav[index]} aria-current={isActive(nav[index])?'page':undefined}>{label}</a>)}<a href={r.contact} aria-current={isActive(r.contact)?'page':undefined}>{lang === 'id' ? 'Hubungi Kami' : 'Contact'}</a><a href={alternate} hreflang={lang === 'id' ? 'en' : 'id'}>{lang === 'id' ? 'English' : 'Bahasa Indonesia'}</a><a href="https://webgisyg.id/" target="_blank" rel="noreferrer">YG GeoPortal ↗</a></nav></details></div></header>
 <style>
