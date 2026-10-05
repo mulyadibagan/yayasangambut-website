@@ -6,5 +6,5 @@ group: "Management & Program Team"
 photo: "/team/rafi-mermabas.jpg"
 language: id
 status: published
-order: 4.5
+order: 6.5
 ---
