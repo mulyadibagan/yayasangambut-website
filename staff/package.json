@@ -1,0 +1,6 @@
+{
+  "name": "yg-staff", "private": true, "type": "module",
+  "scripts": {"test":"node --test test/*.test.mjs", "dev":"wrangler dev", "deploy":"wrangler deploy", "check":"wrangler deploy --dry-run --outdir /tmp/yg-staff-worker"},
+  "dependencies": {"jose":"^6.1.0", "sanitize-html":"^2.17.0"},
+  "devDependencies": {"wrangler":"^4.135.0"}
+}
