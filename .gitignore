@@ -32,3 +32,7 @@ src/data/legacy-wordpress-raw.json
 # Public PDFs are versioned in a verified GitHub Release archive.
 /public/documents/regulations/*.pdf
 /.regulation-archive/
+
+# Generated staff preview templates and public-site CSS
+/staff/public/website-preview/
+/staff/public/_astro/
