@@ -1,7 +1,7 @@
 ---
 name: "Joni Irawan, S.P., M.Si."
-position: "Penasihat Agroforestri"
-positionEn: "Agroforestry Advisor"
+position: "Agroforestri"
+positionEn: "Agroforestry"
 group: "Technical Advisors"
 photo: "/team/joni-irawan.jpg"
 language: id
