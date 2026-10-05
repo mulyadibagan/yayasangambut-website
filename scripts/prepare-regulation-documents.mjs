@@ -34,7 +34,7 @@ if(cached){
   const source=new URL(r.documentSourceUrl);if(source.protocol!=='https:'||!source.hostname.endsWith('.go.id'))throw new Error(`Non-government source: ${r.id}`);
   let failure;
   for(let attempt=0;attempt<3;attempt++){
-   try{const response=await fetch(source,{signal:AbortSignal.timeout(90000)});if(!response.ok)throw new Error(`HTTP ${response.status}`);const b=Buffer.from(await response.arrayBuffer());if(b.subarray(0,5).toString()!=='%PDF-'||b.length!==r.fileBytes||createHash('sha256').update(b).digest('hex')!==r.sha256)throw new Error('Source content changed; editorial review required');await writeFile(resolve(root,r.fileUrl.slice(1)),b);failure=null;break;}catch(e){failure=e;}
+   try{console.log(`Archiving ${r.id} (attempt ${attempt+1})`);const b=execFileSync('python3',['-c','import sys, urllib.request; sys.stdout.buffer.write(urllib.request.urlopen(sys.argv[1], timeout=90).read())',source.href],{maxBuffer:32*1024*1024,timeout:100000});if(b.subarray(0,5).toString()!=='%PDF-'||b.length!==r.fileBytes||createHash('sha256').update(b).digest('hex')!==r.sha256)throw new Error('Source content changed; editorial review required');await writeFile(resolve(root,r.fileUrl.slice(1)),b);failure=null;break;}catch(e){failure=e;}
   }
   if(failure)throw new Error(`Cannot archive ${r.id}: ${failure.message}`);
  }
