@@ -42,3 +42,25 @@ Compare transferred bytes and request count with baseline before rollout.
 
 Develop on a feature branch. Reconcile current main before merging. Main deploys
 automatically to GitHub Pages. Never reset or overwrite other local worktrees.
+
+## Phase 2a — regulation reader and archived originals
+
+Regulations now have bilingual detail/reader pages, local PDF download links,
+and independent links to official catalog pages and original government files.
+The PDF iframe is created only after a reader clicks Show PDF. The catalog and
+reader metadata cause no PDF transfer on initial load. Mobile browsers can use
+the direct same-domain PDF link if embedded viewing is unsupported.
+
+Original PDFs are stored in a separate GitHub Release, not in Git history or
+Google Drive runtime calls. `prepare-regulation-documents.mjs` derives the
+release tag from the reviewed document checksums. The archive job can publish
+only after every included document matches the reviewed SHA-256, length, and
+PDF signature. Subsequent deployments download that release and verify it.
+The build job remains read-only. A failed source/archive verification stops a
+new deployment and leaves the last successful website online.
+
+For a new or changed document: download from its government source, verify its
+identity/completeness (including annexes), update metadata/checksum/page count,
+and review the generated release. Never overwrite an older release asset.
+Cloudflare R2 and Drive synchronization remain pending; this phase uses the
+existing GitHub Pages delivery infrastructure.

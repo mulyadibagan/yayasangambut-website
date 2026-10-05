@@ -1,3 +1,4 @@
+import regulations from '../data/regulations.json';
 import { getCollection } from 'astro:content';
 import { pagePairs } from '../data/site';
 export const prerender = true;
@@ -38,6 +39,7 @@ export async function GET() {
     return `<url><loc>${base}${path}</loc>${alternates(idPath,enPath)}</url>`;
   });
   const otherUrls = content.filter(entry => entry.collection !== 'programs').map(entry => { const path=routeFor(entry); const pair=pagePairs[path]; return `<url><loc>${base}${path}</loc>${pair?alternates(entry.data.language==='id'?path:pair,entry.data.language==='en'?path:pair):''}</url>`; });
-  const urls = [...staticUrls, ...programUrls, ...otherUrls].join('');
+  const regulationUrls=regulations.flatMap(r=>{const id=`/id/pengetahuan/peraturan/${r.id}/`; const en=`/en/knowledge/regulations/${r.id}/`; return [id,en].map(path=>`<url><loc>${base}${path}</loc>${alternates(id,en)}</url>`);});
+  const urls = [...staticUrls, ...programUrls, ...otherUrls, ...regulationUrls].join('');
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">${urls}</urlset>`, { headers: { 'Content-Type': 'application/xml' } });
 }

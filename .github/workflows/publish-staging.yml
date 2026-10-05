@@ -15,7 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  regulation-documents:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare verified regulation archive
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/prepare-regulation-documents.mjs --publish
   build:
+    needs: regulation-documents
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +47,7 @@ jobs:
           gh release download media-archive-2026-10-04 --pattern wordpress-media.tar.gz --dir /tmp/yg-media
           echo 'baf90fa597e4bae878803cf473a0780f69e8bf85a69e756408e51f3c66cf3bcb  /tmp/yg-media/wordpress-media.tar.gz' | sha256sum --check
           tar -xzf /tmp/yg-media/wordpress-media.tar.gz -C dist
+          node scripts/prepare-regulation-documents.mjs --dist
           node scripts/prepare-production-pages.mjs
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -23,7 +23,8 @@
       "id": "Mengubah PP 23/2021.",
       "en": "Amends Government Regulation 23/2021."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://peraturan.bpk.go.id/Download/411502/PP%20Nomor%208%20Tahun%202026.pdf"
   },
   {
     "id": "pp-27-2025",
@@ -49,7 +50,12 @@
       "id": "",
       "en": ""
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/PP_27_2025.pdf",
+    "fileUrl": "/documents/regulations/pp-27-2025.pdf",
+    "fileBytes": 8151050,
+    "sha256": "6dbdf1ea536a341ee5042cb5b6baa6e0a94b2c2b34066a4c870ecff730ccd5b7",
+    "pages": 37
   },
   {
     "id": "uu-32-2024",
@@ -75,7 +81,12 @@
       "id": "Mengubah UU 5/1990.",
       "en": "Amends Law 5/1990."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kemenkoinfra.go.id/dokumen/file/uu/2024/uu-nomor-32-tahun-2024.pdf",
+    "fileUrl": "/documents/regulations/uu-32-2024.pdf",
+    "fileBytes": 5362571,
+    "sha256": "85cc00b74736eb231bafc0a47b10cf21795ac73ce81a79759f18b159e9635977",
+    "pages": 48
   },
   {
     "id": "perpres-28-2023",
@@ -101,7 +112,12 @@
       "id": "",
       "en": ""
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/PERPRES_28_2023.pdf",
+    "fileUrl": "/documents/regulations/perpres-28-2023.pdf",
+    "fileBytes": 2899574,
+    "sha256": "bd263c66df87fa713e2eae35cbb206800eaa7e9090b820cb1b75ec6189e533fd",
+    "pages": 56
   },
   {
     "id": "permen-9-2021",
@@ -127,7 +143,12 @@
       "id": "Mencabut antara lain Permen LHK 83/2016 dan 17/2020.",
       "en": "Repeals, among others, Ministerial Regulations 83/2016 and 17/2020."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/2021pmlhk009_menlhk_06102021150537.pdf",
+    "fileUrl": "/documents/regulations/permen-9-2021.pdf",
+    "fileBytes": 3447504,
+    "sha256": "aaa252b0116d9afcf921b7dc8b5677f522ce4f5ecf7d29e079bf7cb97e185f7e",
+    "pages": 268
   },
   {
     "id": "pp-23-2021",
@@ -153,7 +174,12 @@
       "id": "Telah diubah dengan PP 8/2026.",
       "en": "Amended by Government Regulation 8/2026."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kemenkoinfra.go.id/dokumen/file/pp/2021/salinan-pp-nomor-23-tahun-2021.pdf",
+    "fileUrl": "/documents/regulations/pp-23-2021.pdf",
+    "fileBytes": 10184294,
+    "sha256": "96d032524a4714ae9008c8843d1a4bdf06a93cca312a170865370f0d793f32ea",
+    "pages": 218
   },
   {
     "id": "permen-8-2018",
@@ -179,7 +205,12 @@
       "id": "",
       "en": ""
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/Untitled.pdf",
+    "fileUrl": "/documents/regulations/permen-8-2018.pdf",
+    "fileBytes": 453929,
+    "sha256": "7d9b1c1791098e03f055066fa903c74d3daa6759c1eec3d703d1d39342327887",
+    "pages": 36
   },
   {
     "id": "pp-57-2016",
@@ -205,7 +236,12 @@
       "id": "Mengubah PP 71/2014.",
       "en": "Amends Government Regulation 71/2014."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/PP%2057%20Tahun%202016.pdf",
+    "fileUrl": "/documents/regulations/pp-57-2016.pdf",
+    "fileBytes": 1132903,
+    "sha256": "abef0d3ef2de86b5d28e2eb2cd3aa13a55e48dfeda2e090a74f41babca31946c",
+    "pages": 23
   },
   {
     "id": "permen-32-2016",
@@ -231,7 +267,12 @@
       "id": "",
       "en": ""
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/P.32%20%282%29.pdf",
+    "fileUrl": "/documents/regulations/permen-32-2016.pdf",
+    "fileBytes": 649694,
+    "sha256": "cbbd46c1b25714934b9bc3e866a3e4a6176d083a2ec272028075ab794157f343",
+    "pages": 69
   },
   {
     "id": "pp-71-2014",
@@ -257,6 +298,11 @@
       "id": "Telah diubah dengan PP 57/2016.",
       "en": "Amended by Government Regulation 57/2016."
     },
-    "verifiedAt": "2026-10-05"
+    "verifiedAt": "2026-10-05",
+    "documentSourceUrl": "https://jdih.kehutanan.go.id/new2/uploads/files/PP%2071%20Tahun%202014.pdf",
+    "fileUrl": "/documents/regulations/pp-71-2014.pdf",
+    "fileBytes": 323558,
+    "sha256": "13d744542b4af7810c1eb9649491305fb48329c249db010f02936bf4f8191103",
+    "pages": 38
   }
 ]
