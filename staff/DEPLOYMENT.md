@@ -47,3 +47,9 @@ Referensi resmi: https://developers.cloudflare.com/workers/ci-cd/external-cicd/g
 Tombol Pratinjau website membuka tab privat menggunakan header, footer, dan CSS hasil build website publik. Isi formulir dikirim ke endpoint staf yang memerlukan sesi, disanitasi, lalu dirender tanpa menyimpan atau menerbitkan artikel. Draf tidak dimasukkan ke URL, penyimpanan browser, atau Analytics. Foto tetap mengikuti izin media staf.
 
 Workflow deployment membangun website dan menjalankan `node staff/scripts/build-preview.mjs` sebelum menerbitkan Worker. Untuk pengembangan lokal, jalankan `npm run build` di root repository lalu script tersebut. Template dan CSS hasil build di `staff/public/website-preview` dan `staff/public/_astro` tidak disimpan ke Git. Builder menghentikan proses bila struktur artikel publik yang dibutuhkan tidak ditemukan.
+
+## Perbaikan dan Sampah
+
+Klik judul/Perbaiki tulisan pada daftar Tulisan, simpan revisi, lalu Terbitkan perbaikan untuk memperbarui website. Daftar memeriksa hasil build tulisan yang masih berstatus diproses; tombol Periksa status tersedia di editor.
+
+Hapus ke sampah bersifat dapat dipulihkan. Draf disembunyikan dari daftar aktif; artikel yang pernah diterbitkan lebih dahulu diubah menjadi draft di repository dan baru masuk Sampah setelah build website berhasil. Foto tidak dihapus karena mungkin dipakai artikel lain. Filter Sampah menyediakan Pulihkan draf; pemulihan tidak otomatis menerbitkan artikel. Izin tetap pemilik tulisan atau editor/admin. Migrasi 0002 menambahkan deleted_at dan publish_action tanpa menghapus data.

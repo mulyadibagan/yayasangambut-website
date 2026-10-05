@@ -68,11 +68,11 @@ async function postMedia(env,u,p){
     if(!media || (!isEditor(u)&&media.owner!==u.id))fail(403,'Foto tidak tersedia untuk tulisan ini.');ids.push(id);
   }return [...new Set(ids)];
 }
-async function publish(env,u,id,expectedVersion){
+async function publish(env,u,id,expectedVersion,action='publish'){
   let p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();assertEdit(u,p);
-  const clean=validatePost(p,env.APP_ORIGIN,true);p={...p,...clean};const ids=await postMedia(env,u,p);
+  const removing=action==='trash';const clean=validatePost(p,env.APP_ORIGIN,!removing);p={...p,...clean};const ids=removing?[]:await postMedia(env,u,p);
   const access=await githubToken(env);
-  const lock=await query(env,"UPDATE posts SET status='publishing', published_at=COALESCE(published_at,?),publishing_started_at=?,github_sha=NULL,version=version+1,publish_error=NULL WHERE id=? AND version=? AND status!='publishing'",now(),now(),id,expectedVersion).run();
+  const lock=await query(env,"UPDATE posts SET status='publishing', published_at=COALESCE(published_at,?),publishing_started_at=?,github_sha=NULL,publish_action=?,version=version+1,publish_error=NULL WHERE id=? AND version=? AND status!='publishing'",now(),now(),action,id,expectedVersion).run();
   if(!lock.meta.changes)fail(409,'Tulisan sudah berubah. Muat ulang sebelum menerbitkan.');
   p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();
   try{
@@ -80,17 +80,17 @@ async function publish(env,u,id,expectedVersion){
     if(ids.length)await env.DB.batch(ids.map(mid=>query(env,'UPDATE media SET public=1 WHERE id=?',mid)));
     const path=`/contents/src/content/articles/${p.language}/staff-${id}.md`;
     const existing=await gh(env,path+'?ref='+encodeURIComponent(env.GITHUB_BRANCH),access);
-    const content=articleMarkdown(p);
+    const content=articleMarkdown(p,removing?'draft':'published');
     const encoded=Buffer.from(content,'utf8').toString('base64');
     const existingContent=existing?.content?.replace(/\s/g,'');
     let commitSha;
     if(existingContent===encoded){commitSha=(await gh(env,`/commits?path=src/content/articles/${p.language}/staff-${id}.md&sha=${encodeURIComponent(env.GITHUB_BRANCH)}&per_page=1`,access))[0].sha;}
     else{
-      const result=await gh(env,path,access,'PUT',{message:`Publish article: ${p.title}`,content:encoded,branch:env.GITHUB_BRANCH,...(existing?{sha:existing.sha}:{})});commitSha=result.commit.sha;
+      const result=await gh(env,path,access,'PUT',{message:`${removing?'Withdraw':'Publish'} article: ${p.title}`,content:encoded,branch:env.GITHUB_BRANCH,...(existing?{sha:existing.sha}:{})});commitSha=result.commit.sha;
     }
     await query(env,"UPDATE posts SET github_sha=?,content_sha=?,version=version+1 WHERE id=?",commitSha,await sha(content),id).run();
-    await audit(env,u,'publish_requested',id);
-    return json({status:'publishing',message:'Artikel dikirim untuk diterbitkan. Website sedang dibangun.',commit:commitSha});
+    await audit(env,u,removing?'trash_requested':'publish_requested',id);
+    return json({status:'publishing',message:removing?'Artikel sedang ditarik dari website. Tulisan masuk Sampah setelah build berhasil.':'Artikel dikirim untuk diterbitkan. Website sedang dibangun.',commit:commitSha});
   }catch(e){await query(env,"UPDATE posts SET status='review',publish_error=? WHERE id=?",'Penerbitan belum terkonfirmasi. Editor dapat mencoba kembali.',id).run();throw e;}
 }
 async function checkPublish(env,p){
@@ -106,9 +106,9 @@ async function checkPublish(env,p){
     for(const candidate of recent?.workflow_runs||[]){const comparison=await gh(env,`/compare/${p.github_sha}...${candidate.head_sha}`,access);if(['ahead','identical'].includes(comparison?.status)){run=candidate;break;}}
   }
   if(run?.status==='completed'){
-    const ok=run.conclusion==='success';
-    await query(env,'UPDATE posts SET status=?,publish_error=? WHERE id=? AND github_sha=?',ok?'published':'review',ok?null:'Build website belum berhasil. Hubungi administrator sebelum mencoba kembali.',p.id,p.github_sha).run();
-    p.status=ok?'published':'review';p.publish_error=ok?null:'Build website belum berhasil.';
+    const ok=run.conclusion==='success',removed=ok&&p.publish_action==='trash';
+    await query(env,'UPDATE posts SET status=?,deleted_at=?,publish_error=? WHERE id=? AND github_sha=?',removed?'draft':ok?'published':'review',removed?now():null,ok?null:'Build website belum berhasil. Hubungi administrator sebelum mencoba kembali.',p.id,p.github_sha).run();
+    p.status=removed?'draft':ok?'published':'review';p.deleted_at=removed?now():null;p.publish_error=ok?null:'Build website belum berhasil.';
   }return p;
 }
 async function analytics(env,days){
@@ -128,18 +128,27 @@ async function api(req,env,url,u){
   if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
-    const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(r.results);
+    const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
   }
   if(path==='/api/posts'&&method==='POST'){
     const p=validatePost(await payload(req),env.APP_ORIGIN);const id=crypto.randomUUID();const slug=(p.title.normalize('NFKD').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,90)||'cerita')+'-'+id.slice(0,8);
     await postMedia(env,u,p);
     await query(env,"INSERT INTO posts(id,owner,title,slug,language,summary,category,author,body,cover,image_alt,image_credit,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'draft',?,?)",id,u.id,p.title,slug,p.language,p.summary,p.category,p.author||u.name,p.body,p.cover,p.image_alt,p.image_credit,now(),now()).run();await audit(env,u,'create',id);return json(await query(env,'SELECT * FROM posts WHERE id=?',id).first(),201);
   }
-  const match=path.match(/^\/api\/posts\/([a-f0-9-]+)(?:\/(submit|return|publish))?$/);
+  const match=path.match(/^\/api\/posts\/([a-f0-9-]+)(?:\/(submit|return|publish|trash|restore))?$/);
   if(match){
     const [,id,action]=match;let p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();if(!p)fail(404,'Tulisan tidak ditemukan.');
     if(!isEditor(u)&&p.owner!==u.id)fail(403,'Tulisan ini bukan milik Anda.');
     if(method==='GET'&&!action)return json(await checkPublish(env,p));
+    if(method==='POST'&&action==='restore'){
+      const input=await payload(req);if(!p.deleted_at)fail(409,'Tulisan tidak berada di Sampah.');
+      const r=await query(env,"UPDATE posts SET deleted_at=NULL,status='draft',published_at=NULL,publish_action='publish',github_sha=NULL,publish_error=NULL,updated_at=?,version=version+1 WHERE id=? AND version=? AND deleted_at IS NOT NULL",now(),id,input.version).run();if(!r.meta.changes)fail(409,'Tulisan sudah berubah. Muat ulang.');await audit(env,u,'restore',id);return json({ok:true});
+    }
+    if(method==='POST'&&action==='trash'){
+      assertEdit(u,p);const input=await payload(req);
+      if(p.published_at)return publish(env,u,id,input.version,'trash');
+      const r=await query(env,"UPDATE posts SET deleted_at=?,updated_at=?,version=version+1 WHERE id=? AND version=? AND status!='publishing' AND deleted_at IS NULL",now(),now(),id,input.version).run();if(!r.meta.changes)fail(409,'Tulisan sudah berubah. Muat ulang.');await audit(env,u,'trash',id);return json({ok:true,message:'Tulisan dipindahkan ke Sampah dan dapat dipulihkan.'});
+    }
     if(method==='POST'&&action==='publish'){const input=await payload(req);return publish(env,u,id,input.version);}
     if(method==='PUT'&&!action){
       assertEdit(u,p);const input=await payload(req);const clean=validatePost(input,env.APP_ORIGIN);await postMedia(env,u,clean);
