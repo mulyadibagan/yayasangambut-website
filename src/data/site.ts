@@ -3,15 +3,18 @@ export type Lang = 'id' | 'en';
 export const routeMap = {
   id: {
     home: '/id/', about: '/id/tentang-kami/', programs: '/id/program/', locations: '/id/lokasi-kerja/',
-    impact: '/id/dampak/', stories: '/id/cerita/', publications: '/id/publikasi/', gallery: '/id/galeri/', contact: '/id/hubungi-kami/',
+    impact: '/id/dampak/', stories: '/id/cerita/', publications: '/id/publikasi/', knowledge: '/id/pengetahuan/', gallery: '/id/galeri/', contact: '/id/hubungi-kami/',
   },
   en: {
     home: '/en/', about: '/en/about/', programs: '/en/programs/', locations: '/en/where-we-work/',
-    impact: '/en/impact/', stories: '/en/field-stories/', publications: '/en/publications/', gallery: '/en/gallery/', contact: '/en/contact/',
+    impact: '/en/impact/', stories: '/en/field-stories/', publications: '/en/publications/', knowledge: '/en/knowledge/', gallery: '/en/gallery/', contact: '/en/contact/',
   },
 } as const;
 
 export const pagePairs: Record<string, string> = {
+  '/id/pengetahuan/': '/en/knowledge/', '/en/knowledge/': '/id/pengetahuan/',
+  '/id/pengetahuan/peraturan/': '/en/knowledge/regulations/', '/en/knowledge/regulations/': '/id/pengetahuan/peraturan/',
+  '/id/pengetahuan/panduan/': '/en/knowledge/guides/', '/en/knowledge/guides/': '/id/pengetahuan/panduan/',
   '/': '/en/',
   '/id/publikasi/laporan-tahun-2024/': '/en/publications/annual-report-2024/', '/en/publications/annual-report-2024/': '/id/publikasi/laporan-tahun-2024/',
   '/id/publikasi/panduan-pengelolaan-lahan-gambut-berkelanjutan-berbasis-masyarakat/': '/en/publications/community-peatland-management-guide/', '/en/publications/community-peatland-management-guide/': '/id/publikasi/panduan-pengelolaan-lahan-gambut-berkelanjutan-berbasis-masyarakat/',
@@ -40,7 +43,7 @@ export const pagePairs: Record<string, string> = {
 
 export const copy = {
   id: {
-    nav: ['Tentang Kami', 'Program', 'Wilayah Kerja', 'Dampak', 'Cerita Lapangan', 'Publikasi'],
+    nav: ['Tentang Kami', 'Program', 'Wilayah Kerja', 'Dampak', 'Cerita Lapangan', 'Pengetahuan'],
     heroKicker: 'Pengelolaan sumber daya alam berbasis kemitraan', heroTitle: 'Bersama masyarakat menjaga gambut, hutan, dan pesisir Indonesia.',
     heroText: 'Yayasan Gambut mendukung pengelolaan sumber daya alam lahan basah dan ekosistem lainnya melalui kemitraan strategis dengan masyarakat, pemerintah, akademisi, dan sektor swasta.',
     seePrograms: 'Jelajahi Program', exploreWebgis: 'Buka YG GeoPortal', impactEyebrow: 'Dampak berbasis bukti', impactTitle: 'Aksi lapangan yang dapat ditelusuri.',
@@ -52,7 +55,7 @@ export const copy = {
     temporary: 'DATA PUBLIK · 28 SEP 2026', latest: 'Lihat semua', read: 'Baca cerita', view: 'Lihat publikasi',
   },
   en: {
-    nav: ['About', 'Programs', 'Where We Work', 'Impact', 'Field Stories', 'Publications'],
+    nav: ['About', 'Programs', 'Where We Work', 'Impact', 'Field Stories', 'Knowledge'],
     heroKicker: 'Partnership-based natural resource management', heroTitle: 'Working with communities to protect Indonesia’s peatlands, forests, and coasts.',
     heroText: 'Yayasan Gambut supports the sustainable management of wetlands and other ecosystems through strategic partnerships with communities, government, academia, and the private sector.',
     seePrograms: 'Explore programs', exploreWebgis: 'Open YG GeoPortal', impactEyebrow: 'Evidence-led impact', impactTitle: 'Field action you can trace.',

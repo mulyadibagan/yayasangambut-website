@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import ContentLayout from '../layouts/ContentLayout.astro';
+import regulations from '../data/regulations.json';
+import type { Lang } from '../data/site';
+const {lang,kind='overview'}=Astro.props as {lang:Lang,kind:'overview'|'regulations'|'guides'};
+const id=lang==='id';
+const base=id?'/id/pengetahuan/':'/en/knowledge/';
+const pub=id?'/id/publikasi/':'/en/publications/';
+const reg=base+(id?'peraturan/':'regulations/');
+const guide=base+(id?'panduan/':'guides/');
+const titles={overview:id?'Pengetahuan dan Referensi':'Knowledge and Resources',regulations:id?'Kebijakan dan Peraturan':'Policies and Regulations',guides:id?'Panduan dan Modul':'Guides and Learning Resources'};
+const intros={overview:id?'Publikasi, referensi kebijakan, dan panduan untuk mendukung pengelolaan ekosistem serta penghidupan masyarakat yang berkelanjutan.':'Publications, policy references, and practical guides supporting sustainable ecosystem management and community livelihoods.',regulations:id?'Peraturan pilihan tentang gambut, mangrove, kehutanan, keanekaragaman hayati, dan pengendalian kebakaran, dengan akses ke sumber resmi.':'Selected Indonesian regulations on peatlands, mangroves, forestry, biodiversity, and fire management, linked to official sources.',guides:id?'Bahan pembelajaran dan panduan praktik pengelolaan lahan, restorasi, serta pengembangan penghidupan masyarakat.':'Learning resources and practical guidance on land management, restoration, and community livelihoods.'};
+const topics:Record<string,string>=id?{peat:'Ekosistem gambut',mangrove:'Mangrove dan pesisir',social:'Perhutanan sosial',forestry:'Kehutanan',biodiversity:'Keanekaragaman hayati',fire:'Kebakaran hutan dan lahan'}:{peat:'Peatland ecosystems',mangrove:'Mangroves and coasts',social:'Social forestry',forestry:'Forestry',biodiversity:'Biodiversity',fire:'Forest and land fires'};
+const publications=(await getCollection('publications',({data})=>data.language===lang&&data.status==='published')).sort((a,b)=>b.data.year-a.data.year);
+const guides=publications.filter(e=>!['Laporan Tahunan','Annual Report'].includes(e.data.category));
+const displayed=kind==='guides'?guides:publications.slice(0,3);
+---
+<ContentLayout title={titles[kind]} intro={intros[kind]} eyebrow={id?'Yayasan Gambut · Sumber pengetahuan':'Yayasan Gambut · Resources'}>
+ <div class="container knowledge">
+  <nav class="resource-nav" aria-label={id?'Navigasi pengetahuan':'Resource navigation'}>
+   {[[base,id?'Ikhtisar':'Overview'],[pub,id?'Publikasi':'Publications'],[reg,id?'Kebijakan dan Peraturan':'Policies and Regulations'],[guide,id?'Panduan dan Modul':'Guides and Learning Resources']].map(([href,label])=><a href={href} aria-current={(kind==='overview'?base:kind==='regulations'?reg:guide)===href?'page':undefined}>{label}</a>)}
+  </nav>
+  {kind==='overview'&&<section class="collections" aria-label={id?'Koleksi pengetahuan':'Resource collections'}>
+   {[
+    [pub,'01',id?'Publikasi':'Publications',id?'Laporan tahunan, hasil kajian, dan pembelajaran dari kerja bersama masyarakat.':'Annual reports, studies, and lessons from working with communities.'],
+    [reg,'02',id?'Kebijakan dan Peraturan':'Policies and Regulations',id?'Telusuri peraturan berdasarkan tema, lengkap dengan sumber dan hubungan perubahannya.':'Explore regulations by theme, with official sources and amendment references.'],
+    [guide,'03',id?'Panduan dan Modul':'Guides and Learning Resources',id?'Referensi praktis untuk pendampingan, pengelolaan lahan, dan pemulihan ekosistem.':'Practical resources for community support, land management, and ecosystem restoration.']
+   ].map(([href,n,title,desc])=><a class="collection" href={href}><span class="collection-number">{n}</span><h2>{title}</h2><p>{desc}</p><span class="explore">{id?'Jelajahi koleksi':'Explore collection'} <span aria-hidden="true">↗</span></span></a>)}
+  </section>}
+  {kind==='regulations'?<section data-regulations data-lang={lang}>
+   <div class="catalog-tools" data-regulation-controls hidden>
+    <label>{id?'Cari peraturan':'Search regulations'}<input type="search" data-search placeholder={id?'Judul, nomor, tahun, atau kata kunci…':'Title, number, year, or keyword…'}/></label>
+    <label>{id?'Tema':'Theme'}<select data-topic><option value="">{id?'Semua tema':'All themes'}</option>{Object.entries(topics).map(([value,label])=><option value={value}>{label}</option>)}</select></label>
+    <button type="button" data-reset>{id?'Atur ulang':'Reset'}</button>
+   </div>
+   <div class="catalog-meta"><p role="status" aria-live="polite" data-count>{regulations.length} {id?'peraturan':'regulations'}</p><p>{id?'Sumber ditinjau 5 Oktober 2026':'Sources reviewed 5 October 2026'}</p></div>
+   {!id&&<p class="source-note">English titles and summaries are provided for reference. Official documents are in Indonesian.</p>}
+   <div class="regulation-list">{regulations.map(r=><article id={r.id} data-record data-topic={r.topic} data-search={`${r.number} ${r.year} ${r.title.id} ${r.title.en} ${r.summary[lang]} ${topics[r.topic]}`.toLocaleLowerCase()}>
+    <div class="record-meta"><span class="topic">{topics[r.topic]}</span><span>{r.number}</span></div>
+    <h2>{r.title[lang]}</h2><p class="record-summary">{r.summary[lang]}</p>
+    <details><summary>{id?'Status dan informasi peraturan':'Status and regulation details'}</summary><dl><dt>{id?'Judul resmi':'Official title'}</dt><dd lang="id">{r.title.id}</dd><dt>{id?'Instansi penerbit':'Issuing authority'}</dt><dd>{r.issuer}</dd><dt>{id?'Status pada sumber':'Status in source'}</dt><dd>{r.status[lang]}</dd>{r.note[lang]&&<><dt>{id?'Hubungan peraturan':'Related legislation'}</dt><dd>{r.note[lang]}</dd></>}<dt>{id?'Sumber':'Source'}</dt><dd>{r.source}</dd></dl></details>
+    <a class="official-link" href={r.url} target="_blank" rel="noopener noreferrer">{id?'Baca di sumber resmi':'Read the official source'} <span aria-hidden="true">↗</span><span class="sr-only"> — {r.number}</span></a>
+   </article>)}</div>
+   <p class="empty" data-empty hidden>{id?'Tidak ada peraturan yang sesuai. Coba kata kunci lain atau atur ulang filter.':'No matching regulations. Try another keyword or reset the filters.'}</p>
+   <p class="source-note">{id?'Status dan hubungan peraturan mengikuti informasi pada sumber resmi saat peninjauan. Baca naskah lengkap beserta perubahan dan lampirannya melalui tautan yang tersedia.':'Status and amendment references reflect official sources at the review date. Consult the full text, amendments, and annexes using the links provided.'}</p>
+  </section>:<section class="publication-section"><div class="section-heading"><div><p class="eyebrow">{kind==='guides'?(id?'Pembelajaran untuk praktik':'Learning into practice'):(id?'Dari Yayasan Gambut':'From Yayasan Gambut')}</p><h2>{kind==='guides'?(id?'Koleksi Panduan':'Guide Collection'):(id?'Publikasi Terbaru':'Recent Publications')}</h2></div>{kind==='overview'&&<a href={pub}>{id?'Semua publikasi →':'All publications →'}</a>}</div><div class="publication-grid">{displayed.map(e=><article>{e.data.cover&&<img src={e.data.cover} alt={e.data.title} width="350" height="450" loading="lazy" decoding="async"/>}<div><p class="eyebrow">{e.data.category} · {e.data.year}</p><h3><a href={`${pub}${e.data.slug}/`}>{e.data.title}</a></h3><p>{e.data.summary}</p><a class="official-link" href={e.data.fileUrl} target="_blank" rel="noopener noreferrer">{id?'Buka PDF':'Open PDF'} <span aria-hidden="true">↗</span></a></div></article>)}</div></section>}
+ </div>
+</ContentLayout>
+<script>
+ document.querySelectorAll<HTMLElement>('[data-regulations]').forEach(root=>{
+  const search=root.querySelector<HTMLInputElement>('[data-search]')!;
+  const topic=root.querySelector<HTMLSelectElement>('[data-topic]')!;
+  const records=[...root.querySelectorAll<HTMLElement>('[data-record]')];
+  const controls=root.querySelector<HTMLElement>('[data-regulation-controls]')!;
+  controls.hidden=false;
+  const apply=()=>{const words=search.value.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);let count=0;records.forEach(record=>{const show=(!topic.value||record.dataset.topic===topic.value)&&words.every(word=>record.dataset.search?.includes(word));record.hidden=!show;if(show)count++;});root.querySelector('[data-count]')!.textContent=`${count} ${root.dataset.lang==='id'?'peraturan':'regulations'}`;root.querySelector<HTMLElement>('[data-empty]')!.hidden=count!==0;};
+  search.addEventListener('input',apply);topic.addEventListener('change',apply);root.querySelector('[data-reset]')!.addEventListener('click',()=>{search.value='';topic.value='';apply();search.focus();});
+ });
+</script>
+<style>
+.knowledge{padding-bottom:4rem}.resource-nav{display:flex;gap:.5rem;flex-wrap:wrap;padding:1.4rem 0 2rem}.resource-nav a{padding:.7rem 1rem;border-radius:999px;text-decoration:none;font-size:.9rem;font-weight:700;border:1px solid var(--line)}.resource-nav a[aria-current]{background:var(--forest-950);color:white}.collections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}.collection{display:flex;flex-direction:column;text-decoration:none;padding:1.8rem;border-radius:1.1rem;background:#e4efe5;border:1px solid #cfdfd2;transition:transform .2s}.collection:nth-child(2){background:#e3eff1;border-color:#c7dde0}.collection:nth-child(3){background:#f5ead6;border-color:#e6d6b8}.collection:hover{transform:translateY(-3px)}.collection-number{font-size:.8rem;letter-spacing:.14em;margin-bottom:2rem}.collection h2{font-size:1.5rem;margin-bottom:.8rem}.collection p{font-size:.95rem}.explore{margin-top:auto;padding-top:1.5rem;font-weight:700}.publication-section{margin-top:2rem}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.5rem}.section-heading h2{font-size:1.9rem}.publication-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.5rem}.publication-grid article{border:1px solid var(--line);border-radius:1rem;overflow:hidden;background:var(--paper-bright)}.publication-grid img{width:100%;height:230px;object-fit:contain;background:#e9ede7;padding:1rem}.publication-grid article>div{padding:1.3rem}.publication-grid h3{font-size:1.2rem}.publication-grid h3 a{text-decoration:none}.publication-grid p{font-size:.9rem}.catalog-tools{display:grid;grid-template-columns:2fr 1fr auto;align-items:end;gap:1rem;padding:1.4rem;border:1px solid var(--line);border-radius:1rem;background:#e8f0e9}.catalog-tools label{display:grid;gap:.5rem;font-size:.9rem;font-weight:700}.catalog-tools input,.catalog-tools select,.catalog-tools button{min-height:46px;padding:.7rem;border:1px solid #839c90;border-radius:.5rem;font:inherit;background:white;color:var(--forest-950);width:100%}.catalog-tools button{cursor:pointer}.catalog-meta{display:flex;justify-content:space-between;gap:1rem;font-size:.83rem;padding:1rem 0}.regulation-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.regulation-list article{border:1px solid var(--line);border-radius:1rem;padding:1.5rem;background:var(--paper-bright)}.record-meta{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;font-size:.78rem;margin-bottom:1rem;font-weight:700}.topic{padding:.3rem .65rem;border-radius:999px;background:#e2eee7;color:#244c39}.regulation-list h2{font-size:1.28rem;line-height:1.4}.record-summary{font-size:.95rem}.regulation-list details{border-top:1px solid var(--line);padding-top:.9rem;margin:1.2rem 0}.regulation-list summary{cursor:pointer;font-size:.85rem;font-weight:700;min-height:30px}.regulation-list dl{font-size:.85rem}.regulation-list dt{font-weight:700;margin-top:.7rem}.regulation-list dd{margin:0}.official-link{display:inline-block;font-weight:700;font-size:.9rem;padding:.5rem 0;min-height:44px}.source-note{font-size:.85rem;color:var(--muted);max-width:85ch;margin:1.5rem 0}.empty{padding:2rem;border:1px dashed var(--line);border-radius:1rem}[hidden]{display:none!important}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #257c83;outline-offset:4px}@media(max-width:800px){.collections,.publication-grid{grid-template-columns:1fr}.regulation-list{grid-template-columns:1fr}.catalog-tools{grid-template-columns:1fr}.collection-number{margin-bottom:1rem}.section-heading,.catalog-meta{align-items:start;flex-direction:column;gap:.3rem}.publication-grid article{display:grid;grid-template-columns:110px 1fr}.publication-grid img{height:100%;max-height:250px;padding:.5rem}.resource-nav a{font-size:.8rem}.regulation-list article{padding:1.2rem}}@media(prefers-reduced-motion:reduce){.collection{transition:none}.collection:hover{transform:none}}
+</style>
