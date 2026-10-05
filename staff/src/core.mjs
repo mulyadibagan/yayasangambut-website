@@ -10,6 +10,7 @@ export function assertIdentity(p,env){
 export function assertEdit(user,post){
   if(!post) fail(404,'Tulisan tidak ditemukan.');
   if(!isEditor(user) && post.owner!==user.id) fail(403,'Tulisan ini tidak dapat disunting dengan akses Anda.');
+  if(post.deleted_at) fail(409,'Pulihkan tulisan dari Sampah sebelum menyunting.');
   if(post.status==='publishing') fail(409,'Tulisan sedang diterbitkan. Tunggu proses selesai.');
 }
 export const now=()=>new Date().toISOString();
@@ -34,8 +35,8 @@ export function validatePost(input,origin,publish=false){
   if(publish && p.cover && !p.image_alt)fail(400,'Isi deskripsi foto utama.');
   return p;
 }
-export function articleMarkdown(p){
-  const fields={title:p.title,slug:p.slug,date:p.published_at,modified:p.updated_at,author:p.author,summary:p.summary,category:p.category,language:p.language,status:'published',featured:false,...(p.cover?{featuredImage:p.cover,imageAlt:p.image_alt,imageCredit:p.image_credit}:{})};
+export function articleMarkdown(p,status='published'){
+  const fields={title:p.title,slug:p.slug,date:p.published_at,modified:p.updated_at,author:p.author,summary:p.summary,category:p.category,language:p.language,status,featured:false,...(p.cover?{featuredImage:p.cover,imageAlt:p.image_alt,imageCredit:p.image_credit}:{})};
   return '---\n'+Object.entries(fields).map(([k,v])=>k+': '+JSON.stringify(v)).join('\n')+'\n---\n\n'+p.body+'\n';
 }
 export function imageType(bytes){
