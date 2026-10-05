@@ -9,7 +9,7 @@ export function assertIdentity(p,env){
 }
 export function assertEdit(user,post){
   if(!post) fail(404,'Tulisan tidak ditemukan.');
-  if(!isEditor(user) && (post.owner!==user.id || post.status!=='draft')) fail(403,'Tulisan ini tidak dapat disunting dengan akses Anda.');
+  if(!isEditor(user) && post.owner!==user.id) fail(403,'Tulisan ini tidak dapat disunting dengan akses Anda.');
   if(post.status==='publishing') fail(409,'Tulisan sedang diterbitkan. Tunggu proses selesai.');
 }
 export const now=()=>new Date().toISOString();

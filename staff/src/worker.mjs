@@ -68,7 +68,6 @@ async function postMedia(env,u,p){
   }return [...new Set(ids)];
 }
 async function publish(env,u,id,expectedVersion){
-  if(!isEditor(u))fail(403,'Hanya editor atau administrator yang dapat menerbitkan.');
   let p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();assertEdit(u,p);
   const clean=validatePost(p,env.APP_ORIGIN,true);p={...p,...clean};const ids=await postMedia(env,u,p);
   const access=await githubToken(env);
@@ -163,7 +162,7 @@ async function api(req,env,url,u){
     const id=crypto.randomUUID(); let filename='Foto'; try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Foto').slice(0,180);}catch{fail(400,'Nama foto tidak valid.');}
     await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
-  if(path==='/api/analytics'&&method==='GET'){if(!isEditor(u))fail(403,'Statistik tersedia untuk editor dan administrator.');return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28);}
+  if(path==='/api/analytics'&&method==='GET'){return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28);}
   if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
   if(path==='/api/users'&&method==='PATCH'){
     if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');const input=await payload(req);
