@@ -1,3 +1,4 @@
+import {renderPreview} from './preview.mjs';
 import {createRemoteJWKSet,jwtVerify,SignJWT,importPKCS8} from 'jose';
 import {HttpError,fail,isEditor,assertIdentity,assertEdit,now,token,sha,validatePost,articleMarkdown,imageType} from './core.mjs';
 const googleKeys=createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
@@ -123,7 +124,7 @@ async function analytics(env,days){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
-  if(path==='/api/preview'&&method==='POST'){const input=await payload(req);return json(validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN));}
+  if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){

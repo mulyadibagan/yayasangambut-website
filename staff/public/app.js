@@ -53,12 +53,11 @@ async function photoBlob(file){
 }
 async function upload(file){if(!file)return;notice('Mengunggah foto…');const blob=await photoBlob(file);const response=await fetch('/api/media',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'image/webp','X-Filename':encodeURIComponent(file.name.replace(/\.[^.]+$/,'.webp'))},body:blob});const r=await response.json();if(!response.ok)throw new Error(r.error);await loadMedia();if($('#media-dialog').open)renderMedia($('#picker-grid'),true);notice('Foto berhasil diunggah.');}
 async function preview(){
+ const tab=window.open('','_blank');if(!tab)throw new Error('Izinkan tab baru untuk membuka pratinjau website.');tab.opener=null;
+ tab.document.title='Memuat pratinjau…';tab.document.body.textContent='Memuat pratinjau website…';
  const button=$('#preview');button.disabled=true;
- try{const p=await api('/api/preview','POST',values());const root=$('#preview-content');root.lang=p.language;
- root.innerHTML='<small>'+esc(p.category)+' · '+esc(p.author)+'</small><h1>'+esc(p.title)+'</h1><p class="lead">'+esc(p.summary)+'</p>'+(p.cover?'<figure><img src="'+esc(p.cover)+'" alt="'+esc(p.image_alt)+'"><figcaption>'+esc(p.image_credit)+'</figcaption></figure>':'')+p.body;
- root.querySelectorAll('a').forEach(a=>{a.target='_blank';a.rel='noopener noreferrer';});
- $('#preview-dialog').showModal();root.scrollTop=0;
- }finally{button.disabled=false;}
+ try{const result=await api('/api/preview?view=website','POST',values());tab.document.open();tab.document.write(result.html);tab.document.close();}
+ catch(e){tab.close();throw e;}finally{button.disabled=false;}
 }
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Belum ada data untuk periode ini.</td></tr>'}</tbody></table></div>`;}
 async function loadStats(){const root=$('#analytics-content');root.innerHTML='<div class="empty">Memuat statistik…</div>';try{const r=await api('/api/analytics?days='+$('#stats-range').value);if(!r.configured){root.innerHTML='<div class="empty">'+esc(r.message)+'</div>';return;}const totals=r.totals.rows?.[0]?.metricValues?.map(x=>Number(x.value))||[0,0,0,0];root.innerHTML='<div class="stats-grid">'+['Pengunjung aktif','Sesi','Tampilan halaman','Tingkat interaksi'].map((name,i)=>`<div class="stat"><span>${name}</span><b>${i===3?(totals[i]*100).toFixed(1)+'%':totals[i].toLocaleString('id-ID')}</b></div>`).join('')+'</div><h2>Tren pengunjung</h2>';

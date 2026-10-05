@@ -25,6 +25,12 @@ jobs:
           cache: npm
           cache-dependency-path: staff/package-lock.json
       - run: npm ci --ignore-scripts
+      - name: Build public article preview templates
+        working-directory: .
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+          node staff/scripts/build-preview.mjs
       - run: npm test
       - run: npm run check
         env:

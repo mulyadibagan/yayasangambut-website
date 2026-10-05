@@ -41,3 +41,9 @@ Workflow menjalankan tes dan dry-run, memvalidasi konfigurasi, memeriksa nama re
 Verifikasi live tetap wajib: login admin/editor/staf, penolakan domain lain, unggah foto privat, simpan/review/publikasi artikel, status GitHub Pages, serta data Analytics. Tambahkan link login publik setelah verifikasi lulus.
 
 Referensi resmi: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/ dan https://developers.cloudflare.com/fundamentals/api/reference/permissions/
+
+## Pratinjau website
+
+Tombol Pratinjau website membuka tab privat menggunakan header, footer, dan CSS hasil build website publik. Isi formulir dikirim ke endpoint staf yang memerlukan sesi, disanitasi, lalu dirender tanpa menyimpan atau menerbitkan artikel. Draf tidak dimasukkan ke URL, penyimpanan browser, atau Analytics. Foto tetap mengikuti izin media staf.
+
+Workflow deployment membangun website dan menjalankan `node staff/scripts/build-preview.mjs` sebelum menerbitkan Worker. Untuk pengembangan lokal, jalankan `npm run build` di root repository lalu script tersebut. Template dan CSS hasil build di `staff/public/website-preview` dan `staff/public/_astro` tidak disimpan ke Git. Builder menghentikan proses bila struktur artikel publik yang dibutuhkan tidak ditemukan.
