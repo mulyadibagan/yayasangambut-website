@@ -27,11 +27,11 @@ function setCover(url){cover=url;$('#cover-preview').hidden=!url;$('#remove-cove
 function countWords(){$('#word-count').textContent=($('#post-body').innerText.trim().match(/\S+/g)||[]).length+' kata';}
 function markDirty(){dirty=true;$('#save-state').textContent='Perubahan belum disimpan';countWords();}
 function setEditorState(){
- const readonly=current&&(current.status==='publishing'||(!editor()&&current.status!=='draft'));
+ const readonly=current&&current.status==='publishing';
  $$('#editor input,#editor textarea,#editor select').forEach(e=>e.disabled=!!readonly);$('#post-language').disabled=!!current;
  $('#post-body').contentEditable=String(!readonly);$$('.toolbar button,#choose-cover,#remove-cover').forEach(b=>b.disabled=!!readonly);
  $$('.editor-actions button').forEach(b=>b.disabled=false);$('#save-post').disabled=!!readonly;$('#submit-post').disabled=!!readonly;
- $('#publish-post').hidden=!editor();$('#publish-post').disabled=!!readonly;$('#submit-post').hidden=editor();
+ $('#publish-post').hidden=false;$('#publish-post').disabled=!!readonly;$('#submit-post').hidden=editor();
  $('#return-post').hidden=!(editor()&&current?.status==='review');
  $('#review-note').hidden=!current?.review_note;$('#review-note').textContent=current?.review_note||'';
  $('#live-post').hidden=!current?.published_at;if(current?.published_at)$('#live-post').href='https://yayasangambut.org/'+current.language+'/'+(current.language==='id'?'cerita':'field-stories')+'/'+current.slug+'/';
