@@ -1,0 +1,7 @@
+---
+import RegulationPage from '../../../../components/RegulationPage.astro';
+import regulations from '../../../../data/regulations.json';
+export function getStaticPaths(){return regulations.map(regulation=>({params:{slug:regulation.id},props:{regulation}}));}
+const {regulation}=Astro.props;
+---
+<RegulationPage lang="en" regulation={regulation} />

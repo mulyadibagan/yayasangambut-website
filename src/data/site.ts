@@ -1,3 +1,4 @@
+import regulations from './regulations.json';
 export type Lang = 'id' | 'en';
 
 export const routeMap = {
@@ -12,6 +13,7 @@ export const routeMap = {
 } as const;
 
 export const pagePairs: Record<string, string> = {
+  ...Object.fromEntries(regulations.flatMap(r => [[`/id/pengetahuan/peraturan/${r.id}/`, `/en/knowledge/regulations/${r.id}/`], [`/en/knowledge/regulations/${r.id}/`, `/id/pengetahuan/peraturan/${r.id}/`]])),
   '/id/pengetahuan/': '/en/knowledge/', '/en/knowledge/': '/id/pengetahuan/',
   '/id/pengetahuan/peraturan/': '/en/knowledge/regulations/', '/en/knowledge/regulations/': '/id/pengetahuan/peraturan/',
   '/id/pengetahuan/panduan/': '/en/knowledge/guides/', '/en/knowledge/guides/': '/id/pengetahuan/panduan/',

@@ -28,3 +28,7 @@ src/data/legacy-wordpress-raw.json
 
 # jetbrains setting folder
 .idea/
+
+# Public PDFs are versioned in a verified GitHub Release archive.
+/public/documents/regulations/*.pdf
+/.regulation-archive/

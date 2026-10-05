@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import type { Lang } from '../data/site';
+interface Regulation {id:string;number:string;title:Record<Lang,string>;summary:Record<Lang,string>;issuer:string;status:Record<Lang,string>;note:Record<Lang,string>;url:string;source:string;verifiedAt:string;fileUrl?:string;fileBytes?:number;pages?:number;documentSourceUrl:string;}
+const {lang,regulation:r}=Astro.props as {lang:Lang;regulation:Regulation};
+const id=lang==='id';
+const index=id?'/id/pengetahuan/peraturan/':'/en/knowledge/regulations/';
+const size=r.fileBytes ? (r.fileBytes/1048576).toLocaleString(id?'id-ID':'en-GB',{maximumFractionDigits:1})+' MB':'';
+const reviewed=new Date(r.verifiedAt+'T00:00:00+07:00').toLocaleDateString(id?'id-ID':'en-GB',{timeZone:'Asia/Jakarta',day:'numeric',month:'long',year:'numeric'});
+---
+<BaseLayout title={`${r.number} — ${r.title[lang]} — Yayasan Gambut`} description={r.summary[lang]}>
+ <article class="container regulation-detail">
+  <nav class="breadcrumb" aria-label={id?'Navigasi halaman':'Breadcrumb'}><a href={index}>{id?'Kebijakan dan Peraturan':'Policies and Regulations'}</a><span aria-hidden="true"> / </span><span aria-current="page">{r.number}</span></nav>
+  <header><p class="eyebrow">{r.number}</p><h1>{r.title[lang]}</h1><p class="lede">{r.summary[lang]}</p></header>
+  <div class="document-actions">{r.fileUrl&&<><a class="button primary" href="#dokumen">{id?'Baca dokumen':'Read document'}</a><a class="button secondary" href={r.fileUrl} download={`${r.id}.pdf`}>{id?'Unduh PDF':'Download PDF'}{size&&` · ${size}`}</a></>}<a class="button secondary" href={r.url} target="_blank" rel="noopener noreferrer">{id?'Sumber resmi':'Official source'} ↗</a></div>
+  <dl class="document-meta"><div><dt>{id?'Status pada sumber':'Status in source'}</dt><dd>{r.status[lang]}</dd></div><div><dt>{id?'Instansi penerbit':'Issuing authority'}</dt><dd>{r.issuer}</dd></div><div><dt>{id?'Bahasa dokumen':'Document language'}</dt><dd>Bahasa Indonesia{r.pages&&` · ${r.pages} ${id?'halaman':'pages'}`}</dd></div><div><dt>{id?'Ditinjau':'Reviewed'}</dt><dd><time datetime={r.verifiedAt}>{reviewed}</time></dd></div></dl>
+  {r.note[lang]&&<p class="amendment">{r.note[lang]}</p>}
+  {!id&&<p class="document-note">The English title and summary are provided for reference. The official document is in Indonesian.</p>}
+  <section id="dokumen" class="reader-section" aria-labelledby="document-heading"><div class="reader-heading"><h2 id="document-heading">{id?'Naskah Peraturan':'Regulation Text'}</h2>{r.fileUrl&&<a href={r.fileUrl} target="_blank" rel="noopener noreferrer">{id?'Buka PDF penuh':'Open full PDF'} ↗</a>}</div>
+   {r.fileUrl?<><div class="pdf-reader" data-pdf-reader data-src={r.fileUrl} data-title={`${r.number} — ${r.title.id}`} data-lang={lang}>
+    <div class="reader-placeholder"><p>{id?'Baca salinan dokumen lengkap, termasuk lampiran yang terdapat dalam berkas.':'Read the complete document copy, including annexes contained in the file.'}</p><button class="button primary" type="button" data-load-pdf hidden>{id?'Tampilkan PDF':'Show PDF'}</button><noscript><a class="button primary" href={r.fileUrl}>{id?'Buka PDF':'Open PDF'}</a></noscript></div>
+   </div><p class="document-note">{id?'Jika dokumen tidak tampil pada perangkat Anda, gunakan Buka PDF penuh atau Unduh PDF.':'If your device cannot display the document here, use Open full PDF or Download PDF.'}</p><p class="document-note">{id?'Salinan untuk kemudahan akses. Naskah dan informasi status resmi tersedia pada':'A copy provided for convenient access. Official text and status information are available from'} <a href={r.url} target="_blank" rel="noopener noreferrer">{r.source}</a>. <a href={r.documentSourceUrl} target="_blank" rel="noopener noreferrer">{id?'Asal berkas PDF':'PDF source'}</a>.</p></>:<p>{id?'Naskah lengkap tersedia melalui sumber resmi.':'The full document is available from the official source.'} <a href={r.documentSourceUrl} target="_blank" rel="noopener noreferrer">{id?'Buka dokumen':'Open document'} ↗</a></p>}
+  </section>
+ </article>
+</BaseLayout>
+<script>
+ document.querySelectorAll<HTMLElement>('[data-pdf-reader]').forEach(root=>{
+  const button=root.querySelector<HTMLButtonElement>('[data-load-pdf]')!;button.hidden=false;
+  button.addEventListener('click',()=>{const frame=document.createElement('iframe');frame.src=root.dataset.src+'#view=FitH';frame.title=root.dataset.title!;frame.setAttribute('width','100%');frame.setAttribute('height','850');root.replaceChildren(frame);},{once:true});
+ });
+</script>
+<style>
+.regulation-detail{padding-top:1.5rem;padding-bottom:4rem}.breadcrumb{font-size:.85rem;margin-bottom:2rem;display:flex;gap:.5rem;flex-wrap:wrap}.regulation-detail header{max-width:65rem}.regulation-detail h1{font-size:clamp(1.65rem,3.6vw,2.8rem);line-height:1.2;max-width:36ch}.lede{max-width:75ch}.document-actions{display:flex;gap:.7rem;flex-wrap:wrap;margin:1.5rem 0}.document-meta{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;padding:1.5rem;background:#e8f0e9;border-radius:1rem}.document-meta dt{font-size:.78rem;color:var(--muted);margin-bottom:.4rem}.document-meta dd{margin:0;font-size:.9rem;font-weight:650}.amendment{border-left:3px solid #a27a36;padding:.8rem 1rem;background:#f5ead6;border-radius:0 .5rem .5rem 0}.reader-section{margin-top:2rem;scroll-margin-top:6rem}.reader-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1rem}.reader-heading h2{font-size:1.5rem;margin:0}.reader-heading a{font-size:.9rem}.pdf-reader{border:1px solid var(--line);border-radius:.8rem;overflow:hidden;background:#edf1ee}.reader-placeholder{padding:3rem 1.5rem;text-align:center}.reader-placeholder p{max-width:50ch;margin:0 auto 1.2rem}.pdf-reader :global(iframe){display:block;width:100%;height:80vh;min-height:480px;border:0;background:white}.document-note{font-size:.85rem;max-width:85ch;color:var(--muted)}[hidden]{display:none!important}a:focus-visible,button:focus-visible{outline:3px solid #257c83;outline-offset:4px}@media(max-width:700px){.document-meta{grid-template-columns:1fr 1fr}.reader-heading{align-items:flex-start;flex-direction:column}.document-actions .button{flex:1 1 auto}.pdf-reader :global(iframe){min-height:400px;height:70vh}}@media(max-width:380px){.document-meta{grid-template-columns:1fr}}
+</style>
