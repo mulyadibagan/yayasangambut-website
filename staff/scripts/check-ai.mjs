@@ -20,7 +20,15 @@ try{
   if(child.exitCode!==null)throw Error('AI check runtime did not start. '+logs);
   try{result=await fetch('http://127.0.0.1:8799/',{signal:AbortSignal.timeout(90000)});if(result.ok)break;if(result.status<500||i>=7)break;await result.arrayBuffer();await new Promise(resolve=>setTimeout(resolve,2000));}catch(e){if(e.name==='TimeoutError')throw e;await new Promise(resolve=>setTimeout(resolve,1000));}
  }
- if(!result?.ok){let diagnostic;try{diagnostic=await result.json();}catch{diagnostic={reason:'non_json_gateway_response'};}throw Error('Live Workers AI translation check failed (HTTP '+result?.status+'): '+JSON.stringify(diagnostic)+'. '+logs);}
- const data=await result.json();if(!data.ok)throw Error('Translation validation failed.');
- console.log('Live Workers AI translation check passed:',JSON.stringify(data.translations));
+ if(!result?.ok){
+  let diagnostic;try{diagnostic=await result.json();}catch{diagnostic={reason:'non_json_gateway_response'};}
+  if(diagnostic.reason==='quota'){
+   // The core dashboard and import do not call AI. Preserve their availability.
+   // Publishing still fails closed in translatePost; no stale English is sent.
+   console.warn('::warning::Workers AI quota exhausted. Deploying core dashboard; automatic English publication remains unavailable until quota is restored. Existing published articles are unchanged.');
+  }else throw Error('Live Workers AI translation check failed (HTTP '+result?.status+'): '+JSON.stringify(diagnostic)+'. '+logs);
+ }else{
+  const data=await result.json();if(!data.ok)throw Error('Translation validation failed.');
+  console.log('Live Workers AI translation check passed:',JSON.stringify(data.translations));
+ }
 }finally{child.kill('SIGTERM');await Promise.all([rm(config,{force:true}),rm(entry,{force:true})]);}
