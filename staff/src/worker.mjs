@@ -117,8 +117,8 @@ async function analytics(env,days){
   const report=async(dimensions,metrics,limit)=>{
     const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${env.GA_PROPERTY_ID}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+access_token,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[{startDate:days+'daysAgo',endDate:'yesterday'}],dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),...(limit?{limit,orderBys:[{metric:{metricName:metrics[0]},desc:true}]}:{orderBys:dimensions.length?[{dimension:{dimensionName:dimensions[0]}}]:[]})})});if(!r.ok)fail(502,'Statistik tidak dapat dibaca. Periksa akses Viewer properti Analytics.');return r.json();
   };
-  const reports=await Promise.all([report([],['activeUsers','sessions','screenPageViews','engagementRate']),report(['date'],['activeUsers']),report(['pagePath'],['screenPageViews'],10),report(['sessionDefaultChannelGroup'],['sessions'],10)]);
-  return json({configured:true,days,timezone:'Asia/Jakarta',totals:reports[0],daily:reports[1],pages:reports[2],sources:reports[3]});
+  const reports=await Promise.all([report([],['activeUsers','sessions','screenPageViews','engagementRate']),report(['date'],['activeUsers']),report(['pagePath'],['screenPageViews'],10),report(['sessionDefaultChannelGroup'],['sessions'],10),...await Promise.allSettled([report(['country'],['activeUsers','sessions'],20),report(['city','region','country'],['activeUsers','sessions'],50)])]);
+  return json({configured:true,days,timezone:'Asia/Jakarta',totals:reports[0],daily:reports[1],pages:reports[2],sources:reports[3],countries:reports[4].status==='fulfilled'?reports[4].value:{unavailable:true},cities:reports[5].status==='fulfilled'?reports[5].value:{unavailable:true}});
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
