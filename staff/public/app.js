@@ -27,12 +27,12 @@ function setCover(url){cover=url;$('#cover-preview').hidden=!url;$('#remove-cove
 function countWords(){$('#word-count').textContent=($('#post-body').innerText.trim().match(/\S+/g)||[]).length+' kata';}
 function markDirty(){dirty=true;$('#save-state').textContent='Perubahan belum disimpan';countWords();}
 function setEditorState(){
- const readonly=current&&(current.status==='publishing'||current.deleted_at);
+ const readonly=busy||(current&&(current.status==='publishing'||current.deleted_at));
  $$('#editor input,#editor textarea,#editor select').forEach(e=>e.disabled=!!readonly);$('#post-language').disabled=!!current;
  $('#post-body').contentEditable=String(!readonly);$$('.toolbar button,#choose-cover,#remove-cover').forEach(b=>b.disabled=!!readonly);
  $$('.editor-actions button').forEach(b=>b.disabled=false);$('#save-post').disabled=!!readonly;$('#submit-post').disabled=!!readonly;
  $('#publish-post').hidden=false;$('#publish-post').disabled=!!readonly;$('#submit-post').hidden=editor();
- $('#publish-post').textContent=current?.published_at?'Terbitkan perbaikan':'Terbitkan';
+ $('#publish-post').textContent=$('#post-language').value==='id'?'Terbitkan Indonesia & English':current?.published_at?'Terbitkan perbaikan':'Terbitkan';
  $('#trash-post').hidden=!current||!!current.deleted_at;$('#trash-post').disabled=!!readonly;$('#restore-post').hidden=!current?.deleted_at;$('#check-post').hidden=current?.status!=='publishing';
  $('#return-post').hidden=!(editor()&&current?.status==='review');
  $('#review-note').hidden=!current?.review_note;$('#review-note').textContent=current?.review_note||'';
@@ -45,9 +45,9 @@ async function openPost(id){if(dirty&&!confirm('Tinggalkan perubahan yang belum 
 }
 async function save(){const data=values();current=await api('/api/posts'+(current?'/'+current.id:''),current?'PUT':'POST',data);dirty=false;$('#post-body').innerHTML=current.body;$('#save-state').textContent='Draf tersimpan · '+new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Jakarta'});setEditorState();return current;}
 async function submit(){await lock(async()=>{await save();await api('/api/posts/'+current.id+'/submit','POST',{version:current.version});await openPost(current.id);notice('Tulisan sudah diajukan kepada editor.');});}
-async function publish(){if(!confirm('Terbitkan tulisan ini ke website publik Yayasan Gambut? Foto dalam tulisan juga akan menjadi publik.'))return;await lock(async()=>{if(dirty||!current)await save();const r=await api('/api/posts/'+current.id+'/publish','POST',{version:current.version});await openPost(current.id);notice(r.message);});}
+async function publish(){if(!confirm($('#post-language').value==='id'?'Terbitkan tulisan Indonesia beserta terjemahan Inggris otomatis? Foto dalam tulisan juga akan menjadi publik.':'Terbitkan tulisan ini ke website publik Yayasan Gambut? Foto dalam tulisan juga akan menjadi publik.'))return;await lock(async()=>{if(dirty||!current)await save();notice(current.language==='id'?'Menyiapkan terjemahan Inggris dan penerbitan kedua versi. Mohon tunggu…':'Menyiapkan penerbitan…');const r=await api('/api/posts/'+current.id+'/publish','POST',{version:current.version});await openPost(current.id);notice(r.message);});}
 async function trashPost(){
- const message=current.published_at?'Tarik artikel ini dari website dan pindahkan ke Sampah? Tulisan dapat dipulihkan. Foto tidak dihapus.':'Pindahkan tulisan ini ke Sampah? Tulisan dapat dipulihkan.';
+ const message=current.published_at?'Tarik artikel ini beserta versi bahasa pasangannya dari website dan pindahkan ke Sampah? Tulisan dapat dipulihkan. Foto tidak dihapus.':'Pindahkan tulisan ini ke Sampah? Tulisan dapat dipulihkan.';
  if(!confirm(message+(dirty?' Perubahan yang belum disimpan tidak ikut disimpan.':'')))return;
  await lock(async()=>{const r=await api('/api/posts/'+current.id+'/trash','POST',{version:current.version});dirty=false;await show('posts');notice(r.message);});
 }
@@ -85,7 +85,7 @@ $$('[data-view]').forEach(b=>b.onclick=handle(()=>show(b.dataset.view)));$('#new
 $('#trash-post').onclick=handle(trashPost);$('#restore-post').onclick=handle(restorePost);$('#check-post').onclick=handle(()=>openPost(current.id));
 $('#save-post').onclick=handle(()=>lock(async()=>{await save();notice('Draf berhasil disimpan.');}));$('#submit-post').onclick=handle(submit);$('#publish-post').onclick=handle(publish);$('#preview').onclick=handle(preview);$('#close-preview').onclick=()=>$('#preview-dialog').close();
 $('#return-post').onclick=handle(async()=>{const note=prompt('Catatan perbaikan untuk penulis:');if(note===null)return;if(dirty)await save();await api('/api/posts/'+current.id+'/return','POST',{version:current.version,note});await openPost(current.id);notice('Tulisan dikembalikan kepada penulis.');});
-$$('#editor input,#editor textarea,#editor select').forEach(e=>e.addEventListener('input',markDirty));$('#post-body').oninput=markDirty;$('#post-body').onpaste=e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));markDirty();};$('#post-body').ondrop=e=>e.preventDefault();
+$$('#editor input,#editor textarea,#editor select').forEach(e=>e.addEventListener('input',markDirty));$('#post-language').addEventListener('change',setEditorState);$('#post-body').oninput=markDirty;$('#post-body').onpaste=e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));markDirty();};$('#post-body').ondrop=e=>e.preventDefault();
 $$('[data-command]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{$('#post-body').focus();document.execCommand(b.dataset.command,false,b.dataset.value||null);markDirty();};});
 $('#insert-link').onmousedown=e=>e.preventDefault();$('#insert-link').onclick=()=>{const url=prompt('Alamat tautan (https://…):');if(!url)return;try{if(!['https:','mailto:'].includes(new URL(url).protocol))throw Error();document.execCommand('createLink',false,url);markDirty();}catch{notice('Gunakan tautan HTTPS atau email yang valid.',true);}};
 $('#insert-photo').onclick=handle(()=>chooseMedia('body'));$('#choose-cover').onclick=handle(()=>chooseMedia('cover'));$('#remove-cover').onclick=()=>{setCover('');markDirty();};$('#close-media').onclick=()=>$('#media-dialog').close();$('#upload-media').onclick=$('#upload-dialog').onclick=()=>$('#file-upload').click();$('#file-upload').onchange=handle(async e=>{await upload(e.target.files[0]);e.target.value='';});$('#stats-range').onchange=handle(loadStats);

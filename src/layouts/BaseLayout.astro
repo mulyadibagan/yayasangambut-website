@@ -1,4 +1,5 @@
 ---
+import { articlePairs } from '../utils/article-pairs';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { organisation, pagePairs } from '../data/site';
@@ -35,7 +36,7 @@ const {
 const lang = Astro.currentLocale ?? 'id';
 const currentPath = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 const canonical = new URL(currentPath === '/' ? '/id/' : currentPath, Astro.site).href;
-const alternatePath = pagePairs[currentPath];
+const alternatePath = (await articlePairs())[currentPath] ?? pagePairs[currentPath];
 const alternateLang = lang === 'id' ? 'en' : 'id';
 const socialImage = image
   ? new URL(image, Astro.site).href
@@ -153,7 +154,7 @@ const schema = article
   </head>
   <body>
     <a class="skip-link" href="#main">{lang === 'id' ? 'Lewati ke isi utama' : 'Skip to main content'}</a>
-    {!minimalChrome && <Header />}
+    {!minimalChrome && <Header alternatePath={alternatePath} />}
     <main id="main"><slot /></main>
     {!minimalChrome && <Footer />}
   </body>

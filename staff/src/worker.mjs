@@ -1,3 +1,4 @@
+import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
 import {renderPreview} from './preview.mjs';
 import {createRemoteJWKSet,jwtVerify,SignJWT,importPKCS8} from 'jose';
 import {HttpError,fail,isEditor,assertIdentity,assertEdit,now,token,sha,validatePost,articleMarkdown,imageType} from './core.mjs';
@@ -72,26 +73,23 @@ async function publish(env,u,id,expectedVersion,action='publish'){
   let p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();assertEdit(u,p);
   const removing=action==='trash';const clean=validatePost(p,env.APP_ORIGIN,!removing);p={...p,...clean};const ids=removing?[]:await postMedia(env,u,p);
   const access=await githubToken(env);
+  const previousPublishedAt=p.published_at,previousGithubSha=p.github_sha;let commitSha;
   const lock=await query(env,"UPDATE posts SET status='publishing', published_at=COALESCE(published_at,?),publishing_started_at=?,github_sha=NULL,publish_action=?,version=version+1,publish_error=NULL WHERE id=? AND version=? AND status!='publishing'",now(),now(),action,id,expectedVersion).run();
   if(!lock.meta.changes)fail(409,'Tulisan sudah berubah. Muat ulang sebelum menerbitkan.');
   p=await query(env,'SELECT * FROM posts WHERE id=?',id).first();
   try{
-    // Publication is explicit; only media referenced by this approved article becomes public.
+    const readFile=async path=>{const file=await gh(env,'/contents/'+path+'?ref='+encodeURIComponent(env.GITHUB_BRANCH),access);return file?Buffer.from(file.content.replace(/\s/g,''),'base64').toString('utf8'):null;};
+    const files=await bilingualFiles(env,p,removing,readFile);
+    // Only after translation succeeds do approved photos become public.
     if(ids.length)await env.DB.batch(ids.map(mid=>query(env,'UPDATE media SET public=1 WHERE id=?',mid)));
-    const path=`/contents/src/content/articles/${p.language}/staff-${id}.md`;
-    const existing=await gh(env,path+'?ref='+encodeURIComponent(env.GITHUB_BRANCH),access);
-    const content=articleMarkdown(p,removing?'draft':'published');
-    const encoded=Buffer.from(content,'utf8').toString('base64');
-    const existingContent=existing?.content?.replace(/\s/g,'');
-    let commitSha;
-    if(existingContent===encoded){commitSha=(await gh(env,`/commits?path=src/content/articles/${p.language}/staff-${id}.md&sha=${encodeURIComponent(env.GITHUB_BRANCH)}&per_page=1`,access))[0].sha;}
-    else{
-      const result=await gh(env,path,access,'PUT',{message:`${removing?'Withdraw':'Publish'} article: ${p.title}`,content:encoded,branch:env.GITHUB_BRANCH,...(existing?{sha:existing.sha}:{})});commitSha=result.commit.sha;
-    }
-    await query(env,"UPDATE posts SET github_sha=?,content_sha=?,version=version+1 WHERE id=?",commitSha,await sha(content),id).run();
+    commitSha=await commitFiles(env,access,files,`${removing?'Withdraw':'Publish'} article${p.language==='id'?' (ID + EN)':''}: ${p.title}`,gh);
+    await query(env,"UPDATE posts SET github_sha=?,content_sha=?,version=version+1 WHERE id=?",commitSha,await sha(JSON.stringify(files)),id).run();
     await audit(env,u,removing?'trash_requested':'publish_requested',id);
-    return json({status:'publishing',message:removing?'Artikel sedang ditarik dari website. Tulisan masuk Sampah setelah build berhasil.':'Artikel dikirim untuk diterbitkan. Website sedang dibangun.',commit:commitSha});
-  }catch(e){await query(env,"UPDATE posts SET status='review',publish_error=? WHERE id=?",'Penerbitan belum terkonfirmasi. Editor dapat mencoba kembali.',id).run();throw e;}
+    return json({status:'publishing',message:removing?'Artikel sedang ditarik dari website. Tulisan masuk Sampah setelah build berhasil.':(p.language==='id'?'Artikel Indonesia dan Inggris dikirim untuk diterbitkan. Website sedang dibangun.':'Artikel dikirim untuk diterbitkan. Website sedang dibangun.'),commit:commitSha});
+  }catch(e){
+    if(!commitSha)await query(env,"UPDATE posts SET status='review',published_at=?,github_sha=?,publish_error=? WHERE id=?",previousPublishedAt,previousGithubSha,e instanceof HttpError?e.message:'Penerbitan belum terkonfirmasi. Silakan mencoba kembali.',id).run();
+    throw e;
+  }
 }
 async function checkPublish(env,p){
   if(p.status!=='publishing')return p;
@@ -188,7 +186,7 @@ async function route(req,env){
   const url=new URL(req.url);
   if(url.origin!==env.APP_ORIGIN)fail(403,'Alamat dashboard tidak sesuai konfigurasi.');
   if(req.method!=='GET'&&req.method!=='HEAD'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Permintaan lintas situs ditolak.');
-  if(url.pathname==='/api/config')return json({ready:configured(env)});
+  if(url.pathname==='/api/config')return json({ready:configured(env),automaticEnglish:!!env.AI});
   if(url.pathname==='/auth/login'&&req.method==='GET')return authStart(env);
   if(url.pathname==='/auth/callback'&&req.method==='GET')return authCallback(req,env,url);
   if(url.pathname.startsWith('/media/')){

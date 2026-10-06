@@ -8,7 +8,7 @@ const status = z.enum(['draft', 'review', 'published']);
 const articles = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/articles' }),
   schema: z.object({
-    title: z.string(), slug: z.string(), date: z.coerce.date(), modified: z.coerce.date().optional(), author: z.string(), summary: z.string(), category: z.string(),
+    title: z.string(), translationKey: z.string().optional(), slug: z.string(), date: z.coerce.date(), modified: z.coerce.date().optional(), author: z.string(), summary: z.string(), category: z.string(),
     featuredImage: z.string().optional(), imageAlt: z.string().optional(), imageCredit: z.string().optional(), imageSource: z.string().url().optional(),
     gallery: z.array(z.string()).default([]), categories: z.array(z.string()).default([]), tags: z.array(z.string()).default([]), contentType: z.string().optional(),
     language, status, featured: z.boolean().default(false), originalId: z.number().optional(), sourceUrl: z.string().url().optional(), legacy: z.boolean().default(false),

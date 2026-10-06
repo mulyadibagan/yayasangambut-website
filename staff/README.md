@@ -87,3 +87,28 @@ For local development, use a separate local Wrangler config and a separate Googl
 - The main site's `prepare-production-pages.mjs` currently validates only archive URLs; staff media uses an independent HTTPS origin.
 - Homepage article lists use existing site content rules. `featured:false` avoids automatically pinning each new story.
 - Public website privacy copy should mention Workspace staff accounts when the staff service becomes active; update the existing statement that the public site has no accounts with a link to a dedicated staff privacy notice.
+
+
+## Automatic English publication
+
+Indonesian staff articles now publish an English edition in the same Git commit.
+The `AI` Workers AI binding translates title, summary, category, image descriptions
+and every body text segment. Images, links, HTML structure, author and photo credits
+are retained by code. Article language pairs are resolved at website build time;
+visitors never wait for an AI request.
+
+Use **Terbitkan Indonesia & English** for new articles and subsequent revisions.
+Existing English slugs are retained. Withdrawal marks both editions as drafts in
+one commit; restoring a post does not make it public until it is published again.
+English-source posts remain English-only.
+
+Migration `0003_translation_cache.sql` caches validated translation batches. A failed
+translation leaves published website files unchanged and the saved source available
+for retry; completed batches are reused. Model output must retain all segment IDs
+and numerical literals. These checks do not replace editorial review of meaning.
+Very long articles or unavailable/quota-limited AI service may require retrying.
+
+Deployment uses the existing `staff-production` environment and Cloudflare account.
+Changes under `staff/` trigger tests, a live AI check using synthetic sample text,
+D1 migrations, and deployment. No new API secret is required for the AI binding.
+Model use is subject to the account's Workers AI allowance and usage billing.

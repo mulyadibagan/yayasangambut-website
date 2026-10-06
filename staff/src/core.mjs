@@ -36,7 +36,7 @@ export function validatePost(input,origin,publish=false){
   return p;
 }
 export function articleMarkdown(p,status='published'){
-  const fields={title:p.title,slug:p.slug,date:p.published_at,modified:p.updated_at,author:p.author,summary:p.summary,category:p.category,language:p.language,status,featured:false,...(p.cover?{featuredImage:p.cover,imageAlt:p.image_alt,imageCredit:p.image_credit}:{})};
+  const fields={title:p.title,slug:p.slug,date:p.published_at,modified:p.updated_at,author:p.author,summary:p.summary,category:p.category,language:p.language,status,featured:false,...(p.translationKey?{translationKey:p.translationKey}:{}),...(p.cover?{featuredImage:p.cover,imageAlt:p.image_alt,imageCredit:p.image_credit}:{})};
   return '---\n'+Object.entries(fields).map(([k,v])=>k+': '+JSON.stringify(v)).join('\n')+'\n---\n\n'+p.body+'\n';
 }
 export function imageType(bytes){
