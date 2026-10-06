@@ -169,7 +169,7 @@ async function api(req,env,url,u){
     const bytes=await readLimited(req,2097152);if(bytes.length>2097152)fail(413,'Ukuran maksimum foto adalah 2 MB.');const type=imageType(bytes);if(!type)fail(400,'Gunakan foto JPEG, PNG, atau WebP.');
     const count=await query(env,'SELECT COUNT(*) AS n FROM media WHERE owner=? AND created_at>?',u.id,new Date(Date.now()-86400000).toISOString()).first();if(count.n>=100)fail(429,'Batas unggahan harian tercapai.');
     const id=crypto.randomUUID(); let filename='Foto'; try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Foto').slice(0,180);}catch{fail(400,'Nama foto tidak valid.');}
-    await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
+    await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
   if(path==='/api/analytics'&&method==='GET'){return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28);}
   if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
@@ -192,6 +192,10 @@ async function route(req,env){
   if(url.pathname.startsWith('/media/')){
     const id=url.pathname.slice(7);const meta=await query(env,'SELECT * FROM media WHERE id=?',id).first();if(!meta)fail(404,'Foto tidak ditemukan.');
     if(!meta.public){const u=await session(req,env);if(!isEditor(u)&&meta.owner!==u.id)fail(403,'Foto ini privat.');}
+    if(meta.asset_path){
+      if(!meta.public||meta.asset_path!=='/imported-media/'+id+'.webp')fail(404,'Foto tidak ditemukan.');
+      return env.ASSETS.fetch(new Request(env.APP_ORIGIN+meta.asset_path));
+    }
     const obj=await env.MEDIA.get(id);if(!obj)fail(404,'Foto tidak ditemukan.');return new Response(obj.body,{headers:{'Content-Type':meta.type,'Cache-Control':meta.public?'public, max-age=86400':'private, no-store','X-Content-Type-Options':'nosniff'}});
   }
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');return api(req,env,url,await session(req,env));}

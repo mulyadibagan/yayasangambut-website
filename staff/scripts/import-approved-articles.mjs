@@ -1,12 +1,21 @@
-import {readFile} from 'node:fs/promises';
+import {readFile,mkdir,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {validatePost,imageType} from '../src/core.mjs';
 
 // Explicitly reviewed imports only. Re-running deployment never overwrites a
 // staff edit, resurrects a trashed article, or replaces an existing media row.
-export async function importApprovedArticles({base,token,database,wrangler}) {
+export async function importApprovedArticles({base,token,database}) {
   const seed=JSON.parse(await readFile(new URL('../imports/ghimbo-pamoan.json',import.meta.url),'utf8'));
   const origin='https://staff.yayasangambut.org';
+  // Already-public photographs are bundled as static assets. No R2 object-write
+  // permission is needed, and existing private uploads retain their access rules.
+  await mkdir(resolve('public/imported-media'),{recursive:true});
+  for(const media of seed.media){
+    if(!/^[a-f0-9-]{36}$/.test(media.id)||!/^public\/images\/stories\/2026\/ghimbo-pamoan\/[a-z]+\.webp$/.test(media.file))throw Error('Invalid approved media path.');
+    const source=resolve('..',media.file),bytes=await readFile(source);
+    if(imageType(bytes)!=='image/webp'||bytes.length>2097152)throw Error('Invalid approved image.');
+    await copyFile(source,resolve('public/imported-media',media.id+'.webp'));
+  }
   async function sql(query,params=[]) {
     const response=await fetch(`${base}/d1/database/${database}/query`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({sql:query,params})});
     const result=await response.json();
@@ -31,8 +40,7 @@ export async function importApprovedArticles({base,token,database,wrangler}) {
       if(existing[0].owner!==owner||existing[0].filename!==media.filename||existing[0].size!==bytes.length||existing[0].public!==1)throw Error('Media ID collision.');
       continue;
     }
-    wrangler(['r2','object','put','yg-staff-media/'+media.id,'--file',resolve('..',media.file),'--content-type','image/webp','--remote']);
-    await sql('INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,1,?)',[media.id,owner,media.filename,'image/webp',bytes.length,seed.published_at]);
+    await sql('INSERT INTO media(id,owner,filename,type,size,public,created_at,asset_path) VALUES(?,?,?,?,?,1,?,?)',[media.id,owner,media.filename,'image/webp',bytes.length,seed.published_at,'/imported-media/'+media.id+'.webp']);
   }
   await sql("INSERT INTO posts(id,owner,title,slug,language,summary,category,author,body,cover,image_alt,image_credit,status,created_at,updated_at,published_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,'published',?,?,?) ON CONFLICT(id) DO NOTHING",[seed.id,owner,p.title,seed.slug,p.language,p.summary,p.category,p.author,p.body,p.cover,p.image_alt,p.image_credit,seed.published_at,seed.published_at,seed.published_at]);
   await sql('INSERT INTO audit(actor,action,target,created_at) VALUES(?,?,?,?)',[owner,'import_approved_article',seed.id,new Date().toISOString()]);
