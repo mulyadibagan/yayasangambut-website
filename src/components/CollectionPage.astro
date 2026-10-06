@@ -24,7 +24,8 @@ const publicationFacets=type==='publications'?[...entries.reduce((counts:Map<str
 const facetLabel=(value:string)=>{
   const words=value.replace(/^desa-/,'').replace(/^kampung-/,'').replace(/^kepenghuluan-/,'').split('-').filter(Boolean).map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');
   if(lang==='en'){
-    if(value==='berita'||value==='uncategorized') return 'News';
+    if(value==='berita') return 'News';
+    if(value==='uncategorized') return 'Other stories';
     if(value==='artikel') return 'Articles';
     if(value.startsWith('kepenghuluan-')) return `${words.replace(/^Kepenghuluan /,'')} Village`;
     if(value.startsWith('desa-')||value.startsWith('kampung-')) return `${words} Village`;
