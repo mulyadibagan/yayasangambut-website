@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import BilingualReader from '../../../components/BilingualReader.astro';
 import { categoryLabel, excerpt } from '../../../utils/text';
 export async function getStaticPaths(){
   const all=[...(await getCollection('programs')),...(await getCollection('articles')),...(await getCollection('publications'))];
@@ -16,6 +17,11 @@ const lang=entry.data.language;
 const isProgram=entry.collection==='programs';
 const isArticle=entry.collection==='articles';
 const isPublication=entry.collection==='publications';
+const pairKey=(article)=>article.data.translationKey||(article.id.split('/').pop().replace(/\.md$/,'').startsWith('staff-')?article.id.split('/').pop().replace(/\.md$/,''):undefined);
+const key=isArticle?pairKey(entry):undefined;
+const counterpart=key?(await getCollection('articles',({data})=>data.status==='published')).find(a=>a.data.language!==lang&&pairKey(a)===key):undefined;
+const AlternateContent=counterpart?(await render(counterpart)).Content:undefined;
+const alternatePath=counterpart?`/${counterpart.data.language}/${counterpart.data.language==='id'?'cerita':'field-stories'}/${counterpart.data.slug}/`:undefined;
 const collectionUrl=`/${lang}/${entry.collection==='programs'?(lang==='id'?'program':'programs'):isArticle?(lang==='id'?'cerita':'field-stories'):(lang==='id'?'publikasi':'publications')}/`;
 const collectionLabel=entry.collection==='programs'?(lang==='id'?'Program':'Programs'):isArticle?(lang==='id'?'Cerita Lapangan':'Field Stories'):(lang==='id'?'Publikasi':'Publications');
 const summary=excerpt(entry.data.summary,220);
@@ -27,7 +33,7 @@ const eyebrow=isPublication?entry.data.year:('category'in entry.data?categoryLab
     <header class="container"><nav class="breadcrumb" aria-label={lang==='id'?'Navigasi halaman':'Breadcrumb'}><a href={collectionUrl}>{collectionLabel}</a><span aria-hidden="true">／</span><span aria-current="page">{entry.data.title}</span></nav><p class="eyebrow">{eyebrow}</p><h1>{entry.data.title}</h1><p class="lede">{summary}</p>{isArticle&&<p class="meta">{entry.data.author} · <time datetime={entry.data.date.toISOString()}>{entry.data.date.toLocaleDateString(lang==='id'?'id-ID':'en-GB',{year:'numeric',month:'long',day:'numeric'})}</time></p>}{isPublication&&<dl class="publication-meta"><div><dt>{lang==='id'?'Jenis':'Type'}</dt><dd>{entry.data.category}</dd></div><div><dt>{lang==='id'?'Tahun':'Year'}</dt><dd>{entry.data.year}</dd></div><div><dt>{lang==='id'?'Bahasa dokumen':'Document language'}</dt><dd>{entry.data.documentLanguage==='en'?'English':'Bahasa Indonesia'}</dd></div></dl>}</header>
     {isArticle&&entry.data.featuredImage&&<figure class="featured"><img src={entry.data.featuredImage} width="1600" height="900" alt={entry.data.imageAlt||entry.data.title}/>{entry.data.imageCredit&&<figcaption>{entry.data.imageCredit}</figcaption>}</figure>}
     {isPublication&&entry.data.cover&&<figure class="publication-cover"><img src={entry.data.cover} width="900" height="1200" alt={entry.data.title}/></figure>}
-    <div class="container prose"><Content/>
+    <div class="container prose">{counterpart&&AlternateContent&&alternatePath?<BilingualReader language={lang} alternatePath={alternatePath}><Content/><AlternateContent slot="alternate"/></BilingualReader>:<Content/>}
       {isPublication&&<p><a class="button primary" href={entry.data.fileUrl} target="_blank" rel="noreferrer">{lang==='id'?'Buka atau unduh PDF ↗':'Open or download PDF ↗'}</a></p>}
       {isProgram&&<aside class="program-actions"><h2>{lang==='id'?'Jelajahi data dan peluang kolaborasi':'Explore data and collaboration'}</h2><p>{lang==='id'?'Lihat peta serta pemantauan yang telah dipublikasikan melalui YG GeoPortal, atau hubungi tim kami untuk membahas kebutuhan dan peluang kerja sama.':'View published maps and monitoring through the YG GeoPortal, or contact our team to discuss needs and opportunities for collaboration.'}</p><div><a class="button primary" href="https://webgisyg.id/" target="_blank" rel="noreferrer">{lang==='id'?'Buka YG GeoPortal ↗':'Open YG GeoPortal ↗'}</a><a class="button secondary" href={lang==='id'?'/id/hubungi-kami/':'/en/contact/'}>{lang==='id'?'Hubungi Kami':'Contact Us'}</a></div></aside>}
     </div>
