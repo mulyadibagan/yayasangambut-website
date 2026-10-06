@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { importApprovedArticles } from './import-approved-articles.mjs';
 
 const names = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GITHUB_APP_ID', 'GITHUB_APP_PRIVATE_KEY', 'GITHUB_INSTALLATION_ID', 'GA_SERVICE_ACCOUNT_EMAIL', 'GA_SERVICE_ACCOUNT_KEY'];
 for (const name of ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'STAFF_D1_DATABASE_ID', ...names]) {
@@ -33,6 +34,7 @@ try {
   const path = join(folder, 'secrets.json');
   await writeFile(path, JSON.stringify(Object.fromEntries(names.map(name => [name, process.env[name]]))), {mode: 0o600});
   wrangler(['d1', 'migrations', 'apply', 'DB', '--remote'], 'y\n');
+  await importApprovedArticles({base,token:process.env.CLOUDFLARE_API_TOKEN,database:process.env.STAFF_D1_DATABASE_ID,wrangler});
   // Initial deployment fails closed until Google credentials are installed.
   wrangler(['deploy']);
   wrangler(['secret', 'bulk', path]);
