@@ -70,14 +70,41 @@ async function preview(){
 }
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Belum ada data untuk periode ini.</td></tr>'}</tbody></table></div>`;}
 async function loadStats(){const root=$('#analytics-content');root.innerHTML='<div class="empty">Memuat statistik…</div>';try{const r=await api('/api/analytics?days='+$('#stats-range').value);if(!r.configured){root.innerHTML='<div class="empty">'+esc(r.message)+'</div>';return;}const totals=r.totals.rows?.[0]?.metricValues?.map(x=>Number(x.value))||[0,0,0,0];root.innerHTML='<div class="stats-grid">'+['Pengunjung aktif','Sesi','Tampilan halaman','Tingkat interaksi'].map((name,i)=>`<div class="stat"><span>${name}</span><b>${i===3?(totals[i]*100).toFixed(1)+'%':totals[i].toLocaleString('id-ID')}</b></div>`).join('')+'</div><h2>Tren pengunjung</h2>';
- const days=r.daily.rows||[],max=Math.max(1,...days.map(d=>Number(d.metricValues[0].value)));const chart=document.createElement('div');chart.className='chart';chart.setAttribute('role','img');chart.setAttribute('aria-label','Tren pengunjung harian. Nilai setiap hari tersedia saat menunjuk batang.');for(const d of days){const bar=document.createElement('div');bar.className='bar';bar.style.height=Math.max(2,Number(d.metricValues[0].value)/max*100)+'%';bar.title=d.dimensionValues[0].value+': '+d.metricValues[0].value+' pengunjung';chart.append(bar);}root.append(chart);
+
+ const dailyRows=r.daily.rows||[];
+ if(!dailyRows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Belum ada data pengunjung harian untuk periode ini.';root.append(empty);}
+ else{
+ const counts=new Map(dailyRows.map(row=>[row.dimensionValues[0].value,Number(row.metricValues[0].value)]));
+ const today=new Date(new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})+'T00:00:00Z');
+ const points=Array.from({length:Number(r.days)||28},(_,i)=>{const date=new Date(today);date.setUTCDate(date.getUTCDate()-(Number(r.days)||28)+i);const key=date.toISOString().slice(0,10).replaceAll('-','');return{date,count:counts.get(key)||0};});
+ const peak=Math.max(1,...points.map(p=>p.count)),step=Math.max(1,Math.ceil(peak/4)),top=step*4;
+ const chart=document.createElement('section');chart.className='daily-chart';chart.setAttribute('aria-label','Grafik pengunjung aktif per hari');
+ const unit=document.createElement('p');unit.className='muted';unit.textContent='Pengunjung aktif · pilih batang untuk melihat rincian';chart.append(unit);
+ const frame=document.createElement('div');frame.className='daily-frame';
+ const axis=document.createElement('div');axis.className='daily-axis';axis.setAttribute('aria-hidden','true');for(let i=4;i>=0;i--){const tick=document.createElement('span');tick.textContent=(i*step).toLocaleString('id-ID');axis.append(tick);}frame.append(axis);
+ const scroll=document.createElement('div');scroll.className='daily-scroll';scroll.tabIndex=0;scroll.setAttribute('aria-label','Geser untuk melihat seluruh tanggal');
+ const plot=document.createElement('div');plot.className='daily-plot';plot.style.minWidth=points.length*38+'px';
+ const detail=document.createElement('p');detail.className='daily-detail';detail.setAttribute('aria-live','polite');
+ const fullDate=date=>date.toLocaleDateString('id-ID',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const buttons=[];
+ const select=index=>{buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===index)));detail.textContent=fullDate(points[index].date)+' — '+points[index].count.toLocaleString('id-ID')+' pengunjung aktif';};
+ points.forEach((point,index)=>{const button=document.createElement('button');button.type='button';button.className='daily-bar';button.title=fullDate(point.date)+': '+point.count.toLocaleString('id-ID')+' pengunjung aktif';button.setAttribute('aria-label',button.title);
+ const fill=document.createElement('span');fill.className='daily-fill';fill.style.height=Math.max(point.count?2:0,point.count/top*100)+'%';
+ const value=document.createElement('span');value.className='daily-value';value.textContent=point.count.toLocaleString('id-ID');fill.append(value);
+ const date=document.createElement('span');date.className='daily-date';date.textContent=point.date.toLocaleDateString('id-ID',{timeZone:'UTC',day:'numeric',month:'short'});
+ button.append(fill,date);button.addEventListener('click',()=>select(index));buttons.push(button);plot.append(button);});
+ scroll.append(plot);frame.append(scroll);chart.append(frame,detail);root.append(chart);select(points.length-1);
+ }
+
  const tables=document.createElement('div');tables.className='analytics-tables';tables.innerHTML='<div><h2>Halaman populer</h2>'+table(['Halaman','Tampilan'],(r.pages.rows||[]).map(d=>[d.dimensionValues[0].value,d.metricValues[0].value]))+'</div><div><h2>Sumber kunjungan</h2>'+table(['Saluran','Sesi'],(r.sources.rows||[]).map(d=>[d.dimensionValues[0].value,d.metricValues[0].value]))+'</div>';root.append(tables);
  const geography=document.createElement('div');geography.className='analytics-tables';
- const location=value=>!value||value==='(not set)'?'Tidak teridentifikasi':value;
+ const unknownLocation=value=>!value||['(not set)','unknown','tidak teridentifikasi'].includes(value.trim().toLowerCase());
+ const location=value=>unknownLocation(value)?'Tidak teridentifikasi':value;
  const geoTable=(report,headers,dimensionCount,limit)=>{
    if(report?.unavailable)return '<div class="empty">Data lokasi belum dapat dibaca. Coba muat ulang statistik.</div>';
    if(!report?.rows?.length)return '<div class="empty">Belum ada data lokasi untuk periode ini.</div>';
-   const rows=report.rows.map(row=>[...row.dimensionValues.slice(0,dimensionCount).map(d=>location(d.value)),...row.metricValues.map(m=>Number(m.value).toLocaleString('id-ID'))]);
+   const isUnknown=row=>[0,dimensionCount-1].some(index=>unknownLocation(row.dimensionValues[index]?.value));
+   const rows=[...report.rows].sort((a,b)=>Number(isUnknown(a))-Number(isUnknown(b))).map(row=>[...row.dimensionValues.slice(0,dimensionCount).map(d=>location(d.value)),...row.metricValues.map(m=>Number(m.value).toLocaleString('id-ID'))]);
    let note=Number(report.rowCount)>limit?'Menampilkan '+limit+' lokasi dengan pengunjung aktif terbanyak.':'';
    if(report.metadata?.subjectToThresholding)note+=(note?' ':'')+'Sebagian rincian dapat dibatasi oleh Google Analytics karena ambang privasi.';
    return table(headers,rows)+(note?'<p class="muted">'+esc(note)+'</p>':'');
