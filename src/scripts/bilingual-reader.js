@@ -3,18 +3,25 @@
 export const blockSelector='p,h2,h3,h4,li,figcaption,td,th';
 export function textOf(block){const copy=block.cloneNode(true);copy.querySelectorAll('.reader-paragraph,script,style').forEach(e=>e.remove());return copy.textContent.trim();}
 export function readingBlocks(root){return [...root.querySelectorAll(blockSelector)].filter(e=>!e.querySelector(blockSelector)&&textOf(e));}
-export function alignBlocks(source,target){
+export function alignBlocks(source,target,sourceLanguage='id',targetLanguage='en'){
   // Translation keeps semantic block structure. If an edition has been reworked,
   // never guess a counterpart by paragraph number alone.
   if(source.length!==target.length)return null;
-  const numbers=text=>(text.match(/\d+(?:[.,]\d+)*/g)||[]).sort().join('|');
-  if(source.some((e,i)=>e.tagName!==target[i].tagName||numbers(textOf(e))!==numbers(textOf(target[i]))))return null;
+  const numbers=(text,language)=>(text.match(/\d+(?:[.,]\d+)*/g)||[]).map(value=>{
+    // Grouping and decimal separators differ between the two published editions.
+    const normalized=language==='id'?value.replace(/\./g,'').replace(',','.'):value.replace(/,/g,'');
+    const [integer,fraction='']=normalized.split('.');
+    const whole=integer.replace(/^0+(?=\d)/,'');
+    const decimal=fraction.replace(/0+$/,'');
+    return decimal?whole+'.'+decimal:whole;
+  }).sort().join('|');
+  if(source.some((e,i)=>e.tagName!==target[i].tagName||numbers(textOf(e),sourceLanguage)!==numbers(textOf(target[i]),targetLanguage)))return null;
   return source.map((e,i)=>({source:textOf(e),target:textOf(target[i])}));
 }
 function initReader(reader){
   if(reader.dataset.ready)return;reader.dataset.ready='true';
   const body=reader.querySelector('[data-reader-content]'),template=reader.querySelector('[data-reader-alternate]');
-  const blocks=readingBlocks(body),targets=readingBlocks(template.content),pairs=alignBlocks(blocks,targets);
+  const blocks=readingBlocks(body),targets=readingBlocks(template.content),pairs=alignBlocks(blocks,targets,reader.dataset.language,reader.dataset.target);
   const guide=reader.querySelector('.reader-guide');
   if(!pairs){guide.querySelector('span').textContent=reader.dataset.language==='id'?'Baca artikel ini dalam bahasa Inggris melalui tautan berikut.':'Read this article in Indonesian using the link below.';return;}
   const dialog=reader.querySelector('[data-reader-dialog]'),popup=reader.querySelector('[data-reader-selection]');
@@ -29,7 +36,7 @@ function initReader(reader){
   blocks.forEach((block,i)=>{
     block.classList.add('reader-block');
     const button=document.createElement('button');button.type='button';button.className='reader-paragraph';button.textContent=reader.dataset.target.toUpperCase();
-    button.setAttribute('aria-label',(reader.dataset.language==='id'?'Lihat bahasa Inggris untuk paragraf ini':'Lihat bahasa Indonesia untuk paragraf ini'));button.setAttribute('aria-haspopup','dialog');
+    button.setAttribute('aria-label',(reader.dataset.language==='id'?'Lihat bahasa Inggris untuk paragraf ini':'View this paragraph in Indonesian'));button.setAttribute('aria-haspopup','dialog');
     button.addEventListener('click',()=>open([i],button));block.append(button);
   });
   function selectionChanged(){

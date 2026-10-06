@@ -6,18 +6,18 @@ const target=language==='id'?'en':'id';
 <section class="bilingual-reader" data-bilingual-reader data-language={language} data-target={target}>
   <aside class="reader-guide" aria-label={language==='id'?'Baca dalam dua bahasa':'Read in two languages'}>
     <span><strong>{language==='id'?'Baca dalam dua bahasa':'Read in two languages'}</strong><br />{language==='id'?'Blok teks atau tekan EN di samping paragraf untuk membandingkan bahasa.':'Select text or tap ID beside a paragraph to compare languages.'}</span>
-    <a href={alternatePath}>{language==='id'?'Artikel English ↗':'Artikel Indonesia ↗'}</a>
+    <a href={alternatePath}>{language==='id'?'Artikel bahasa Inggris ↗':'Indonesian article ↗'}</a>
   </aside>
   <div data-reader-content><slot /></div>
   <template data-reader-alternate><slot name="alternate" /></template>
-  <button type="button" class="reader-selection" data-reader-selection hidden aria-haspopup="dialog">{language==='id'?'Lihat bahasa Inggris':'Lihat bahasa Indonesia'}</button>
+  <button type="button" class="reader-selection" data-reader-selection hidden aria-haspopup="dialog">{language==='id'?'Lihat bahasa Inggris':'View in Indonesian'}</button>
   <dialog class="reader-dialog" data-reader-dialog aria-labelledby="reader-dialog-title">
     <header><div><p>{language==='id'?'BACA & BANDINGKAN':'READ & COMPARE'}</p><h2 id="reader-dialog-title">{language==='id'?'Indonesia · English':'English · Indonesia'}</h2></div><button type="button" data-reader-close aria-label={language==='id'?'Tutup perbandingan':'Close comparison'}>×</button></header>
     <div class="reader-columns">
       <section aria-label={language==='id'?'Teks bahasa Indonesia':'English text'}><h3>{language==='id'?'Bahasa Indonesia':'English'}</h3><div data-reader-source lang={language}></div></section>
       <section aria-label={target==='id'?'Teks bahasa Indonesia':'English text'}><h3>{target==='id'?'Bahasa Indonesia':'English'}</h3><div data-reader-target lang={target}></div></section>
     </div>
-    <footer>{language==='id'?'Padanan dari versi artikel yang telah diterbitkan.':'Text from the published language editions.'} <a href={alternatePath}>{language==='id'?'Buka artikel English ↗':'Buka artikel Indonesia ↗'}</a></footer>
+    <footer>{language==='id'?'Padanan dari versi artikel yang telah diterbitkan.':'Text from the published language editions.'} <a href={alternatePath}>{language==='id'?'Buka artikel bahasa Inggris ↗':'Open Indonesian article ↗'}</a></footer>
   </dialog>
 </section>
 <script>
