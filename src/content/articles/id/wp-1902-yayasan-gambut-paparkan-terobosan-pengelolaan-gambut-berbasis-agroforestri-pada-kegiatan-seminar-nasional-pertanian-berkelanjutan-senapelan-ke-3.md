@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1902"
 title: "Yayasan Gambut Paparkan Agroforestri Kelapa–Kopi pada SENAPELAN ke-3"
 slug: "yayasan-gambut-paparkan-terobosan-pengelolaan-gambut-berbasis-agroforestri-pada-kegiatan-seminar-nasional-pertanian-berkelanjutan-senapelan-ke-3"
 date: "2025-12-06T07:22:34"

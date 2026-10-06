@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1784"
 title: "Pemasangan Papan Informasi Bahaya Kebakaran di Lahan Gambut"
 slug: "early-warning-system-ews-dukungan-infrastruktur-papan-informasi-fire-danger-rating-system-fdrs-di-lahan-rawan-kebakaran"
 date: "2025-01-17T06:37:29"

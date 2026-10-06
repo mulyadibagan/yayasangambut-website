@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-300"
 title: "Pengolahan Produk Nanas di Penampi"
 slug: "produk-turunan-nenas-desa-penampi"
 date: "2020-11-23T14:38:25"

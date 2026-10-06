@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-308"
 title: "Praktik Pengelolaan Lahan Tanpa Bakar di Penampi"
 slug: "petani-desa-penampi-giat-mengkampanyekan-pengelolaan-lahan-tanpa-bakar"
 date: "2020-11-24T12:18:14"

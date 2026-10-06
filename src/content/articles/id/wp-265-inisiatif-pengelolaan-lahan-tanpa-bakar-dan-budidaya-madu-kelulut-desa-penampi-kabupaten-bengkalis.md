@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-265"
 title: "Pertanian Tanpa Bakar dan Budidaya Kelulut di Penampi"
 slug: "inisiatif-pengelolaan-lahan-tanpa-bakar-dan-budidaya-madu-kelulut-desa-penampi-kabupaten-bengkalis"
 date: "2020-11-18T09:27:06"

@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-281"
 title: "Pengembangan Budidaya Madu Kelulut di Penampi"
 slug: "pengembangan-budidaya-madu-kelulut-desa-penampi"
 date: "2020-11-20T14:07:31"

@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-436"
 title: "Prakiraan Cuaca dan Risiko Kebakaran Juli–September 2021"
 slug: "prakiraan-cuaca-dan-risiko-kebakaran-untuk-wilayah-indonesiajuli-september-2021"
 date: "2021-07-05T08:43:20"

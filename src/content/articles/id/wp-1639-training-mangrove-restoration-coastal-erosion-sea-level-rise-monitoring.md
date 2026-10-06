@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1639"
 title: "Pelatihan Restorasi Mangrove dan Pemantauan Pesisir"
 slug: "training-mangrove-restoration-coastal-erosion-sea-level-rise-monitoring"
 date: "2024-08-26T07:22:44"

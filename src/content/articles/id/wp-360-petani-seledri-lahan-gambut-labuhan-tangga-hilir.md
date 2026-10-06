@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-360"
 title: "Budidaya Seledri di Labuhan Tangga Hilir"
 slug: "petani-seledri-lahan-gambut-labuhan-tangga-hilir"
 date: "2020-12-05T16:50:01"

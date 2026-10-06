@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1701"
 title: "Pelatihan Pengembangan Kopi Liberika di Lahan Gambut"
 slug: "optimalisasi-pertanian-berkelanjutan-di-lahan-gambut-transformasi-pengetahuan-dalam-pengembangan-kopi-liberika"
 date: "2024-10-31T03:34:43"

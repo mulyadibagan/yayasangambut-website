@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-10"
 title: "Pemetaan Partisipatif Batas Desa Buruk Bakul"
 slug: "pemetaan-partisipatif-administrasi-desa-buruk-bakul"
 date: "2020-05-11T20:15:21"

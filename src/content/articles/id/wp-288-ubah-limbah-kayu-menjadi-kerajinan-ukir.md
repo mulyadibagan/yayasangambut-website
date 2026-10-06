@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-288"
 title: "Pemanfaatan Limbah Kayu untuk Kerajinan Ukir"
 slug: "ubah-limbah-kayu-menjadi-kerajinan-ukir"
 date: "2020-11-22T01:52:08"

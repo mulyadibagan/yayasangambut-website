@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1510"
 title: "Pelatihan Teknologi Informasi bagi Kelompok Masyarakat"
 slug: "pemanfaatan-teknologi-informasi-dan-komunikasi-bagi-kelompok-mayarakat-dalam-pendistribusian-informasi"
 date: "2024-06-08T00:09:24"

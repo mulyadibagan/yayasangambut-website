@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-13"
 title: "Pemetaan Potensi Hutan Desa Buruk Bakul"
 slug: "pemetaan-potensi-hutan-desa-buruk-bakul"
 date: "2020-05-11T20:16:18"

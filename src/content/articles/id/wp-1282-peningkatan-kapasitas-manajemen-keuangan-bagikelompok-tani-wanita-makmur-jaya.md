@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1282"
 title: "Pelatihan Manajemen Keuangan Kelompok Tani Wanita Makmur Jaya"
 slug: "peningkatan-kapasitas-manajemen-keuangan-bagikelompok-tani-wanita-makmur-jaya"
 date: "2023-07-13T05:45:03"

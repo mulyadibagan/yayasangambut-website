@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-5"
 title: "Diskusi Tinjauan Strategi Pengelolaan Gambut ASEAN"
 slug: "fgd-review-asean-peatland-management-strategy"
 date: "2020-05-11T20:13:13"

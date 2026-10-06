@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-344"
 title: "Pelatihan Budidaya Jahe dan Keladi di Lahan Gambut"
 slug: "pelatihan-budidaya-jahe-dan-keladi-di-lahan-gambut"
 date: "2020-12-03T03:32:07"

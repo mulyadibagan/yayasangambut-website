@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1478"
 title: "Agroforestri Kopi di Temiang, Sepahat, dan Tanjung Kuras"
 slug: "keberlanjutan-pengelolaan-dan-pemanfaatan-lahan-gambut-melalui-agroforestri-kopi-pendekatan-holistik-untuk-pertanian-berkelanjutan-desa-temiang-desa-sepahat-kabupaten-bengkalis-dan-kampung-tanj"
 date: "2024-01-05T04:29:39"

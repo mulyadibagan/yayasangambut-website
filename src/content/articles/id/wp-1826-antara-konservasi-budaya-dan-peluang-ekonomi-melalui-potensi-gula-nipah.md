@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1826"
 title: "Gula Nipah: Konservasi, Budaya, dan Peluang Usaha Masyarakat"
 slug: "antara-konservasi-budaya-dan-peluang-ekonomi-melalui-potensi-gula-nipah"
 date: "2025-04-28T10:41:52"

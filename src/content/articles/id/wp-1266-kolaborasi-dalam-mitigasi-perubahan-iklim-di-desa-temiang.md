@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1266"
 title: "Kolaborasi Pengelolaan Gambut di Temiang"
 slug: "kolaborasi-dalam-mitigasi-perubahan-iklim-di-desa-temiang"
 date: "2023-05-15T18:06:39"

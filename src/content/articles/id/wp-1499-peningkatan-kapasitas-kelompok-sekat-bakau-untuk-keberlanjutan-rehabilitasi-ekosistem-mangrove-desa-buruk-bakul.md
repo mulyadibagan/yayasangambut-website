@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1499"
 title: "Pelatihan Pengelolaan Mangrove bagi Kelompok Sekat Bakau"
 slug: "peningkatan-kapasitas-kelompok-sekat-bakau-untuk-keberlanjutan-rehabilitasi-ekosistem-mangrove-desa-buruk-bakul"
 date: "2024-03-08T08:11:09"

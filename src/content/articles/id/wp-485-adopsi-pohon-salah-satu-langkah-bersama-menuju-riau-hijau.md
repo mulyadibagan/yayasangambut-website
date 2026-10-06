@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-485"
 title: "Program Adopsi Pohon di Riau"
 slug: "adopsi-pohon-salah-satu-langkah-bersama-menuju-riau-hijau"
 date: "2021-09-24T06:52:06"

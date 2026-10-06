@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1486"
 title: "Kolaborasi Pemulihan Pesisir Buruk Bakul"
 slug: "inisiatif-dan-kolaboratif-upaya-mengembalikan-dan-menjaga-kawasan-pesisir-desa-buruk-bakul-dari-kerusakan-lingkungan"
 date: "2024-01-15T09:08:55"

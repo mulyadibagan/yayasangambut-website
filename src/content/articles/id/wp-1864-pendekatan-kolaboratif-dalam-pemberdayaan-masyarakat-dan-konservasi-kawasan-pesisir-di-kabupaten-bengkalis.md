@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1864"
 title: "Kolaborasi untuk Konservasi Mangrove dan Penguatan Masyarakat Pesisir Bengkalis"
 slug: "pendekatan-kolaboratif-dalam-pemberdayaan-masyarakat-dan-konservasi-kawasan-pesisir-di-kabupaten-bengkalis"
 date: "2025-05-20T21:44:00"

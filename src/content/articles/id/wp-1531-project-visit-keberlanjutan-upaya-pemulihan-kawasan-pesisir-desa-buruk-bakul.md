@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1531"
 title: "Kunjungan Pemantauan Program Mangrove di Buruk Bakul"
 slug: "project-visit-keberlanjutan-upaya-pemulihan-kawasan-pesisir-desa-buruk-bakul"
 date: "2024-06-11T08:54:26"

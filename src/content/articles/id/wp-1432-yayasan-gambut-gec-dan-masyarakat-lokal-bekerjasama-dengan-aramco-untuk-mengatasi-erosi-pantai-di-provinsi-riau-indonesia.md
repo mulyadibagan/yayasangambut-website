@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1432"
 title: "Kolaborasi YG, GEC, dan Aramco untuk Konservasi Mangrove"
 slug: "yayasan-gambut-gec-dan-masyarakat-lokal-bekerjasama-dengan-aramco-untuk-mengatasi-erosi-pantai-di-provinsi-riau-indonesia"
 date: "2023-10-31T07:08:01"

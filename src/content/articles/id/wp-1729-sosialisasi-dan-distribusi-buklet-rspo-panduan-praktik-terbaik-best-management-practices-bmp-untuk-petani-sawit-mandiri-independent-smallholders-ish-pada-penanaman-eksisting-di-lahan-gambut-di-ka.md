@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1729"
 title: "Pengenalan Panduan RSPO bagi Petani Sawit Mandiri di Siak"
 slug: "sosialisasi-dan-distribusi-buklet-rspo-panduan-praktik-terbaik-best-management-practices-bmp-untuk-petani-sawit-mandiri-independent-smallholders-ish-pada-penanaman-eksisting-di-lahan-gambut-di-ka"
 date: "2024-12-27T06:54:57"

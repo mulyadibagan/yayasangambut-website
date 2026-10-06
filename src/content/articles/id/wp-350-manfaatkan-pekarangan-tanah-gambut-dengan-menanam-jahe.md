@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-350"
 title: "Budidaya Jahe di Pekarangan Lahan Gambut"
 slug: "manfaatkan-pekarangan-tanah-gambut-dengan-menanam-jahe"
 date: "2020-12-04T03:04:22"

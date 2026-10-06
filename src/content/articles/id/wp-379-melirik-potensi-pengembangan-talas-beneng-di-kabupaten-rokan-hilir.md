@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-379"
 title: "Pengembangan Talas Beneng di Rokan Hilir"
 slug: "melirik-potensi-pengembangan-talas-beneng-di-kabupaten-rokan-hilir"
 date: "2020-12-08T05:47:40"

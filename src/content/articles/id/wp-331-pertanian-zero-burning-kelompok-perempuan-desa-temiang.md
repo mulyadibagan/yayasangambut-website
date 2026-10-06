@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-331"
 title: "Pertanian Tanpa Bakar oleh Kelompok Perempuan Temiang"
 slug: "pertanian-zero-burning-kelompok-perempuan-desa-temiang"
 date: "2020-11-30T01:45:17"

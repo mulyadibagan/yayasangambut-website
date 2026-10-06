@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-318"
 title: "Pengolahan Jamu Tradisional di Temiang"
 slug: "kearifan-lokal-produk-jamu-desa-temiang"
 date: "2020-11-25T16:17:40"

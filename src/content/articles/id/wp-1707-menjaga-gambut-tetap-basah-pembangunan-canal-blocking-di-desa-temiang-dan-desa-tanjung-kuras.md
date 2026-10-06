@@ -1,4 +1,5 @@
 ---
+translationKey: "wordpress-1707"
 title: "Pembangunan Sekat Kanal di Temiang dan Tanjung Kuras"
 slug: "menjaga-gambut-tetap-basah-pembangunan-canal-blocking-di-desa-temiang-dan-desa-tanjung-kuras"
 date: "2024-11-12T10:10:17"
