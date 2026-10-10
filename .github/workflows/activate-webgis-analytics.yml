@@ -1,0 +1,28 @@
+name: Activate WebGIS Analytics API
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/activate-webgis-analytics.yml", ".github/scripts/activate-webgis-analytics.mjs"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  activate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staff-production
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts
+        working-directory: staff
+      - name: Activate only Analytics Admin API and verify WebGIS reports
+        run: node .github/scripts/activate-webgis-analytics.mjs
+        env:
+          GA_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GA_SERVICE_ACCOUNT_EMAIL }}
+          GA_SERVICE_ACCOUNT_KEY: ${{ secrets.GA_SERVICE_ACCOUNT_KEY }}
