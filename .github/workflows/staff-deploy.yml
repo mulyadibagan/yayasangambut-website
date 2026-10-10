@@ -57,3 +57,9 @@ jobs:
           GA_SERVICE_ACCOUNT_KEY: ${{ secrets.GA_SERVICE_ACCOUNT_KEY }}
           WRANGLER_SEND_METRICS: 'false'
         run: node scripts/deploy.mjs
+
+      - name: Verify WebGIS analytics read access
+        env:
+          GA_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GA_SERVICE_ACCOUNT_EMAIL }}
+          GA_SERVICE_ACCOUNT_KEY: ${{ secrets.GA_SERVICE_ACCOUNT_KEY }}
+        run: node scripts/check-webgis-analytics.mjs

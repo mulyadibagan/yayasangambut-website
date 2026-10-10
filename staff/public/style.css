@@ -16,3 +16,5 @@
 .daily-date{position:absolute;top:calc(100% + 10px);font-size:10px;white-space:nowrap;color:var(--muted)}
 .daily-detail{margin:10px 0 0;padding:14px;background:var(--pale);border-radius:7px;font-size:13px;line-height:1.6}
 @media(max-width:720px){.daily-chart{padding:16px}.daily-frame{grid-template-columns:38px minmax(0,1fr)}}
+
+.stats-filters{display:flex;gap:12px;flex-wrap:wrap}.stats-filters select{min-width:155px}

@@ -1,3 +1,4 @@
+import {analyticsReports} from './analytics.mjs';
 import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
 import {renderPreview} from './preview.mjs';
 import {createRemoteJWKSet,jwtVerify,SignJWT,importPKCS8} from 'jose';
@@ -109,16 +110,12 @@ async function checkPublish(env,p){
     p.status=removed?'draft':ok?'published':'review';p.deleted_at=removed?now():null;p.publish_error=ok?null:'Build website belum berhasil.';
   }return p;
 }
-async function analytics(env,days){
+async function analytics(env,days,site='website'){
   if(!env.GA_SERVICE_ACCOUNT_EMAIL||!env.GA_SERVICE_ACCOUNT_KEY) return json({configured:false,message:'Statistik Google Analytics belum dihubungkan.'});
   const key=await importPKCS8(env.GA_SERVICE_ACCOUNT_KEY,'RS256');
   const assertion=await new SignJWT({scope:'https://www.googleapis.com/auth/analytics.readonly'}).setProtectedHeader({alg:'RS256'}).setIssuer(env.GA_SERVICE_ACCOUNT_EMAIL).setAudience('https://oauth2.googleapis.com/token').setIssuedAt().setExpirationTime('50m').sign(key);
   const t=await fetch('https://oauth2.googleapis.com/token',{method:'POST',body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion})});if(!t.ok)fail(502,'Koneksi statistik belum berhasil.');const {access_token}=await t.json();
-  const report=async(dimensions,metrics,limit)=>{
-    const r=await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${env.GA_PROPERTY_ID}:runReport`,{method:'POST',headers:{Authorization:'Bearer '+access_token,'Content-Type':'application/json'},body:JSON.stringify({dateRanges:[{startDate:days+'daysAgo',endDate:'yesterday'}],dimensions:dimensions.map(name=>({name})),metrics:metrics.map(name=>({name})),...(limit?{limit,orderBys:[{metric:{metricName:metrics[0]},desc:true}]}:{orderBys:dimensions.length?[{dimension:{dimensionName:dimensions[0]}}]:[]})})});if(!r.ok)fail(502,'Statistik tidak dapat dibaca. Periksa akses Viewer properti Analytics.');return r.json();
-  };
-  const reports=await Promise.all([report([],['activeUsers','sessions','screenPageViews','engagementRate']),report(['date'],['activeUsers']),report(['pagePath'],['screenPageViews'],10),report(['sessionDefaultChannelGroup'],['sessions'],10),...await Promise.allSettled([report(['country'],['activeUsers','sessions'],20),report(['city','region','country'],['activeUsers','sessions'],50)])]);
-  return json({configured:true,days,timezone:'Asia/Jakarta',totals:reports[0],daily:reports[1],pages:reports[2],sources:reports[3],countries:reports[4].status==='fulfilled'?reports[4].value:{unavailable:true},cities:reports[5].status==='fulfilled'?reports[5].value:{unavailable:true}});
+  try{return json(await analyticsReports(env,access_token,days,site));}catch(e){fail(502,e.message);}
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
@@ -171,7 +168,7 @@ async function api(req,env,url,u){
     const id=crypto.randomUUID(); let filename='Foto'; try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Foto').slice(0,180);}catch{fail(400,'Nama foto tidak valid.');}
     await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
-  if(path==='/api/analytics'&&method==='GET'){return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28);}
+  if(path==='/api/analytics'&&method==='GET'){const site=url.searchParams.get('site')||'website';if(!['website','webgis'].includes(site))fail(400,'Situs statistik tidak dikenal.');return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28,site);}
   if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
   if(path==='/api/users'&&method==='PATCH'){
     if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');const input=await payload(req);
