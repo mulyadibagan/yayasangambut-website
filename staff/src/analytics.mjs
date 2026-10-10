@@ -4,7 +4,11 @@ export async function webgisProperty(env, accessToken, fetcher = fetch) {
   const headers = {Authorization: 'Bearer ' + accessToken};
   const read = async path => {
     const response = await fetcher('https://analyticsadmin.googleapis.com/v1beta/' + path, {headers});
-    if (!response.ok) throw new Error('Akses statistik WebGIS belum tersedia. Periksa Google Analytics Admin API dan akses Viewer akun layanan pada properti WebGIS.');
+    if (!response.ok) {
+      const error=await response.json().catch(()=>({}));
+      const reason=(error.error?.details||[]).map(d=>d.reason).find(Boolean)||error.error?.status||String(response.status);
+      throw new Error('Akses statistik WebGIS belum tersedia ('+reason+'). Periksa Google Analytics Admin API dan akses Viewer akun layanan pada properti WebGIS.');
+    }
     return response.json();
   };
   const find = async property => {
