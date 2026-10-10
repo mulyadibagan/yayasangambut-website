@@ -8,7 +8,7 @@ function mock({found=true,geoError=false}={}){
   if(url.includes('accountSummaries'))return ok({accountSummaries:[{propertySummaries:[{property:'properties/111'},{property:'properties/222'}]}]});
   if(url.includes('/dataStreams')){reads.push(url);return ok({dataStreams:[{name:'properties/222/dataStreams/987',webStreamData:{measurementId:found&&url.includes('/222/')?'G-ZEBSLW4ZWW':'G-OTHER'}}]});}
   if(url.endsWith('/properties/222'))return ok({timeZone:'Asia/Jakarta'});
-  assert(url.includes(':runReport'));const body=JSON.parse(init.body);reports.push({url,body});
+  assert(url.includes(':runReport'));const body=JSON.parse(init.body);if(body.dimensions[0]?.name==='hostName')return ok({rows:[]});reports.push({url,body});
   if(geoError&&body.dimensions.some(d=>d.name==='city'))return new Response('',{status:403});
   return ok({rows:[]});
  };return{fetcher,reports,reads};
@@ -43,4 +43,13 @@ test('property discovery follows paginated account summaries and streams',async(
  if(url.includes('dataStreams'))return ok({dataStreams:[{name:'properties/222/dataStreams/987',webStreamData:{measurementId:'G-ZEBSLW4ZWW'}}]});
  return ok({timeZone:'Asia/Jakarta'});
  });assert.equal(result.propertyId,'222');assert(seen.some(u=>u.includes('pageToken=next')));assert(seen.some(u=>u.includes('pageToken=streams')));
+});
+
+test('shared website property is usable when it contains verified WebGIS hostname traffic',async()=>{
+ const requests=[];const result=await analyticsReports({GA_PROPERTY_ID:'111'},'test',28,'webgis',async(url,init)=>{
+ assert(!url.includes('analyticsadmin'));const body=JSON.parse(init.body);requests.push(body);
+ if(body.dimensions[0]?.name==='hostName')return ok({rows:[{dimensionValues:[{value:'webgisyg.id'}],metricValues:[{value:'42'}]}],metadata:{timeZone:'Asia/Jakarta'}});
+ return ok({rows:[]});
+ });assert.equal(result.configured,true);assert.equal(requests.length,7);
+ for(const body of requests.slice(1))assert.deepEqual(body.dimensionFilter.andGroup.expressions,[{filter:{fieldName:'hostName',inListFilter:{values:['webgisyg.id','www.webgisyg.id']}}}]);
 });

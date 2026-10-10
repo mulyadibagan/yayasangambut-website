@@ -2,6 +2,22 @@
 const WEBGIS_MEASUREMENT_ID = 'G-ZEBSLW4ZWW';
 export async function webgisProperty(env, accessToken, fetcher = fetch) {
   const headers = {Authorization: 'Bearer ' + accessToken};
+  // A shared property can already report this hostname without Admin API access.
+  if (/^\d+$/.test(env.GA_PROPERTY_ID || '')) {
+    const probe = await fetcher('https://analyticsdata.googleapis.com/v1beta/properties/' + env.GA_PROPERTY_ID + ':runReport', {
+      method: 'POST', headers: {...headers, 'Content-Type': 'application/json'},
+      body: JSON.stringify({dateRanges:[{startDate:'90daysAgo',endDate:'yesterday'}],
+        dimensions:[{name:'hostName'}],metrics:[{name:'screenPageViews'}],
+        dimensionFilter:{filter:{fieldName:'hostName',inListFilter:{values:['webgisyg.id','www.webgisyg.id']}}}})
+    });
+    if (probe.ok) {
+      const data=await probe.json();
+      if ((data.rows||[]).some(row=>['webgisyg.id','www.webgisyg.id'].includes(row.dimensionValues?.[0]?.value)&&Number(row.metricValues?.[0]?.value)>0)) {
+        return {propertyId:env.GA_PROPERTY_ID,timezone:data.metadata?.timeZone||'Asia/Jakarta'};
+      }
+    }
+  }
+
   const read = async path => {
     const response = await fetcher('https://analyticsadmin.googleapis.com/v1beta/' + path, {headers});
     if (!response.ok) {
@@ -48,7 +64,7 @@ export async function analyticsReports(env, accessToken, days, site = 'website',
   const selected = site === 'webgis' ? await webgisProperty(env, accessToken, fetcher) : {propertyId: env.GA_PROPERTY_ID, timezone: 'Asia/Jakarta'};
   const report = async (dimensions, metrics, limit) => {
     const dimensionFilter = site === 'webgis' ? {andGroup: {expressions: [
-      {filter: {fieldName: 'streamId', stringFilter: {matchType: 'EXACT', value: selected.streamId}}},
+      ...(selected.streamId ? [{filter: {fieldName: 'streamId', stringFilter: {matchType: 'EXACT', value: selected.streamId}}}] : []),
       {filter: {fieldName: 'hostName', inListFilter: {values: ['webgisyg.id', 'www.webgisyg.id']}}}
     ]}} : undefined;
     const response = await fetcher('https://analyticsdata.googleapis.com/v1beta/properties/' + selected.propertyId + ':runReport', {
