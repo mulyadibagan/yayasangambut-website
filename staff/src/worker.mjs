@@ -1,3 +1,4 @@
+import {broker,issueCode} from './webgis-sso.mjs';
 import {analyticsReports,analyticsPeriod} from './analytics.mjs';
 import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
 import {renderPreview} from './preview.mjs';
@@ -48,6 +49,8 @@ async function authCallback(req,env,url){
   const current=await query(env,'SELECT * FROM users WHERE id=?',u.id).first();if(current.disabled)fail(403,'Akses akun ini dinonaktifkan.');
   const raw=token();await query(env,'INSERT INTO sessions VALUES(?,?,?)',await sha(raw),u.id,Date.now()+8*3600000).run();
   await audit(env,u,'login',u.id);
+  const targetCookie=cookies(req)['__Host-yg-webgis-target'];
+  if(targetCookie){let target;try{target=JSON.parse(decodeURIComponent(targetCookie));}catch{fail(400,'Mulai login WebGIS kembali.');}const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
   const headers=new Headers({Location:env.APP_ORIGIN+'/'});headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});
 }
 async function githubToken(env){
@@ -182,6 +185,14 @@ async function api(req,env,url,u){
 async function route(req,env){
   const url=new URL(req.url);
   if(url.origin!==env.APP_ORIGIN)fail(403,'Alamat dashboard tidak sesuai konfigurasi.');
+  if(url.pathname.startsWith('/api/webgis/'))return broker(req,env,url);
+  if(url.pathname==='/auth/webgis'&&req.method==='GET'){
+    const target={state:url.searchParams.get('state'),challenge:url.searchParams.get('challenge')};
+    if(!/^[A-Za-z0-9_-]{32,128}$/.test(target.state||'')||!/^[A-Za-z0-9_-]{43}$/.test(target.challenge||''))fail(400,'Permintaan WebGIS tidak valid.');
+    let u;try{u=await session(req,env);}catch(e){if(!(e instanceof HttpError)||e.status!==401)throw e;}
+    if(u)return issueCode(env,u,target);
+    const started=await authStart(env);const headers=new Headers(started.headers);headers.append('Set-Cookie',cookie('__Host-yg-webgis-target',encodeURIComponent(JSON.stringify(target)),600));return new Response(null,{status:302,headers});
+  }
   if(req.method!=='GET'&&req.method!=='HEAD'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Permintaan lintas situs ditolak.');
   if(url.pathname==='/api/config')return json({ready:configured(env),automaticEnglish:!!env.AI});
   if(url.pathname==='/auth/login'&&req.method==='GET')return authStart(env);
