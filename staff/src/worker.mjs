@@ -1,3 +1,4 @@
+import {finance} from './kups-finance.mjs';
 import {broker,issueCode} from './webgis-sso.mjs';
 import {analyticsReports,analyticsPeriod} from './analytics.mjs';
 import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
@@ -22,16 +23,16 @@ async function payload(req){const text=new TextDecoder().decode(await readLimite
 async function session(req,env){
   const raw=cookies(req)['__Host-yg-session'];if(!raw)fail(401,'Silakan masuk dengan akun Google YG.');
   const user=await query(env,'SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.id=? AND sessions.expires>? AND users.disabled=0',await sha(raw),Date.now()).first();
-  if(!user)fail(401,'Sesi berakhir. Silakan masuk kembali.');return user;
+  if(!user)fail(401,'Sesi berakhir. Silakan masuk kembali.');if(!user.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return user;
 }
-async function authStart(env){
+async function authStart(env,external=false){
   if(!configured(env))fail(503,'Login Google Workspace sedang disiapkan.');
   const state=token(),nonce=token(),verifier=token();
   await env.DB.batch([query(env,'DELETE FROM oauth_states WHERE expires<?',Date.now()),query(env,'DELETE FROM sessions WHERE expires<?',Date.now()),query(env,'INSERT INTO oauth_states VALUES(?,?,?,?)',await sha(state),nonce,verifier,Date.now()+600000)]);
   const hash=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier)));
   const challenge=btoa(String.fromCharCode(...hash)).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
   const url=new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  url.search=new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,redirect_uri:env.APP_ORIGIN+'/auth/callback',response_type:'code',scope:'openid email profile',state,nonce,hd:env.GOOGLE_WORKSPACE_DOMAIN,code_challenge:challenge,code_challenge_method:'S256',prompt:'select_account'});
+  url.search=new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,redirect_uri:env.APP_ORIGIN+'/auth/callback',response_type:'code',scope:'openid email profile',state,nonce,...(external?{}:{hd:env.GOOGLE_WORKSPACE_DOMAIN}),code_challenge:challenge,code_challenge_method:'S256',prompt:'select_account'});
   return redirect(url.href,{'Set-Cookie':cookie('__Host-yg-oauth',state,600)});
 }
 async function authCallback(req,env,url){
@@ -44,13 +45,21 @@ async function authCallback(req,env,url){
   const tokens=await response.json();
   let claims;try{({payload:claims}=await jwtVerify(tokens.id_token,googleKeys,{audience:env.GOOGLE_CLIENT_ID,issuer:['https://accounts.google.com','accounts.google.com'],algorithms:['RS256']}));}catch{fail(401,'Identitas Google tidak dapat diverifikasi.');}
   if(claims.nonce!==row.nonce)fail(401,'Identitas login tidak cocok.');
-  const u=assertIdentity(claims,env);
+  const targetCookie=cookies(req)['__Host-yg-webgis-target'];
+  let target;if(targetCookie){try{target=JSON.parse(decodeURIComponent(targetCookie));}catch{fail(400,'Mulai login kembali.');}}
+  let u;
+  if(target?.purpose==='kups' && claims.email_verified===true && claims.sub){
+    const email=String(claims.email||'').toLowerCase();
+    const membership=await query(env,'SELECT email FROM kups_members WHERE email=? AND disabled=0 LIMIT 1',email).first();
+    if(email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN)&&claims.hd===env.GOOGLE_WORKSPACE_DOMAIN)u=assertIdentity(claims,env);
+    else {if(!membership)fail(403,'Email belum terdaftar sebagai anggota KUPS. Hubungi admin YG.');u={id:claims.sub,email,name:String(claims.name||email).slice(0,160),role:'staff',externalKups:true};}
+  }else u=assertIdentity(claims,env);
   await query(env,'INSERT INTO users(id,email,name,role,created_at,last_login) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,name=excluded.name,last_login=excluded.last_login',u.id,u.email,u.name,u.role,now(),now()).run();
   const current=await query(env,'SELECT * FROM users WHERE id=?',u.id).first();if(current.disabled)fail(403,'Akses akun ini dinonaktifkan.');
+  if(u.externalKups){if(target?.purpose!=='kups')fail(403,'Akses hanya untuk Keuangan KUPS.');await audit(env,u,'kups_login',u.id);return issueCode(env,u,target);}
   const raw=token();await query(env,'INSERT INTO sessions VALUES(?,?,?)',await sha(raw),u.id,Date.now()+8*3600000).run();
   await audit(env,u,'login',u.id);
-  const targetCookie=cookies(req)['__Host-yg-webgis-target'];
-  if(targetCookie){let target;try{target=JSON.parse(decodeURIComponent(targetCookie));}catch{fail(400,'Mulai login WebGIS kembali.');}const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
+  if(target){const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
   const headers=new Headers({Location:env.APP_ORIGIN+'/'});headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});
 }
 async function githubToken(env){
@@ -185,13 +194,14 @@ async function api(req,env,url,u){
 async function route(req,env){
   const url=new URL(req.url);
   if(url.origin!==env.APP_ORIGIN)fail(403,'Alamat dashboard tidak sesuai konfigurasi.');
+  if(url.pathname.startsWith('/api/kups/'))return finance(req,env,url);
   if(url.pathname.startsWith('/api/webgis/'))return broker(req,env,url);
-  if(url.pathname==='/auth/webgis'&&req.method==='GET'){
-    const target={state:url.searchParams.get('state'),challenge:url.searchParams.get('challenge')};
+  if(['/auth/webgis','/auth/kups'].includes(url.pathname)&&req.method==='GET'){
+    const target={state:url.searchParams.get('state'),challenge:url.searchParams.get('challenge'),purpose:url.pathname==='/auth/kups'?'kups':'staff'};
     if(!/^[A-Za-z0-9_-]{32,128}$/.test(target.state||'')||!/^[A-Za-z0-9_-]{43}$/.test(target.challenge||''))fail(400,'Permintaan WebGIS tidak valid.');
     let u;try{u=await session(req,env);}catch(e){if(!(e instanceof HttpError)||e.status!==401)throw e;}
     if(u)return issueCode(env,u,target);
-    const started=await authStart(env);const headers=new Headers(started.headers);headers.append('Set-Cookie',cookie('__Host-yg-webgis-target',encodeURIComponent(JSON.stringify(target)),600));return new Response(null,{status:302,headers});
+    const started=await authStart(env,target.purpose==='kups');const headers=new Headers(started.headers);headers.append('Set-Cookie',cookie('__Host-yg-webgis-target',encodeURIComponent(JSON.stringify(target)),600));return new Response(null,{status:302,headers});
   }
   if(req.method!=='GET'&&req.method!=='HEAD'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Permintaan lintas situs ditolak.');
   if(url.pathname==='/api/config')return json({ready:configured(env),automaticEnglish:!!env.AI});
@@ -206,7 +216,7 @@ async function route(req,env){
     }
     const obj=await env.MEDIA.get(id);if(!obj)fail(404,'Foto tidak ditemukan.');return new Response(obj.body,{headers:{'Content-Type':meta.type,'Cache-Control':meta.public?'public, max-age=86400':'private, no-store','X-Content-Type-Options':'nosniff'}});
   }
-  if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');return api(req,env,url,await session(req,env));}
+  if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
   return env.ASSETS.fetch(req);
 }
@@ -215,4 +225,5 @@ export default {async fetch(req,env){
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(!new URL(req.url).pathname.startsWith('/media/'))out.headers.set('Cache-Control','no-store');return out;
 }};
+
 

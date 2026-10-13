@@ -20,12 +20,8 @@ export async function issueCode(env,u,target){
 export async function broker(req,env,url){
  if(req.method==='OPTIONS')return respond({},204);
  if(url.pathname==='/api/webgis/introspect'&&req.method==='GET'){
-  const raw=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
-  if(!raw.startsWith('yg-google-'))return respond({ok:false},401);
-  const row=await q(env,'SELECT users.*,webgis_sessions.scope,webgis_sessions.role AS webgis_role,webgis_sessions.expires FROM webgis_sessions JOIN users ON users.id=webgis_sessions.user_id WHERE webgis_sessions.id=? AND webgis_sessions.expires>? AND users.disabled=0',await sha(raw),Date.now()).first();
-  if(!row)return respond({ok:false},401);
-  const access=await grant(env,row);if(access.scope!==row.scope||access.role!==row.webgis_role)return respond({ok:false},401);
-  return respond({ok:true,email:row.email,username:row.email.split('@')[0],name:row.name,role:row.webgis_role,scope:row.scope,expiresAt:row.expires});
+  const row=await validateWebgisSession(env,req.headers.get('Authorization')?.replace(/^Bearer /,'')||'');
+  return row?respond({ok:true,...row}):respond({ok:false},401);
  }
  if(req.headers.get('Origin')!==origin)return respond({ok:false},403);
  if(url.pathname==='/api/webgis/exchange'&&req.method==='POST'){
@@ -41,4 +37,13 @@ export async function broker(req,env,url){
  }
  if(url.pathname==='/api/webgis/logout'&&req.method==='POST'){const raw=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';await q(env,'DELETE FROM webgis_sessions WHERE id=?',await sha(raw)).run();return respond({ok:true});}
  return respond({ok:false},404);
+}
+
+
+export async function validateWebgisSession(env,raw){
+ if(!raw.startsWith('yg-google-'))return null;
+ const row=await q(env,'SELECT users.*,webgis_sessions.scope,webgis_sessions.role AS webgis_role,webgis_sessions.expires FROM webgis_sessions JOIN users ON users.id=webgis_sessions.user_id WHERE webgis_sessions.id=? AND webgis_sessions.expires>? AND users.disabled=0',await sha(raw),Date.now()).first();
+ if(!row)return null;
+ const access=await grant(env,row);if(access.scope!==row.scope||access.role!==row.webgis_role)return null;
+ return {email:row.email,username:row.email.split('@')[0],name:row.name,role:row.webgis_role,scope:row.scope,expiresAt:row.expires};
 }
