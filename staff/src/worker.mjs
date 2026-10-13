@@ -23,7 +23,7 @@ async function payload(req){const text=new TextDecoder().decode(await readLimite
 async function session(req,env){
   const raw=cookies(req)['__Host-yg-session'];if(!raw)fail(401,'Silakan masuk dengan akun Google YG.');
   const user=await query(env,'SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.id=? AND sessions.expires>? AND users.disabled=0',await sha(raw),Date.now()).first();
-  if(!user)fail(401,'Sesi berakhir. Silakan masuk kembali.');if(!user.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return user;
+  if(!user)fail(401,'Sesi berakhir. Silakan masuk kembali.');if(!user.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN)|| (await query(env,'SELECT scope FROM webgis_access WHERE email=?',user.email).first())?.scope==='kups-finance')fail(403,'Akses hanya untuk Keuangan KUPS.');return user;
 }
 async function authStart(env,external=false){
   if(!configured(env))fail(503,'Login Google Workspace sedang disiapkan.');
@@ -56,7 +56,8 @@ async function authCallback(req,env,url){
   }else u=assertIdentity(claims,env);
   await query(env,'INSERT INTO users(id,email,name,role,created_at,last_login) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,name=excluded.name,last_login=excluded.last_login',u.id,u.email,u.name,u.role,now(),now()).run();
   const current=await query(env,'SELECT * FROM users WHERE id=?',u.id).first();if(current.disabled)fail(403,'Akses akun ini dinonaktifkan.');
-  if(u.externalKups){if(target?.purpose!=='kups')fail(403,'Akses hanya untuk Keuangan KUPS.');await audit(env,u,'kups_login',u.id);return issueCode(env,u,target);}
+  const restricted=await query(env,'SELECT scope FROM webgis_access WHERE email=?',u.email).first();
+  if(u.externalKups||restricted?.scope==='kups-finance'){if(!target||(u.externalKups&&target.purpose!=='kups'))fail(403,'Masuk melalui halaman Keuangan KUPS.');await audit(env,u,'kups_login',u.id);const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
   const raw=token();await query(env,'INSERT INTO sessions VALUES(?,?,?)',await sha(raw),u.id,Date.now()+8*3600000).run();
   await audit(env,u,'login',u.id);
   if(target){const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
@@ -199,7 +200,7 @@ async function route(req,env){
   if(['/auth/webgis','/auth/kups'].includes(url.pathname)&&req.method==='GET'){
     const target={state:url.searchParams.get('state'),challenge:url.searchParams.get('challenge'),purpose:url.pathname==='/auth/kups'?'kups':'staff'};
     if(!/^[A-Za-z0-9_-]{32,128}$/.test(target.state||'')||!/^[A-Za-z0-9_-]{43}$/.test(target.challenge||''))fail(400,'Permintaan WebGIS tidak valid.');
-    let u;try{u=await session(req,env);}catch(e){if(!(e instanceof HttpError)||e.status!==401)throw e;}
+    let u;try{u=await session(req,env);}catch(e){if(!(e instanceof HttpError)||![401,403].includes(e.status))throw e;}
     if(u)return issueCode(env,u,target);
     const started=await authStart(env,target.purpose==='kups');const headers=new Headers(started.headers);headers.append('Set-Cookie',cookie('__Host-yg-webgis-target',encodeURIComponent(JSON.stringify(target)),600));return new Response(null,{status:302,headers});
   }
