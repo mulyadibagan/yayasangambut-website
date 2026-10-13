@@ -1,3 +1,4 @@
+import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
 import {fail,now,imageType} from './core.mjs';
 import {validateWebgisSession} from './webgis-sso.mjs';
 const origin='https://webgisyg.id';
@@ -8,9 +9,11 @@ export function validDate(v){const d=new Date(v+'T00:00:00Z');return /^\d{4}-\d{
 export function money(v,zero=false){if(!Number.isSafeInteger(v)||v<(zero?0:1)||v>1e12)fail(400,'Isi nominal rupiah bulat yang valid.');return v;}
 export function openingBalance(v){if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>1e12||!/^\d+(?:\.\d{1,6})?$/.test(String(v)))fail(400,'Saldo awal harus berupa angka positif, maksimal enam angka desimal.');return v;}
 const str=(v,max)=>{if(typeof v!=='string'||v.length>max)fail(400,'Isi teks yang valid.');return v.trim();};
-export function validateTransaction(b){
+export function validateTransaction(b,strict=false){
  if(!validDate(b.date)||!['income','expense'].includes(b.kind))fail(400,'Tanggal atau jenis transaksi tidak valid.');
- const p={date:b.date,kind:b.kind,category:str(b.category,80),description:str(b.description,500),amount:money(b.amount),quantity:b.quantity??null,unit:str(b.unit||'',20),unit_price:b.unit_price==null?null:money(b.unit_price,true),object_id:str(b.object_id||'',80),evidence_id:str(b.evidence_id||'',80),source_ref:str(b.source_ref||'',120)};
+ const p={date:b.date,kind:b.kind,category:str(b.category,80),description:str(b.description,500),amount:money(b.amount),quantity:b.quantity??null,unit:str(b.unit||'',20),unit_price:b.unit_price==null?null:money(b.unit_price,true),object_id:str(b.object_id||'',80),evidence_id:str(b.evidence_id||'',80),source_ref:str(b.source_ref||'',120),account:b.account||'unassigned',counterparty:str(b.counterparty||'',160),product:str(b.product||'',100),activity:str(b.activity||'',200)};
+ if(!['cash','bank','unassigned'].includes(p.account))fail(400,'Akun pembayaran tidak valid.');
+ if(strict&&!categories[p.kind]?.includes(p.category))fail(400,'Kategori tidak sesuai jenis transaksi.');
  if(!p.category||!p.description)fail(400,'Isi kategori dan uraian.');
  if(p.quantity!==null&&(!Number.isFinite(p.quantity)||p.quantity<=0||p.quantity>1e9||!p.unit))fail(400,'Isi jumlah positif dan satuannya.');
  return p;
@@ -21,7 +24,7 @@ const audit=(env,u,g,action,target,data)=>q(env,'INSERT INTO kups_audit VALUES(?
 const requireAdmin=u=>{if(u.scope!=='webgis-staff'||u.role!=='admin')fail(403,'Akses admin YG diperlukan.');};
 async function verifyEvidence(env,g,id){if(id&&!await q(env,'SELECT id FROM kups_evidence WHERE id=? AND group_id=?',id,g).first())fail(400,'Bukti tidak ditemukan pada kelompok ini.');}
 async function insertTx(env,u,g,p,id=crypto.randomUUID()){
- return q(env,'INSERT INTO kups_transactions(id,group_id,date,kind,category,description,amount,quantity,unit,unit_price,object_id,evidence_id,source_ref,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,g,p.date,p.kind,p.category,p.description,p.amount,p.quantity,p.unit,p.unit_price,p.object_id,p.evidence_id,p.source_ref,u.email,u.email,now(),now());
+ return q(env,'INSERT INTO kups_transactions(id,group_id,date,kind,category,description,amount,quantity,unit,unit_price,object_id,evidence_id,source_ref,created_by,updated_by,created_at,updated_at,account,counterparty,product,activity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,g,p.date,p.kind,p.category,p.description,p.amount,p.quantity,p.unit,p.unit_price,p.object_id,p.evidence_id,p.source_ref,u.email,u.email,now(),now(),p.account,p.counterparty,p.product,p.activity);
 }
 export async function finance(req,env,url){
  if(req.method==='OPTIONS')return json({},204);
@@ -37,6 +40,7 @@ export async function finance(req,env,url){
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
+ const extended=await detailsRoute(req,env,url,{u,g,group,write,requireAdmin,json,body,q,audit,verifyEvidence});if(extended)return extended;
  if(path==='/setup'&&method==='POST'){
   requireAdmin(u);const b=await body(req);openingBalance(b.opening_amount);const earliest=await q(env,'SELECT MIN(date) AS date FROM kups_transactions WHERE group_id=?',g).first();if(earliest.date&&b.start_date>earliest.date)fail(400,'Tanggal awal tidak boleh melewati transaksi yang sudah ada.');if(!validDate(b.start_date))fail(400,'Tanggal awal tidak valid.');
   const r=await env.DB.batch([q(env,'UPDATE kups_groups SET opening_amount=?,start_date=?,version=version+1 WHERE id=? AND opening_amount IS NULL AND version=?',b.opening_amount,b.start_date,g,b.version),q(env,"INSERT INTO kups_audit SELECT ?,?,?,?,?,?,? WHERE changes()>0",crypto.randomUUID(),g,u.email,'setup',g,JSON.stringify({opening_amount:b.opening_amount,start_date:b.start_date}),now())]);if(!r[0].meta.changes)fail(409,'Saldo sudah ditetapkan. Muat ulang.');return json({ok:true});
@@ -47,16 +51,16 @@ export async function finance(req,env,url){
   const prior=await q(env,"SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount ELSE -amount END),0) AS net FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)<?",g,month).first();
   const active=rows.filter(t=>!t.deleted_at);const income=active.filter(t=>t.kind==='income').reduce((n,t)=>n+t.amount,0),expense=active.filter(t=>t.kind==='expense').reduce((n,t)=>n+t.amount,0);const opening=group.opening_amount===null?null:group.opening_amount+prior.net;
   const chart=(await q(env,"SELECT substr(date,1,7) AS month,SUM(CASE WHEN kind='income' THEN amount ELSE 0 END) AS income,SUM(CASE WHEN kind='expense' THEN amount ELSE 0 END) AS expense FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)>=? AND substr(date,1,7)<=? GROUP BY substr(date,1,7) ORDER BY month",g,String(Number(month.slice(0,4))-1)+month.slice(4),month).all()).results;
-  const period=await q(env,'SELECT * FROM kups_periods WHERE group_id=? AND month=?',g,month).first();return json({group,access,rows,summary:{opening,income,expense,closing:opening===null?null:opening+income-expense},chart,period});
+  const period=await q(env,'SELECT * FROM kups_periods WHERE group_id=? AND month=?',g,month).first();return json({group,access,rows,summary:{opening,income,expense,closing:opening===null?null:opening+income-expense},chart,period,...await ledgerDetails(env,q,g,group,month)});
  }
  if(path==='/transactions'&&method==='POST'){
-  write();if(group.opening_amount===null)fail(409,'Saldo awal belum ditetapkan.');const p=validateTransaction(await body(req));await verifyEvidence(env,g,p.evidence_id);const id=crypto.randomUUID();await env.DB.batch([await insertTx(env,u,g,p,id),audit(env,u,g,'create',id,p)]);return json({ok:true,id},201);
+  write();if(group.opening_amount===null)fail(409,'Saldo awal belum ditetapkan.');const p=validateTransaction(await body(req),true);await verifyEvidence(env,g,p.evidence_id);const id=crypto.randomUUID();await env.DB.batch([await insertTx(env,u,g,p,id),audit(env,u,g,'create',id,p)]);return json({ok:true,id},201);
  }
  const match=path.match(/^\/transactions\/([a-f0-9-]{36})(?:\/(trash|restore))?$/);
  if(match&&['PUT','POST'].includes(method)){
   write();const [,id,action]=match,b=await body(req),old=await q(env,'SELECT * FROM kups_transactions WHERE id=? AND group_id=?',id,g).first();if(!old)fail(404,'Transaksi tidak ditemukan.');if(b.version!==old.version)fail(409,'Transaksi berubah. Muat ulang sebelum menyimpan.');
   let statement,snapshot;
-  if(method==='PUT'&&!action){if(old.deleted_at)fail(409,'Pulihkan transaksi lebih dahulu.');const p=validateTransaction(b);await verifyEvidence(env,g,p.evidence_id);snapshot={before:old,after:p};statement=q(env,'UPDATE kups_transactions SET date=?,kind=?,category=?,description=?,amount=?,quantity=?,unit=?,unit_price=?,object_id=?,evidence_id=?,source_ref=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND group_id=? AND version=?',p.date,p.kind,p.category,p.description,p.amount,p.quantity,p.unit,p.unit_price,p.object_id,p.evidence_id,p.source_ref,u.email,now(),id,g,b.version);}
+  if(method==='PUT'&&!action){if(old.deleted_at)fail(409,'Pulihkan transaksi lebih dahulu.');const p=validateTransaction(b,true);await verifyEvidence(env,g,p.evidence_id);snapshot={before:old,after:p};statement=q(env,'UPDATE kups_transactions SET date=?,kind=?,category=?,description=?,amount=?,quantity=?,unit=?,unit_price=?,object_id=?,evidence_id=?,source_ref=?,account=?,counterparty=?,product=?,activity=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND group_id=? AND version=?',p.date,p.kind,p.category,p.description,p.amount,p.quantity,p.unit,p.unit_price,p.object_id,p.evidence_id,p.source_ref,p.account,p.counterparty,p.product,p.activity,u.email,now(),id,g,b.version);}
   else if(method==='POST'&&action){if((action==='trash')===!!old.deleted_at)fail(409,'Status transaksi sudah berubah.');snapshot={before:old,reason:str(b.reason||'',500)};if(action==='trash'&&!snapshot.reason)fail(400,'Isi alasan penghapusan.');statement=q(env,'UPDATE kups_transactions SET deleted_at=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND group_id=? AND version=?',action==='trash'?now():null,u.email,now(),id,g,b.version);}
   else fail(405,'Metode tidak diizinkan.');
   // Transaction statement and audit are atomic; abort stale races before writing audit.
@@ -91,5 +95,9 @@ export async function finance(req,env,url){
  }
  const ev=path.match(/^\/evidence\/([a-f0-9-]{36})$/);if(ev&&method==='GET'){const meta=await q(env,'SELECT * FROM kups_evidence WHERE id=? AND group_id=?',ev[1],g).first();if(!meta)fail(404,'Bukti tidak ditemukan.');const file=await env.MEDIA.get('kups/'+ev[1]);if(!file)fail(404,'Bukti tidak tersedia.');const r=json({});return new Response(file.body,{headers:{...Object.fromEntries(r.headers),'Content-Type':meta.type,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(meta.filename),'X-Content-Type-Options':'nosniff'}});}
  fail(404,'Fitur tidak ditemukan.');
- }catch(e){return json({error:String(e.message).includes('KUPS_PERIOD_LOCKED')?'Periode ditutup atau tanggal sebelum awal pembukuan.':e.status?e.message:'Layanan keuangan belum dapat menyelesaikan permintaan.'},String(e.message).includes('KUPS_PERIOD_LOCKED')?409:e.status||500);}
+  }catch(e){
+ const message=String(e.message),conflict=message.includes('KUPS_')||message.includes('UNIQUE constraint');
+ const error=message.includes('KUPS_PERIOD_LOCKED')?'Periode ditutup atau tanggal sebelum awal pembukuan.':message.includes('KUPS_OVERPAYMENT')?'Pembayaran melebihi sisa tagihan atau tanggal/jenis tidak sesuai.':message.includes('KUPS_DOCUMENT_HAS_PAYMENTS')?'Nilai tagihan tidak boleh lebih kecil dari pembayaran. Hapus pembayaran aktif dahulu sebelum menghapus tagihan.':message.includes('UNIQUE constraint')?'Referensi atau permintaan sudah pernah disimpan. Muat ulang.':e.status?e.message:'Layanan keuangan belum dapat menyelesaikan permintaan.';
+ return json({error},conflict?409:e.status||500);
+ }
 }
