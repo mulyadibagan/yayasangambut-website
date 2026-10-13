@@ -1,6 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analyticsReports,webgisProperty} from '../src/analytics.mjs';
+import {analyticsReports,webgisProperty,analyticsPeriod} from '../src/analytics.mjs';
+
+test('calendar years include leap days and retain historical years in 2028',()=>{
+ assert.deepEqual(analyticsPeriod('year:2027',new Date('2028-07-01T00:00:00Z')).startDate,'2027-01-01');
+ assert.equal(analyticsPeriod('year:2027',new Date('2028-07-01T00:00:00Z')).endDate,'2027-12-31');
+ assert.equal(analyticsPeriod('year:2028',new Date('2028-03-01T00:00:00Z')).endDate,'2028-02-29');
+ assert.throws(()=>analyticsPeriod('year:2029',new Date('2028-07-01T00:00:00Z')));
+ assert.throws(()=>analyticsPeriod('year:2027',new Date('2027-01-01T00:00:00Z')));
+ assert.equal(analyticsPeriod('all',new Date('2028-07-01T00:00:00Z')).startDate,'2020-01-01');
+});
+test('all reports use the same unrestricted period and query unique annual and monthly users',async()=>{
+ const m=mock();const result=await analyticsReports({GA_PROPERTY_ID:'111'},'test','all','website',m.fetcher);
+ assert.equal(result.period.kind,'all');assert.equal(m.reports.length,8);
+ for(const {body} of m.reports)assert.deepEqual(body.dateRanges,[{startDate:'2020-01-01',endDate:result.period.endDate}]);
+ assert(m.reports.some(r=>r.body.dimensions[0]?.name==='yearMonth'&&r.body.metrics[0].name==='activeUsers'));
+ assert(m.reports.some(r=>r.body.dimensions[0]?.name==='year'&&r.body.metrics.length===4));
+});
+test('past annual WebGIS reports preserve site filters and end on December 31',async()=>{
+ const m=mock();const r=await analyticsReports({GA_PROPERTY_ID:'111'},'test','year:2025','webgis',m.fetcher);
+ for(const {body} of m.reports){assert.deepEqual(body.dateRanges,[{startDate:'2025-01-01',endDate:'2025-12-31'}]);assert(body.dimensionFilter);}
+ assert.equal(r.period.granularity,'month');
+});
 const ok=data=>Response.json(data);
 function mock({found=true,geoError=false}={}){
  const reports=[],reads=[];
@@ -53,3 +74,4 @@ test('shared website property is usable when it contains verified WebGIS hostnam
  });assert.equal(result.configured,true);assert.equal(requests.length,7);
  for(const body of requests.slice(1))assert.deepEqual(body.dimensionFilter.andGroup.expressions,[{filter:{fieldName:'hostName',inListFilter:{values:['webgisyg.id','www.webgisyg.id']}}}]);
 });
+

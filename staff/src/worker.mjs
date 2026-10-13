@@ -1,4 +1,4 @@
-import {analyticsReports} from './analytics.mjs';
+import {analyticsReports,analyticsPeriod} from './analytics.mjs';
 import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
 import {renderPreview} from './preview.mjs';
 import {createRemoteJWKSet,jwtVerify,SignJWT,importPKCS8} from 'jose';
@@ -168,7 +168,7 @@ async function api(req,env,url,u){
     const id=crypto.randomUUID(); let filename='Foto'; try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Foto').slice(0,180);}catch{fail(400,'Nama foto tidak valid.');}
     await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
-  if(path==='/api/analytics'&&method==='GET'){const site=url.searchParams.get('site')||'website';if(!['website','webgis'].includes(site))fail(400,'Situs statistik tidak dikenal.');return analytics(env,[7,28,90].includes(Number(url.searchParams.get('days')))?Number(url.searchParams.get('days')):28,site);}
+  if(path==='/api/analytics'&&method==='GET'){const site=url.searchParams.get('site')||'website';if(!['website','webgis'].includes(site))fail(400,'Situs statistik tidak dikenal.');const period=url.searchParams.get('period')||url.searchParams.get('days')||'28';try{analyticsPeriod(period);}catch(e){fail(400,e.message);}return analytics(env,period,site);}
   if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
   if(path==='/api/users'&&method==='PATCH'){
     if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');const input=await payload(req);
@@ -204,3 +204,4 @@ export default {async fetch(req,env){
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(!new URL(req.url).pathname.startsWith('/media/'))out.headers.set('Cache-Control','no-store');return out;
 }};
+

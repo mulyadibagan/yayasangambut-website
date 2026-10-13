@@ -70,29 +70,40 @@ async function preview(){
 }
 function table(headers,rows){return `<div class="table-wrap"><table><thead><tr>${headers.map(h=>'<th>'+esc(h)+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map(row=>'<tr>'+row.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">Belum ada data untuk periode ini.</td></tr>'}</tbody></table></div>`;}
 let statsRequest=0;
-async function loadStats(){const requestId=++statsRequest;$('#stats-description').textContent='Google Analytics · '+($('#stats-site').value==='webgis'?'WebGIS YG':'Website YG')+' · hingga kemarin';const root=$('#analytics-content');root.innerHTML='<div class="empty">Memuat statistik…</div>';try{const r=await api('/api/analytics?days='+$('#stats-range').value+'&site='+$('#stats-site').value);if(requestId!==statsRequest)return;if(!r.configured){root.innerHTML='<div class="empty">'+esc(r.message)+'</div>';return;}const totals=r.totals.rows?.[0]?.metricValues?.map(x=>Number(x.value))||[0,0,0,0];root.innerHTML='<div class="stats-grid">'+['Pengunjung aktif','Sesi','Tampilan halaman','Tingkat interaksi'].map((name,i)=>`<div class="stat"><span>${name}</span><b>${i===3?(totals[i]*100).toFixed(1)+'%':totals[i].toLocaleString('id-ID')}</b></div>`).join('')+'</div><h2>Tren pengunjung</h2>';
+const statsToday=new Date(new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})+'T00:00:00Z');statsToday.setUTCDate(statsToday.getUTCDate()-1);const statsYear=statsToday.getUTCFullYear();
+for(let year=Number(statsYear);year>=2026;year--){const option=document.createElement('option');option.value='year:'+year;option.textContent='Tahun '+year;$('#stats-range').append(option);}
 
- const dailyRows=r.daily.rows||[];
- if(!dailyRows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Belum ada data pengunjung harian untuk periode ini.';root.append(empty);}
+async function loadStats(){const requestId=++statsRequest;$('#stats-description').textContent='Google Analytics · '+($('#stats-site').value==='webgis'?'WebGIS YG':'Website YG')+' · hingga kemarin';const root=$('#analytics-content');root.innerHTML='<div class="empty">Memuat statistik…</div>';try{const r=await api('/api/analytics?period='+encodeURIComponent($('#stats-range').value)+'&site='+$('#stats-site').value);if(requestId!==statsRequest)return;if(!r.configured){root.innerHTML='<div class="empty">'+esc(r.message)+'</div>';return;}const totals=r.totals.rows?.[0]?.metricValues?.map(x=>Number(x.value))||[0,0,0,0];root.innerHTML='<div class="stats-grid">'+['Pengunjung aktif','Sesi','Tampilan halaman','Tingkat interaksi'].map((name,i)=>`<div class="stat"><span>${name}</span><b>${i===3?(totals[i]*100).toFixed(1)+'%':totals[i].toLocaleString('id-ID')}</b></div>`).join('')+'</div><h2>Tren pengunjung</h2>';
+
+ const longPeriod=r.period?.kind!=='days';
+ $('#stats-granularity').disabled=!longPeriod;
+ const monthly=longPeriod&&$('#stats-granularity').value==='month';
+ const dateLabel=value=>new Date(value+'T00:00:00Z').toLocaleDateString('id-ID',{timeZone:'UTC',day:'numeric',month:'long',year:'numeric'});
+ $('#stats-description').textContent='Google Analytics · '+(r.site==='webgis'?'WebGIS YG':'Website YG')+' · '+dateLabel(r.period.startDate)+' – '+dateLabel(r.period.endDate);
+ if(r.annual){const annual=document.createElement('section');annual.innerHTML='<h2>Rekap per tahun</h2>'+table(['Tahun','Pengunjung aktif','Sesi','Tampilan halaman','Tingkat interaksi'],(r.annual.rows||[]).map(row=>[row.dimensionValues[0].value,...row.metricValues.map((m,i)=>i===3?(Number(m.value)*100).toFixed(1)+'%':Number(m.value).toLocaleString('id-ID'))]));root.append(annual);}
+ const dailyRows=(monthly?r.monthly:r.daily)?.rows||[];
+ if(!dailyRows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Belum ada data pengunjung untuk periode ini.';root.append(empty);}
  else{
  const counts=new Map(dailyRows.map(row=>[row.dimensionValues[0].value,Number(row.metricValues[0].value)]));
- const today=new Date(new Date().toLocaleDateString('sv-SE',{timeZone:r.timezone||'Asia/Jakarta'})+'T00:00:00Z');
- const points=Array.from({length:Number(r.days)||28},(_,i)=>{const date=new Date(today);date.setUTCDate(date.getUTCDate()-(Number(r.days)||28)+i);const key=date.toISOString().slice(0,10).replaceAll('-','');return{date,count:counts.get(key)||0};});
+ const first=r.period.kind==='all'&&dailyRows.length?dailyRows[0].dimensionValues[0].value:null;
+ const start=first?(monthly?first.slice(0,4)+'-'+first.slice(4,6)+'-01':first.slice(0,4)+'-'+first.slice(4,6)+'-'+first.slice(6,8)):r.period.startDate;
+ const cursor=new Date(start+'T00:00:00Z'),end=new Date(r.period.endDate+'T00:00:00Z');if(monthly)cursor.setUTCDate(1);
+ const points=[];while(cursor<=end){const date=new Date(cursor),key=date.toISOString().slice(0,monthly?7:10).replaceAll('-','');points.push({date,count:counts.get(key)||0});if(monthly)cursor.setUTCMonth(cursor.getUTCMonth()+1);else cursor.setUTCDate(cursor.getUTCDate()+1);}
  const peak=Math.max(1,...points.map(p=>p.count)),step=Math.max(1,Math.ceil(peak/4)),top=step*4;
- const chart=document.createElement('section');chart.className='daily-chart';chart.setAttribute('aria-label','Grafik pengunjung aktif per hari');
+ const chart=document.createElement('section');chart.className='daily-chart';chart.setAttribute('aria-label',monthly?'Grafik pengunjung aktif per bulan':'Grafik pengunjung aktif per hari');
  const unit=document.createElement('p');unit.className='muted';unit.textContent='Pengunjung aktif · pilih batang untuk melihat rincian';chart.append(unit);
  const frame=document.createElement('div');frame.className='daily-frame';
  const axis=document.createElement('div');axis.className='daily-axis';axis.setAttribute('aria-hidden','true');for(let i=4;i>=0;i--){const tick=document.createElement('span');tick.textContent=(i*step).toLocaleString('id-ID');axis.append(tick);}frame.append(axis);
  const scroll=document.createElement('div');scroll.className='daily-scroll';scroll.tabIndex=0;scroll.setAttribute('aria-label','Geser untuk melihat seluruh tanggal');
  const plot=document.createElement('div');plot.className='daily-plot';plot.style.minWidth=points.length*38+'px';
  const detail=document.createElement('p');detail.className='daily-detail';detail.setAttribute('aria-live','polite');
- const fullDate=date=>date.toLocaleDateString('id-ID',{timeZone:'UTC',weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ const fullDate=date=>date.toLocaleDateString('id-ID',monthly?{timeZone:'UTC',month:'long',year:'numeric'}:{timeZone:'UTC',weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const buttons=[];
  const select=index=>{buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===index)));detail.textContent=fullDate(points[index].date)+' — '+points[index].count.toLocaleString('id-ID')+' pengunjung aktif';};
  points.forEach((point,index)=>{const button=document.createElement('button');button.type='button';button.className='daily-bar';button.title=fullDate(point.date)+': '+point.count.toLocaleString('id-ID')+' pengunjung aktif';button.setAttribute('aria-label',button.title);
  const fill=document.createElement('span');fill.className='daily-fill';fill.style.height=Math.max(point.count?2:0,point.count/top*100)+'%';
  const value=document.createElement('span');value.className='daily-value';value.textContent=point.count.toLocaleString('id-ID');fill.append(value);
- const date=document.createElement('span');date.className='daily-date';date.textContent=point.date.toLocaleDateString('id-ID',{timeZone:'UTC',day:'numeric',month:'short'});
+ const date=document.createElement('span');date.className='daily-date';date.textContent=point.date.toLocaleDateString('id-ID',{timeZone:'UTC',day:monthly?undefined:'numeric',month:'short',year:monthly?'numeric':undefined});
  button.append(fill,date);button.addEventListener('click',()=>select(index));buttons.push(button);plot.append(button);});
  scroll.append(plot);frame.append(scroll);chart.append(frame,detail);root.append(chart);select(points.length-1);
  }
@@ -112,7 +123,7 @@ async function loadStats(){const requestId=++statsRequest;$('#stats-description'
  };
  geography.innerHTML='<section><h2>Negara pengunjung</h2>'+geoTable(r.countries,['Negara','Pengunjung aktif','Sesi'],1,20)+'</section><section><h2>Kota pengunjung</h2>'+geoTable(r.cities,['Kota','Wilayah','Negara','Pengunjung aktif','Sesi'],3,50)+'</section>';
  root.append(geography);
- const note=document.createElement('p');note.className='muted';note.textContent='Data hingga kemarin. Lokasi merupakan perkiraan Google Analytics; lokasi yang tidak tersedia ditampilkan sebagai “Tidak teridentifikasi”.';root.append(note);
+ const note=document.createElement('p');note.className='muted';note.textContent='Data tersedia sejak pencatatan Google Analytics dimulai; tahun berjalan sampai kemarin. Pengunjung aktif dihitung untuk tiap periode, bukan dijumlahkan dari hari atau bulan. Lokasi merupakan perkiraan Google Analytics; lokasi yang tidak tersedia ditampilkan sebagai “Tidak teridentifikasi”.';root.append(note);
 
  }catch(e){if(requestId===statsRequest)root.innerHTML='<div class="empty">'+esc(e.message)+'</div>';}}
 async function loadUsers(){const list=await api('/api/users');$('#user-list').innerHTML='<div class="table-wrap"><table><thead><tr><th>Nama / email</th><th>Peran</th><th>Akses</th><th></th></tr></thead><tbody>'+list.map(u=>`<tr data-user="${esc(u.id)}"><td>${esc(u.name)}<br><small>${esc(u.email)}</small></td><td>${u.role==='admin'?'Administrator':`<select aria-label="Peran ${esc(u.name)}"><option value="staff" ${u.role==='staff'?'selected':''}>Staf</option><option value="editor" ${u.role==='editor'?'selected':''}>Editor</option></select>`}</td><td>${u.disabled?'Dinonaktifkan':'Aktif'}</td><td>${u.role==='admin'?'':`<button class="secondary" data-save-user>Simpan peran</button> <button class="text-button" data-toggle-user>${u.disabled?'Aktifkan':'Nonaktifkan'}</button>`}</td></tr>`).join('')+'</tbody></table></div>';
@@ -131,6 +142,7 @@ $('#return-post').onclick=handle(async()=>{const note=prompt('Catatan perbaikan 
 $$('#editor input,#editor textarea,#editor select').forEach(e=>e.addEventListener('input',markDirty));$('#post-language').addEventListener('change',setEditorState);$('#post-body').oninput=markDirty;$('#post-body').onpaste=e=>{e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text/plain'));markDirty();};$('#post-body').ondrop=e=>e.preventDefault();
 $$('[data-command]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{$('#post-body').focus();document.execCommand(b.dataset.command,false,b.dataset.value||null);markDirty();};});
 $('#insert-link').onmousedown=e=>e.preventDefault();$('#insert-link').onclick=()=>{const url=prompt('Alamat tautan (https://…):');if(!url)return;try{if(!['https:','mailto:'].includes(new URL(url).protocol))throw Error();document.execCommand('createLink',false,url);markDirty();}catch{notice('Gunakan tautan HTTPS atau email yang valid.',true);}};
-$('#insert-photo').onclick=handle(()=>chooseMedia('body'));$('#choose-cover').onclick=handle(()=>chooseMedia('cover'));$('#remove-cover').onclick=()=>{setCover('');markDirty();};$('#close-media').onclick=()=>$('#media-dialog').close();$('#upload-media').onclick=$('#upload-dialog').onclick=()=>$('#file-upload').click();$('#file-upload').onchange=handle(async e=>{await upload(e.target.files[0]);e.target.value='';});$('#stats-range').onchange=handle(loadStats);$('#stats-site').onchange=handle(loadStats);
+$('#insert-photo').onclick=handle(()=>chooseMedia('body'));$('#choose-cover').onclick=handle(()=>chooseMedia('cover'));$('#remove-cover').onclick=()=>{setCover('');markDirty();};$('#close-media').onclick=()=>$('#media-dialog').close();$('#upload-media').onclick=$('#upload-dialog').onclick=()=>$('#file-upload').click();$('#file-upload').onchange=handle(async e=>{await upload(e.target.files[0]);e.target.value='';});$('#stats-range').onchange=handle(()=>{$('#stats-granularity').value=$('#stats-range').value.startsWith('year:')||$('#stats-range').value==='all'?'month':'day';return loadStats();});$('#stats-granularity').onchange=handle(loadStats);$('#stats-site').onchange=handle(loadStats);
 $('#logout').onclick=handle(async()=>{if(dirty&&!confirm('Keluar tanpa menyimpan perubahan?'))return;await api('/api/logout','POST',{});location.reload();});window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 init().catch(e=>{$('#login-status').textContent='Layanan login belum tersedia. Silakan coba kembali nanti.';});
+
