@@ -6,6 +6,7 @@ const json=(data,status=200)=>new Response(status===204?null:JSON.stringify(data
 export const validMonth=v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v||'');
 export function validDate(v){const d=new Date(v+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(v||'')&&Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===v;}
 export function money(v,zero=false){if(!Number.isSafeInteger(v)||v<(zero?0:1)||v>1e12)fail(400,'Isi nominal rupiah bulat yang valid.');return v;}
+export function openingBalance(v){if(typeof v!=='number'||!Number.isFinite(v)||v<0||v>1e12||!/^\d+(?:\.\d{1,6})?$/.test(String(v)))fail(400,'Saldo awal harus berupa angka positif, maksimal enam angka desimal.');return v;}
 const str=(v,max)=>{if(typeof v!=='string'||v.length>max)fail(400,'Isi teks yang valid.');return v.trim();};
 export function validateTransaction(b){
  if(!validDate(b.date)||!['income','expense'].includes(b.kind))fail(400,'Tanggal atau jenis transaksi tidak valid.');
@@ -37,7 +38,7 @@ export async function finance(req,env,url){
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
  if(path==='/setup'&&method==='POST'){
-  requireAdmin(u);const b=await body(req);money(b.opening_amount,true);const earliest=await q(env,'SELECT MIN(date) AS date FROM kups_transactions WHERE group_id=?',g).first();if(earliest.date&&b.start_date>earliest.date)fail(400,'Tanggal awal tidak boleh melewati transaksi yang sudah ada.');if(!validDate(b.start_date))fail(400,'Tanggal awal tidak valid.');
+  requireAdmin(u);const b=await body(req);openingBalance(b.opening_amount);const earliest=await q(env,'SELECT MIN(date) AS date FROM kups_transactions WHERE group_id=?',g).first();if(earliest.date&&b.start_date>earliest.date)fail(400,'Tanggal awal tidak boleh melewati transaksi yang sudah ada.');if(!validDate(b.start_date))fail(400,'Tanggal awal tidak valid.');
   const r=await env.DB.batch([q(env,'UPDATE kups_groups SET opening_amount=?,start_date=?,version=version+1 WHERE id=? AND opening_amount IS NULL AND version=?',b.opening_amount,b.start_date,g,b.version),q(env,"INSERT INTO kups_audit SELECT ?,?,?,?,?,?,? WHERE changes()>0",crypto.randomUUID(),g,u.email,'setup',g,JSON.stringify({opening_amount:b.opening_amount,start_date:b.start_date}),now())]);if(!r[0].meta.changes)fail(409,'Saldo sudah ditetapkan. Muat ulang.');return json({ok:true});
  }
  if(path==='/ledger'&&method==='GET'){
