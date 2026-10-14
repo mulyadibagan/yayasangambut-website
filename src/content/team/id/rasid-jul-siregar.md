@@ -1,5 +1,5 @@
 ---
-name: "Rasid Jul Siregar"
+name: "Rasid Jul Siregar, S.Pd., M.Pd."
 position: "Staf Program dan GIS"
 positionEn: "Program and GIS Staff"
 group: "Management & Program Team"
