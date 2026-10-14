@@ -19,7 +19,14 @@ export function validateTransaction(b,strict=false){
  return p;
 }
 async function body(req){if(Number(req.headers.get('content-length')||0)>200000)fail(413,'Data terlalu besar.');const reader=req.body?.getReader();let size=0;const parts=[];if(!reader)fail(400,'Data kosong.');while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>200000){await reader.cancel();fail(413,'Data terlalu besar.');}parts.push(value);}const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length;}try{return JSON.parse(new TextDecoder().decode(bytes));}catch{fail(400,'Data tidak valid.');}}
-export function assertGroupAccess(u,member,write=false){if(u.scope==='webgis-staff'&&u.role==='admin')return 'admin';if(!member||member.disabled)fail(403,'Email Anda belum memiliki akses keuangan kelompok ini.');if(write&&member.role!=='treasurer')fail(403,'Akses bendahara diperlukan.');return member.role;}
+const ygStaff=u=>u.scope==='webgis-staff'&&/^[^@\s]+@yayasangambut\.org$/.test(u.email||'');
+export function assertGroupAccess(u,member,write=false){
+ if(u.scope==='webgis-staff'&&u.role==='admin')return 'admin';
+ if(member?.disabled||(!member&&!ygStaff(u)))fail(403,'Email Anda belum memiliki akses keuangan kelompok ini.');
+ const role=member?.role||'viewer';
+ if(write&&role!=='treasurer')fail(403,'Akses bendahara diperlukan.');
+ return role;
+}
 const audit=(env,u,g,action,target,data)=>q(env,'INSERT INTO kups_audit VALUES(?,?,?,?,?,?,?)',crypto.randomUUID(),g,u.email,action,target,JSON.stringify(data),now());
 const requireAdmin=u=>{if(u.scope!=='webgis-staff'||u.role!=='admin')fail(403,'Akses admin YG diperlukan.');};
 async function verifyEvidence(env,g,id){if(id&&!await q(env,'SELECT id FROM kups_evidence WHERE id=? AND group_id=?',id,g).first())fail(400,'Bukti tidak ditemukan pada kelompok ini.');}
@@ -35,7 +42,9 @@ export async function finance(req,env,url){
  if(!['webgis-staff','kups-finance'].includes(u.scope))fail(403,'Akses tidak diizinkan.');
  const path=url.pathname.replace('/api/kups',''),method=req.method;
  if(path==='/groups'&&method==='GET'){
-  const groups=(await q(env,u.scope==='webgis-staff'&&u.role==='admin'?'SELECT *,\'admin\' AS access FROM kups_groups':'SELECT g.*,m.role AS access FROM kups_groups g JOIN kups_members m ON m.group_id=g.id WHERE m.email=? AND m.disabled=0',...(u.scope==='webgis-staff'&&u.role==='admin'?[]:[u.email])).all()).results;
+  const admin=u.scope==='webgis-staff'&&u.role==='admin';
+  const sql=admin?"SELECT *,'admin' AS access FROM kups_groups":ygStaff(u)?"SELECT g.*,COALESCE(m.role,'viewer') AS access FROM kups_groups g LEFT JOIN kups_members m ON m.group_id=g.id AND m.email=? WHERE m.disabled IS NULL OR m.disabled=0":'SELECT g.*,m.role AS access FROM kups_groups g JOIN kups_members m ON m.group_id=g.id WHERE m.email=? AND m.disabled=0';
+  const groups=(await q(env,sql,...(admin?[]:[u.email])).all()).results;
   return json({groups,user:{name:u.name,email:u.email,admin:u.scope==='webgis-staff'&&u.role==='admin'}});
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
@@ -101,3 +110,4 @@ export async function finance(req,env,url){
  return json({error},conflict?409:e.status||500);
  }
 }
+

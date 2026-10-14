@@ -34,3 +34,36 @@ test('transfer moves balances between cash/bank without business income/expense;
 test('closed invoice can receive a future payment; closed-month transfer/edit stays blocked',async()=>{const f=fixture(),raw=await auth(f);await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:100000,version:1});const id=(await call(f,raw,'/documents','POST',invoice())).data.id;await call(f,raw,'/period','POST',{month:'2026-08',action:'close',counted_amount:130000,note:'Pemeriksaan',version:2});assert.equal((await call(f,raw,'/documents/'+id+'/payment','POST',{date:'2026-08-20',amount:70000,account:'cash'})).status,409);assert.equal((await call(f,raw,'/documents/'+id+'/payment','POST',{date:'2026-09-01',amount:70000,account:'cash'})).status,201);assert.equal((await call(f,raw,'/documents/'+id,'PUT',invoice({version:1}))).status,409);assert.equal((await call(f,raw,'/transfers','POST',{date:'2026-08-20',from_account:'bank',to_account:'cash',amount:1000,description:'Tarik'})).status,409);});
 test('payment edits/restores cannot exceed document total; document cannot be deleted while cash payments remain',async()=>{const f=fixture(),raw=await auth(f);await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:100000,version:1});const doc=(await call(f,raw,'/documents','POST',invoice())).data.id;const p=(await call(f,raw,'/ledger?month=2026-08')).data.rows[0];assert.equal((await call(f,raw,'/documents/'+doc+'/trash','POST',{version:1,reason:'Koreksi'})).status,409);assert.equal((await call(f,raw,'/documents/'+doc,'PUT',invoice({total_amount:20000,version:1}))).status,409);assert.equal((await call(f,raw,'/transactions/'+p.id,'PUT',tx({amount:100001,version:1}))).status,409);await call(f,raw,'/transactions/'+p.id+'/trash','POST',{version:1,reason:'Koreksi'});await call(f,raw,'/documents/'+doc+'/payment','POST',{date:'2026-08-15',amount:100000,account:'bank'});assert.equal((await call(f,raw,'/transactions/'+p.id+'/restore','POST',{version:2})).status,409);});
 test('repeat submission is idempotent and unknown historical accounts remain unassigned',async()=>{const f=fixture(),raw=await auth(f);await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:100000,version:1});const b=invoice({request_id:crypto.randomUUID()});const first=await call(f,raw,'/documents','POST',b),second=await call(f,raw,'/documents','POST',b);assert.equal(first.status,201);assert.equal(second.status,200);assert.equal(second.data.id,first.data.id);assert.equal(f.db.prepare('SELECT COUNT(*) n FROM kups_transactions').get().n,1);await call(f,raw,'/import','POST',{rows:[tx({source_ref:'old-account:10'})]});const r=(await call(f,raw,'/ledger?month=2026-08')).data;assert.equal(r.rows.find(t=>t.source_ref==='old-account:10').account,'unassigned');assert.equal(r.accounts.find(a=>a.id==='cash').closing,null);const viewer=await auth(f,'member');f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','member@gmail.com','viewer',0)");assert.equal((await call(f,viewer,'/documents','POST',invoice())).status,403);assert.equal((await call(f,viewer,'/transfers','POST',{date:'2026-08-20',from_account:'bank',to_account:'cash',amount:1000,description:'Tarik'})).status,403);});
+
+const accessMigration=()=>readFileSync(new URL('../migrations/0008_kups_read_access.sql',import.meta.url),'utf8');
+async function workspaceAuth(f){
+ f.db.exec("INSERT INTO users VALUES('ygstaff','staff@yayasangambut.org','YG Staff','staff',0)");
+ const raw='yg-google-ygstaff';
+ await f.env.DB.prepare('INSERT INTO webgis_sessions VALUES(?,?,?,?,?)').bind(await sha(raw),'ygstaff','webgis-staff','staff',Date.now()+100000).run();
+ return raw;
+}
+test('verified YG staff can read groups and ledger, but cannot mutate finance or manage members',async()=>{
+ const f=fixture(),raw=await workspaceAuth(f);
+ const groups=await call(f,raw,'/groups');assert.equal(groups.status,200);assert.equal(groups.data.groups[0].access,'viewer');
+ assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,200);
+ for(const path of ['/transactions','/documents','/transfers','/members','/setup','/period','/import','/evidence'])assert.equal((await call(f,raw,path,'POST',{})).status,403,path);
+ assert.equal((await call(f,raw,'/members')).status,403);
+ f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','staff@yayasangambut.org','viewer',1)");
+ assert.equal((await call(f,raw,'/groups')).data.groups.length,0);
+ assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,403);
+ f.db.exec("UPDATE kups_members SET disabled=0,role='treasurer' WHERE email='staff@yayasangambut.org'");
+ assert.equal((await call(f,raw,'/groups')).data.groups[0].access,'treasurer');
+ assert.equal((await call(f,raw,'/transactions','POST',tx())).status,409); // Authorized; opening balance still missing.
+});
+test('domain read access requires exact domain and staff scope',()=>{
+ for(const email of ['staff@yayasangambut.org.evil.com','staff@evilyayasangambut.org','staff@gmail.com','staff@@yayasangambut.org'])assert.throws(()=>assertGroupAccess({email,scope:'webgis-staff',role:'staff'},null));
+ assert.throws(()=>assertGroupAccess({email:'staff@yayasangambut.org',scope:'kups-finance',role:'kups'},null));
+});
+test('Alfred migration allows Dayun read only, preserves grants, and cannot reach other groups or website APIs',async()=>{
+ const f=fixture();f.db.exec(accessMigration());f.db.exec(accessMigration());
+ f.db.exec("INSERT INTO users VALUES('alfred','alfrednobel951@gmail.com','Alfred','staff',0); INSERT INTO kups_groups(id,name,created_at) VALUES('other','Other','2026-10-14')");
+ const raw=await auth(f,'alfred');const groups=await call(f,raw,'/groups');assert.equal(groups.data.groups.length,1);assert.equal(groups.data.groups[0].id,g);assert.equal(groups.data.groups[0].access,'viewer');
+ assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,200);assert.equal((await call(f,raw,'/transactions','POST',tx())).status,403);
+ const url=new URL('https://staff.yayasangambut.org/api/kups/ledger?group=other&month=2026-08');assert.equal((await finance(new Request(url,{headers:{Origin:'https://webgisyg.id',Authorization:'Bearer '+raw}}),f.env,url)).status,403);
+ f.db.exec("UPDATE kups_members SET role='treasurer',disabled=1 WHERE email='alfrednobel951@gmail.com'");f.db.exec(accessMigration());assert.equal(f.db.prepare("SELECT role,disabled FROM kups_members WHERE email='alfrednobel951@gmail.com'").get().role,'treasurer');assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,403);
+});
