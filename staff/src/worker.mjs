@@ -1,3 +1,4 @@
+import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
 import {broker,issueCode} from './webgis-sso.mjs';
 import {analyticsReports,analyticsPeriod} from './analytics.mjs';
@@ -133,7 +134,8 @@ async function analytics(env,days,site='website'){
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
@@ -226,5 +228,6 @@ export default {async fetch(req,env){
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(!new URL(req.url).pathname.startsWith('/media/'))out.headers.set('Cache-Control','no-store');return out;
 }};
+
 
 

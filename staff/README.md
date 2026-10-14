@@ -112,3 +112,14 @@ Deployment uses the existing `staff-production` environment and Cloudflare accou
 Changes under `staff/` trigger tests, a live AI check using synthetic sample text,
 D1 migrations, and deployment. No new API secret is required for the AI binding.
 Model use is subject to the account's Workers AI allowance and usage billing.
+
+## Tugas Tim
+
+Menu Tugas Tim memakai sesi Google Workspace yang sama. Staf melihat tugas yang dibuat atau ditugaskan kepadanya; hanya akun `ADMIN_EMAIL` dengan peran admin dapat melihat seluruh tim dan menugaskan satu atau beberapa staf. Hak editor artikel tidak memberikan akses Direktur.
+
+Staf membuat tugas pribadi dan memperbarui status/catatan/lampiran. Penugasan dari Direktur diajukan ke Perlu ditinjau sebelum Direktur menandainya Selesai. Tenggat memakai WIB. Daftar dan papan status memiliki filter pencarian, program, staf (Direktur), status, dan arsip. Arsip bersifat reversibel; hasil selesai tetap tersimpan.
+
+Migrasi `0010_team_tasks.sql` menambah tabel tugas, riwayat, dan metadata lampiran. Versi tugas mencegah penimpaan perubahan bersamaan. PDF/JPEG/PNG/WebP maksimal 5 MB disimpan di bucket privat, prefix `tasks/`; unduhan selalu memeriksa sesi dan akses tugas. Lampiran tidak memakai rute media artikel publik. Tidak ada email/notifikasi eksternal otomatis.
+
+Akun calon penanggung jawab muncul setelah login Workspace pertama; akun nonaktif atau khusus Keuangan KUPS tidak dapat menerima tugas. Masuk ke `/?view=tasks` untuk membuka menu langsung.
+
