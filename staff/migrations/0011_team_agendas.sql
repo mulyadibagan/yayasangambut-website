@@ -11,9 +11,9 @@ CREATE TABLE team_agendas (
 CREATE INDEX team_agendas_dates ON team_agendas(start_at,end_at);
 INSERT INTO team_agendas(id,creator,title,kind,program,location,coordinator,start_at,end_at,participant_ids,participants,description,status,created_at,updated_at)
 SELECT 'dayun-20261012-14',id,'Koordinasi dan Pemetaan Agroforestri Dayun','field','Agroforestri Dayun · APRIL','Dayun, Kabupaten Siak; perjalanan kembali ke Pekanbaru','Mulyadi','2026-10-12T00:00','2026-10-14T23:59',
- (SELECT json_group_array(id) FROM users WHERE email='mulyadi@yayasangambut.org' OR name LIKE 'Rasid%'),
- 'Mulyadi, Rasid, Ariel',
+ (SELECT json_group_array(id) FROM users WHERE email='mulyadi@yayasangambut.org' OR name LIKE 'Rasid%' OR name LIKE 'Zamharir%' OR name LIKE 'Rafi%'),
+ 'Mulyadi, Rasid, Zamharir, Rafi Merbamas',
  '12 Oktober — Dayun: pertemuan dengan APRIL, NPM, dan KUPS untuk membahas CBA dan SOP.
-13 Oktober — Dayun: pemetaan area agroforestri bersama Rasid, Mulyadi, dan Ariel serta penyusunan CBA.
+13 Oktober — Dayun: pemetaan area agroforestri bersama Rasid, Mulyadi, Zamharir, dan Rafi Merbamas serta penyusunan CBA.
 14 Oktober — perjalanan Dayun–Pekanbaru, koordinasi dengan Balai Perhutanan Sosial dan APRIL, serta penyampaian hasil analisis CBA.',
  'ongoing','2026-10-14T12:29:02Z','2026-10-14T12:29:02Z' FROM users WHERE email='mulyadi@yayasangambut.org';
