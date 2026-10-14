@@ -8,11 +8,11 @@ const requestId=v=>{if(v&&!/^[a-f0-9-]{36}$/.test(v))fail(400,'Permintaan tidak 
 export function validateDocument(b){
  if(!date(b.date)||!categories[b.kind]?.includes(b.category))fail(400,'Tanggal atau kategori tidak sesuai jenis transaksi.');
  const p={date:b.date,kind:b.kind,category:b.category,description:text(b.description||'',500),counterparty:text(b.counterparty||'',160),total_amount:amount(b.total_amount),quantity:b.quantity??null,unit:text(b.unit||'',20),unit_price:b.unit_price==null?null:amount(b.unit_price,true),product:text(b.product||'',100),activity:text(b.activity||'',200),object_id:text(b.object_id||'',80),source_ref:text(b.source_ref||'',120),evidence_id:text(b.evidence_id||'',80)};
- if(!p.description||!p.counterparty)fail(400,'Isi uraian dan nama pembeli, pemasok, atau penerima.');
+ if(!p.description)fail(400,'Isi keterangan transaksi.');
  if(p.quantity!==null&&(!Number.isFinite(p.quantity)||p.quantity<=0||p.quantity>1e9||!p.unit))fail(400,'Isi jumlah dan satuan yang valid.');
- if(p.category.startsWith('Penjualan ')&&(!p.product||p.quantity===null||(p.unit_price===null||p.unit_price<=0)))fail(400,'Lengkapi produk, jumlah, satuan, dan harga penjualan.');
- if(p.category==='Penjualan nanas'&&!['buah','kg'].includes(p.unit))fail(400,'Satuan penjualan nanas harus buah atau kg.');
- if(p.category==='Upah'&&(!p.activity||p.quantity===null||p.unit_price===null||p.unit_price<=0||p.unit!=='hari'))fail(400,'Lengkapi kegiatan, hari kerja, dan tarif upah.');
+ if((p.category.startsWith('Penjualan ')||p.category==='Upah')&&p.unit_price!==null&&p.unit_price<=0)fail(400,'Harga atau tarif harus lebih dari nol jika diisi.');
+ if(p.category==='Penjualan nanas'&&p.unit&&!['buah','kg'].includes(p.unit))fail(400,'Satuan penjualan nanas harus buah atau kg.');
+ if(p.category==='Upah'&&p.unit&&p.unit!=='hari')fail(400,'Satuan upah harus hari jika rincian diisi.');
  return p;
 }
 function payment(b,d){const p={date:b.date,amount:amount(b.amount),account:account(b.account),evidence_id:text(b.evidence_id||'',80),source_ref:text(b.source_ref||'',120)};if(!date(p.date)||p.date<d.date)fail(400,'Tanggal pembayaran tidak boleh mendahului transaksi.');return p;}
@@ -67,3 +67,4 @@ export async function ledgerDetails(env,q,g,group,month){
  const outstanding={receivable:0,payable:0};for(const d of documents.filter(d=>!d.deleted_at)){if(d.kind==='income')outstanding.receivable+=d.remaining;else outstanding.payable+=d.remaining;}
  return {transfers,documents,accounts,outstanding,categories};
 }
+
