@@ -1,3 +1,4 @@
+import {financeOwner,financeEntry} from './finance-access.mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
@@ -137,7 +138,7 @@ async function api(req,env,url,u){
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:financeOwner(u),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
@@ -220,6 +221,13 @@ async function route(req,env){
       return env.ASSETS.fetch(new Request(env.APP_ORIGIN+meta.asset_path));
     }
     const obj=await env.MEDIA.get(id);if(!obj)fail(404,'Foto tidak ditemukan.');return new Response(obj.body,{headers:{'Content-Type':meta.type,'Cache-Control':meta.public?'public, max-age=86400':'private, no-store','X-Content-Type-Options':'nosniff'}});
+  }
+  if(url.pathname==='/finance'||url.pathname.startsWith('/finance/')||url.pathname==='/api/finance'||url.pathname.startsWith('/api/finance/')){
+    if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');
+    const u=await session(req,env);
+    if(!financeOwner(u))fail(403,'Menu Keuangan hanya dapat diakses oleh Mulyadi.');
+    if(url.pathname!=='/finance')fail(404,'Halaman tidak ditemukan.');
+    return financeEntry(u,req.method);
   }
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
