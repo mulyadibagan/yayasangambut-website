@@ -233,7 +233,17 @@ async function route(req,env){
     headers.set('x-yg-finance-user',u.email);
     headers.set('oai-authenticated-user-email',u.email);
     headers.set('oai-authenticated-user-id',u.id);
-    return env.FINANCE.fetch(new Request(req,{headers}));
+    const response=await env.FINANCE.fetch(new Request(req,{headers}));
+    if(!response.headers.get('Content-Type')?.includes('text/html'))return response;
+    // Finance has its own HTML shell; use the same identity as the staff portal.
+    const brandIcon='/brand/yayasan-gambut-logo.png?v=20261015';
+    return new HTMLRewriter()
+      .on('link[rel]',{element(element){
+        const rel=(element.getAttribute('rel')||'').toLowerCase().split(/\s+/);
+        if(rel.some(value=>['icon','apple-touch-icon','apple-touch-icon-precomposed','mask-icon'].includes(value)))element.remove();
+      }})
+      .on('head',{element(element){element.append(`<link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
+      .transform(response);
   }
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
