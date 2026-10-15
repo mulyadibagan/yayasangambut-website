@@ -1,3 +1,5 @@
+const financeEmails = new Set(['mulyadi@yayasangambut.org', 'rienaprasiddha@yayasangambut.org']);
+
 export function financeOwner(user) {
-  return !!user && user.role === 'admin' && user.email?.toLowerCase() === 'mulyadi@yayasangambut.org' && !user.disabled;
+  return !!user && financeEmails.has(user.email?.toLowerCase()) && !user.disabled;
 }

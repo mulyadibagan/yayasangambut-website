@@ -225,7 +225,7 @@ async function route(req,env){
   if(url.pathname==='/finance'||url.pathname.startsWith('/finance/')||url.pathname==='/api/finance'||url.pathname.startsWith('/api/finance/')){
     if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');
     const u=await session(req,env);
-    if(!financeOwner(u))fail(403,'Menu Keuangan hanya dapat diakses oleh Mulyadi.');
+    if(!financeOwner(u))fail(403,'Menu Keuangan hanya dapat diakses oleh Mulyadi dan Riena.');
     if(url.pathname.startsWith('/api/finance'))fail(404,'Halaman tidak ditemukan.');
     if(!env.FINANCE)fail(503,'Aplikasi keuangan sedang disiapkan.');
     const headers=new Headers(req.headers);
