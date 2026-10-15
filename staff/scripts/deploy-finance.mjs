@@ -1,6 +1,6 @@
 // Finance source and historical data are encrypted at rest in this public repository.
 // Decrypt only on the protected production runner; never copy into public website assets.
-import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
 import {createDecipheriv,createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
@@ -42,17 +42,54 @@ if(!old[0].results.length){
  }
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_evidence_source_file_unique ON finance_evidence_registry(source_message_id,file_id)');
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
- for(const file of tables.finance_files.rows){
-  const bytes=await readFile(root+'/private/uploads/'+file.id);if(bytes.length!==file.size_bytes)throw Error('File size mismatch.');
-  const response=await fetch(base+'/r2/buckets/yg-staff-media/objects/'+file.object_key.split('/').map(encodeURIComponent).join('/'),{method:'PUT',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':file.mime_type},body:bytes});
-  if(!response.ok)throw Error('Cannot migrate finance attachment ('+response.status+').');
- }
- await query('INSERT INTO yg_finance_migrations(id,source_hash) VALUES(?,?)',['finance-2026-10-15',digest]);
- console.log('Finance migration verified: 103 requests, 6 uploaded files, and supporting tables.');
+ console.log('Finance database tables verified; uploaded files will be verified through the private Worker binding.');
 }else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
+const migrationFiles=[];
+await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
+for(const [index,file] of tables.finance_files.rows.entries()){
+ const bytes=await readFile(root+'/private/uploads/'+file.id);
+ if(bytes.length!==file.size_bytes)throw Error('Finance upload size mismatch.');
+ await copyFile(root+'/private/uploads/'+file.id,root+'/dist/client/_migration/uploads/'+index);
+ migrationFiles.push({key:file.object_key,size:file.size_bytes,mime:file.mime_type,path:'/_migration/uploads/'+index,sha:createHash('sha256').update(bytes).digest('hex')});
+}
+await query('CREATE TABLE IF NOT EXISTS yg_finance_upload_migrations (id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, file_count INTEGER NOT NULL, completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+const bootstrap=`import app from './index.js';
+const files=${JSON.stringify(migrationFiles)};
+const migrationId='finance-2026-10-15';const sourceHash='${digest}';
+async function verify(bytes,expected){const hash=await crypto.subtle.digest('SHA-256',bytes);const hex=Array.from(new Uint8Array(hash),v=>v.toString(16).padStart(2,'0')).join('');if(hex!==expected)throw Error('Finance attachment checksum mismatch');}
+async function initialize(env){
+ const old=await env.DB.prepare('SELECT source_hash FROM yg_finance_upload_migrations WHERE id=?').bind(migrationId).first();
+ if(old){if(old.source_hash!==sourceHash)throw Error('Finance migration source changed');return;}
+ for(const file of files){
+  const stored=await env.BUCKET.get(file.key);
+  if(stored){if(stored.size!==file.size)throw Error('Finance attachment already exists with a different size');await verify(await stored.arrayBuffer(),file.sha);continue;}
+  const response=await env.ASSETS.fetch(new Request('https://finance.internal'+file.path));if(!response.ok)throw Error('Finance migration asset missing');
+  const bytes=await response.arrayBuffer();if(bytes.byteLength!==file.size)throw Error('Finance attachment size mismatch');await verify(bytes,file.sha);
+  await env.BUCKET.put(file.key,bytes,{httpMetadata:{contentType:file.mime}});
+  const saved=await env.BUCKET.get(file.key);if(!saved||saved.size!==file.size)throw Error('Finance attachment write incomplete');await verify(await saved.arrayBuffer(),file.sha);
+ }
+ await env.DB.prepare('INSERT INTO yg_finance_upload_migrations(id,source_hash,file_count) VALUES(?,?,?)').bind(migrationId,sourceHash,files.length).run();
+ console.log('Private finance attachment migration verified.');
+}
+export default {fetch:(req,env,ctx)=>app.fetch(req,env,ctx),scheduled:(_event,env,ctx)=>ctx.waitUntil(initialize(env))};
+`;
+await writeFile(root+'/dist/server/finance-bootstrap.js',bootstrap);
 const built=JSON.parse(await readFile(root+'/dist/server/wrangler.json','utf8'));
-Object.assign(built,{name:'yg-finance',account_id:account,workers_dev:false,preview_urls:false,routes:[],d1_databases:[{binding:'DB',database_name:'yg-staff',database_id:database}],r2_buckets:[{binding:'BUCKET',bucket_name:'yg-staff-media'}]});
+Object.assign(built,{name:'yg-finance',main:'finance-bootstrap.js',account_id:account,workers_dev:false,preview_urls:false,routes:[],d1_databases:[{binding:'DB',database_name:'yg-staff',database_id:database}],r2_buckets:[{binding:'BUCKET',bucket_name:'yg-staff-media'}]});
 if(built.assets){built.assets.run_worker_first=true;built.assets.binding='ASSETS';}
 await writeFile(root+'/dist/server/wrangler.json',JSON.stringify(built));
 run('./node_modules/.bin/wrangler',['deploy','--config','dist/server/wrangler.json']);
+const schedulePath='/workers/scripts/yg-finance/schedules';
+await cf(schedulePath,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify([{cron:'* * * * *'}])});
+try{
+ let verified=false;
+ for(let attempt=0;attempt<30;attempt++){
+  const result=await query('SELECT source_hash,file_count FROM yg_finance_upload_migrations WHERE id=?',['finance-2026-10-15']);
+  if(result[0].results.length){const row=result[0].results[0];if(row.source_hash!==digest||Number(row.file_count)!==migrationFiles.length)throw Error('Finance upload migration verification failed.');verified=true;break;}
+  await new Promise(resolve=>setTimeout(resolve,5000));
+ }
+ if(!verified)throw Error('Private finance upload migration has not completed.');
+ await query('INSERT OR IGNORE INTO yg_finance_migrations(id,source_hash) VALUES(?,?)',['finance-2026-10-15',digest]);
+ console.log('Finance migration complete: all table counts and uploaded file SHA256 checks verified.');
+}finally{await cf(schedulePath,{method:'PUT',headers:{'Content-Type':'application/json'},body:'[]'});}
 console.log('Private finance service deployed; staff session remains the only entry.');
