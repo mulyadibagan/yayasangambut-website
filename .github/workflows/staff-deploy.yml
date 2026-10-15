@@ -43,6 +43,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: node scripts/check-ai.mjs
+      - name: Build and migrate private YG finance
+        env:
+          PRIVATE_FINANCE_ARCHIVE_KEY: ${{ secrets.PRIVATE_FINANCE_ARCHIVE_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAFF_D1_DATABASE_ID: ${{ vars.STAFF_D1_DATABASE_ID }}
+        run: node scripts/deploy-finance.mjs
       - name: Validate configuration and deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

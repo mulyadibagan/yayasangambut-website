@@ -1,4 +1,4 @@
-import {financeOwner,financeEntry} from './finance-access.mjs';
+import {financeOwner} from './finance-access.mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
@@ -226,8 +226,14 @@ async function route(req,env){
     if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');
     const u=await session(req,env);
     if(!financeOwner(u))fail(403,'Menu Keuangan hanya dapat diakses oleh Mulyadi.');
-    if(url.pathname!=='/finance')fail(404,'Halaman tidak ditemukan.');
-    return financeEntry(u,req.method);
+    if(url.pathname.startsWith('/api/finance'))fail(404,'Halaman tidak ditemukan.');
+    if(!env.FINANCE)fail(503,'Aplikasi keuangan sedang disiapkan.');
+    const headers=new Headers(req.headers);
+    for(const name of [...headers.keys()])if(name.startsWith('oai-')||name.startsWith('x-yg-finance-')||['cookie','authorization'].includes(name))headers.delete(name);
+    headers.set('x-yg-finance-user',u.email);
+    headers.set('oai-authenticated-user-email',u.email);
+    headers.set('oai-authenticated-user-id',u.id);
+    return env.FINANCE.fetch(new Request(req,{headers}));
   }
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
@@ -236,6 +242,7 @@ async function route(req,env){
 export default {async fetch(req,env){
   let r;try{r=await route(req,env);}catch(e){r=json({error:e instanceof HttpError?e.message:'Layanan sementara tidak tersedia. Coba kembali atau hubungi administrator.'},e instanceof HttpError?e.status:500);}
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
+  if(new URL(req.url).pathname==='/finance'||new URL(req.url).pathname.startsWith('/finance/'))out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://drive.google.com https://lh3.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://docs.google.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; frame-src 'self' blob: https://drive.google.com https://docs.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(!new URL(req.url).pathname.startsWith('/media/'))out.headers.set('Cache-Control','no-store');return out;
 }};
 

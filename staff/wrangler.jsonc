@@ -20,6 +20,7 @@
   // Run setup-config.mjs after creating the dedicated D1 database and R2 bucket.
   // No existing WebGIS resources are reused.
   "d1_databases": [{"binding":"DB", "database_name":"yg-staff", "database_id":"REPLACE_WITH_D1_DATABASE_ID", "migrations_dir":"migrations"}],
+  "services": [{"binding":"FINANCE", "service":"yg-finance"}],
   "r2_buckets": [{"binding":"MEDIA", "bucket_name":"yg-staff-media"}],
   "routes": [{"pattern":"staff.yayasangambut.org", "custom_domain":true}]
 }
