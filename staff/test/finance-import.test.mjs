@@ -16,6 +16,7 @@ test('private binding imports verified files once and rejects corrupted source b
  const objects=new Map();
  const BUCKET={async get(key){const bytes=objects.get(key);return bytes?{size:bytes.length,arrayBuffer:async()=>Uint8Array.from(bytes).buffer,text:async()=>bytes.toString()}:null;},async put(key,bytes){objects.set(key,Buffer.from(bytes));},async delete(key){objects.delete(key);}};
  try{
+  await DB.prepare('CREATE TABLE yg_finance_upload_events(id TEXT PRIMARY KEY,result TEXT,detail TEXT,updated_at TEXT DEFAULT CURRENT_TIMESTAMP)').run();
   await DB.prepare('CREATE TABLE yg_finance_upload_migrations(id TEXT PRIMARY KEY, source_hash TEXT, file_count INTEGER)').run();
   let reads=0;
   const env={DB,BUCKET,ASSETS:{fetch:async()=>{reads++;return new Response(data);}}};

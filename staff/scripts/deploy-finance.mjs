@@ -36,9 +36,14 @@ if(!old[0].results.length){
   const key=primary[table]||'id';
   const definitions=columns.map(c=>`"${c}" ${c===key?(['finance_audit','finance_notifications'].includes(table)?'INTEGER PRIMARY KEY AUTOINCREMENT':'TEXT PRIMARY KEY'):numeric.has(c)?'REAL':['created_at','updated_at'].includes(c)?'TEXT DEFAULT CURRENT_TIMESTAMP':'TEXT'}`);
   await query(`CREATE TABLE IF NOT EXISTS "${table}" (${definitions.join(',')})`);
-  for(const row of rows)await query(`INSERT OR IGNORE INTO "${table}" (${columns.map(c=>'"'+c+'"').join(',')}) VALUES (${columns.map(()=>'?').join(',')})`,columns.map(c=>row[c]??null));
+  const current=await query(`SELECT * FROM "${table}"`);
+  const normalized=row=>JSON.stringify(columns.map(c=>row[c]??null));
+  const existing=new Set(current[0].results.map(normalized));
+  for(const row of rows)if(!existing.has(normalized(row)))await query(`INSERT OR IGNORE INTO "${table}" (${columns.map(c=>'"'+c+'"').join(',')}) VALUES (${columns.map(()=>'?').join(',')})`,columns.map(c=>row[c]??null));
   const count=await query(`SELECT COUNT(*) AS count FROM "${table}"`);
   if(Number(count[0].results[0].count)!==rows.length)throw Error('Finance row count mismatch: '+table);
+  const verified=await query(`SELECT * FROM "${table}"`),verifiedRows=new Set(verified[0].results.map(normalized));
+  if(rows.some(row=>!verifiedRows.has(normalized(row))))throw Error('Finance values mismatch: '+table);
  }
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_evidence_source_file_unique ON finance_evidence_registry(source_message_id,file_id)');
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
@@ -52,6 +57,7 @@ for(const [index,file] of tables.finance_files.rows.entries()){
  await copyFile(root+'/private/uploads/'+file.id,root+'/dist/client/_migration/uploads/'+index);
  migrationFiles.push({key:file.object_key,size:file.size_bytes,mime:file.mime_type,path:'/_migration/uploads/'+index,sha:createHash('sha256').update(bytes).digest('hex')});
 }
+await query("CREATE TABLE IF NOT EXISTS yg_finance_upload_events (id TEXT PRIMARY KEY, result TEXT, detail TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
 await query('CREATE TABLE IF NOT EXISTS yg_finance_upload_migrations (id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, file_count INTEGER NOT NULL, completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
 const bootstrap=`import app from './index.js';
 const files=${JSON.stringify(migrationFiles)};
@@ -71,7 +77,14 @@ async function initialize(env){
  await env.DB.prepare('INSERT INTO yg_finance_upload_migrations(id,source_hash,file_count) VALUES(?,?,?)').bind(migrationId,sourceHash,files.length).run();
  console.log('Private finance attachment migration verified.');
 }
-export default {fetch:(req,env,ctx)=>app.fetch(req,env,ctx),scheduled:(_event,env,ctx)=>ctx.waitUntil(initialize(env))};
+async function scheduled(_event,env,ctx){
+ ctx.waitUntil((async()=>{
+  await env.DB.prepare("INSERT OR REPLACE INTO yg_finance_upload_events(id,result,detail) VALUES(?,'running','')").bind(migrationId).run();
+  try{await initialize(env);await env.DB.prepare("UPDATE yg_finance_upload_events SET result='complete',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(migrationId).run();}
+  catch(error){await env.DB.prepare("UPDATE yg_finance_upload_events SET result='failed',detail=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(String(error.message),migrationId).run();throw error;}
+ })());
+}
+export default {fetch:(req,env,ctx)=>app.fetch(req,env,ctx),scheduled};
 `;
 await writeFile(root+'/dist/server/finance-bootstrap.js',bootstrap);
 const built=JSON.parse(await readFile(root+'/dist/server/wrangler.json','utf8'));
@@ -80,12 +93,16 @@ if(built.assets){built.assets.run_worker_first=true;built.assets.binding='ASSETS
 await writeFile(root+'/dist/server/wrangler.json',JSON.stringify(built));
 run('./node_modules/.bin/wrangler',['deploy','--config','dist/server/wrangler.json']);
 const schedulePath='/workers/scripts/yg-finance/schedules';
+await query("INSERT OR REPLACE INTO yg_finance_upload_events(id,result,detail) VALUES(?,'waiting','')",['finance-2026-10-15']);
 await cf(schedulePath,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify([{cron:'* * * * *'}])});
 try{
  let verified=false;
- for(let attempt=0;attempt<30;attempt++){
+ for(let attempt=0;attempt<210;attempt++){
   const result=await query('SELECT source_hash,file_count FROM yg_finance_upload_migrations WHERE id=?',['finance-2026-10-15']);
   if(result[0].results.length){const row=result[0].results[0];if(row.source_hash!==digest||Number(row.file_count)!==migrationFiles.length)throw Error('Finance upload migration verification failed.');verified=true;break;}
+  const event=await query('SELECT result,detail FROM yg_finance_upload_events WHERE id=?',['finance-2026-10-15']);
+  if(event[0].results[0]?.result==='failed')throw Error('Finance attachment initialization failed: '+event[0].results[0].detail);
+  if(attempt%12===0)console.log('Waiting for private finance migration trigger; state: '+(event[0].results[0]?.result||'waiting'));
   await new Promise(resolve=>setTimeout(resolve,5000));
  }
  if(!verified)throw Error('Private finance upload migration has not completed.');
