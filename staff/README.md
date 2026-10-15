@@ -136,9 +136,9 @@ mutations require the same Origin. Finance data does not enter public Pages asse
 
 The protected production workflow requires an AES-256-GCM encrypted source/data
 package at `staff/imports/finance-private.enc` and `PRIVATE_FINANCE_ARCHIVE_KEY` as
-an Actions secret. These two items are pending the owner's explicit authorization
-for storage in this repository/Actions. They have not been uploaded. Do not merge
-or deploy this draft without them.
+an Actions secret. The owner explicitly authorized storage of the encrypted package and its Actions
+secret on 15 October 2026. The decryption key is stored only in Actions secrets;
+the repository contains ciphertext.
 
 The deploy script builds the application with `/finance` as its base path, runs
 isolated integration checks with all external requests disabled, imports the
