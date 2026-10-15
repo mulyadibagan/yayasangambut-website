@@ -1,0 +1,58 @@
+// Finance source and historical data are encrypted at rest in this public repository.
+// Decrypt only on the protected production runner; never copy into public website assets.
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {createDecipheriv,createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {resolve} from 'node:path';
+const root=resolve('finance-runtime');
+const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
+if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
+const data=await readFile('imports/finance-private.enc');
+const decipher=createDecipheriv('aes-256-gcm',key,data.subarray(0,12));decipher.setAuthTag(data.subarray(12,28));
+const archive=Buffer.concat([decipher.update(data.subarray(28)),decipher.final()]);
+await mkdir(root,{recursive:true,mode:0o700});
+const extracted=spawnSync('tar',['-xzf','-','-C',root],{input:archive});
+if(extracted.status!==0)throw Error('Cannot extract private finance archive.');
+function run(cmd,args,cwd=root){const r=spawnSync(cmd,args,{cwd,stdio:'inherit',env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'}});if(r.status!==0)throw Error('Finance preparation failed: '+cmd);}
+run('npm',['ci','--ignore-scripts']);
+run('npm',['run','build']);
+const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
+if(checked.status!==0)throw Error('Private finance integration checks failed.');
+const account=process.env.CLOUDFLARE_ACCOUNT_ID,database=process.env.STAFF_D1_DATABASE_ID;
+if(!/^[a-f0-9]{32}$/i.test(account||'')||!/^[-a-f0-9]{36}$/i.test(database||''))throw Error('Invalid account or database configuration.');
+const base=`https://api.cloudflare.com/client/v4/accounts/${account}`;
+async function cf(path,init={}){const r=await fetch(base+path,{...init,headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,...init.headers}});const body=await r.json();if(!r.ok||!body.success)throw Error('Finance Cloudflare operation failed ('+r.status+'): '+JSON.stringify(body.errors));return body.result;}
+const db=await cf('/d1/database/'+database);if(db.name!=='yg-staff')throw Error('Wrong finance database.');
+const query=async(sql,params=[])=>cf(`/d1/database/${database}/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sql,params})});
+await query('CREATE TABLE IF NOT EXISTS yg_finance_migrations (id TEXT PRIMARY KEY, source_hash TEXT NOT NULL, completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)');
+const snapshot=await readFile(root+'/private/database.json');
+const tables=JSON.parse(snapshot),digest=createHash('sha256').update(snapshot).digest('hex');
+const old=await query('SELECT source_hash FROM yg_finance_migrations WHERE id=?',['finance-2026-10-15']);
+if(!old[0].results.length){
+ const numeric=new Set(['amount','balance','advance_amount','actual_amount','size_bytes','line_item_no','email_ts','confidence']);
+ const primary={finance_settings:'setting_key',finance_email_links:'source_message_id',finance_email_candidates:'message_id'};
+ for(const [table,{columns,rows}] of Object.entries(tables)){
+  if(!/^finance_[a-z_]+$/.test(table)||columns.some(c=>!/^[_a-z]+$/.test(c)))throw Error('Invalid migration identifier.');
+  const key=primary[table]||'id';
+  const definitions=columns.map(c=>`"${c}" ${c===key?(['finance_audit','finance_notifications'].includes(table)?'INTEGER PRIMARY KEY AUTOINCREMENT':'TEXT PRIMARY KEY'):numeric.has(c)?'REAL':['created_at','updated_at'].includes(c)?'TEXT DEFAULT CURRENT_TIMESTAMP':'TEXT'}`);
+  await query(`CREATE TABLE IF NOT EXISTS "${table}" (${definitions.join(',')})`);
+  for(const row of rows)await query(`INSERT OR IGNORE INTO "${table}" (${columns.map(c=>'"'+c+'"').join(',')}) VALUES (${columns.map(()=>'?').join(',')})`,columns.map(c=>row[c]??null));
+  const count=await query(`SELECT COUNT(*) AS count FROM "${table}"`);
+  if(Number(count[0].results[0].count)!==rows.length)throw Error('Finance row count mismatch: '+table);
+ }
+ await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_evidence_source_file_unique ON finance_evidence_registry(source_message_id,file_id)');
+ await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
+ for(const file of tables.finance_files.rows){
+  const bytes=await readFile(root+'/private/uploads/'+file.id);if(bytes.length!==file.size_bytes)throw Error('File size mismatch.');
+  const response=await fetch(base+'/r2/buckets/yg-staff-media/objects/'+file.object_key.split('/').map(encodeURIComponent).join('/'),{method:'PUT',headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN,'Content-Type':file.mime_type},body:bytes});
+  if(!response.ok)throw Error('Cannot migrate finance attachment ('+response.status+').');
+ }
+ await query('INSERT INTO yg_finance_migrations(id,source_hash) VALUES(?,?)',['finance-2026-10-15',digest]);
+ console.log('Finance migration verified: 103 requests, 6 uploaded files, and supporting tables.');
+}else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
+const built=JSON.parse(await readFile(root+'/dist/server/wrangler.json','utf8'));
+Object.assign(built,{name:'yg-finance',account_id:account,workers_dev:false,preview_urls:false,routes:[],d1_databases:[{binding:'DB',database_name:'yg-staff',database_id:database}],r2_buckets:[{binding:'BUCKET',bucket_name:'yg-staff-media'}]});
+if(built.assets){built.assets.run_worker_first=true;built.assets.binding='ASSETS';}
+await writeFile(root+'/dist/server/wrangler.json',JSON.stringify(built));
+run('./node_modules/.bin/wrangler',['deploy','--config','dist/server/wrangler.json']);
+console.log('Private finance service deployed; staff session remains the only entry.');

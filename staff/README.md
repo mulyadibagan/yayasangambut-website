@@ -123,3 +123,32 @@ Migrasi `0010_team_tasks.sql` menambah tabel tugas, riwayat, dan metadata lampir
 
 Akun calon penanggung jawab muncul setelah login Workspace pertama; akun nonaktif atau khusus Keuangan KUPS tidak dapat menerima tugas. Masuk ke `/?view=tasks` untuk membuka menu langsung.
 
+
+
+## Private YG finance migration
+
+The finance application is prepared for `https://staff.yayasangambut.org/finance`.
+This replaces the redirect with a private `yg-finance` Worker service binding. The
+finance Worker has no public route, workers.dev URL, or preview URL. Every HTML,
+asset, PDF, and API request passes the staff session check and the Mulyadi-only
+owner check. Client identity headers are discarded and rebuilt from that session;
+mutations require the same Origin. Finance data does not enter public Pages assets.
+
+The protected production workflow requires an AES-256-GCM encrypted source/data
+package at `staff/imports/finance-private.enc` and `PRIVATE_FINANCE_ARCHIVE_KEY` as
+an Actions secret. The owner explicitly authorized storage of the encrypted package and its Actions
+secret on 15 October 2026. The decryption key is stored only in Actions secrets;
+the repository contains ciphertext.
+
+The deploy script builds the application with `/finance` as its base path, runs
+isolated integration checks with all external requests disabled, imports the
+historical database and uploaded files into the existing private YG D1/R2 bindings,
+checks table and file counts, and records the snapshot digest. Completed imports
+are never replayed over newer transactions. Existing Google Drive evidence links
+and Apps Script integration settings are retained. Email delivery is not exercised
+by the migration checks.
+
+Validation: all 81 staff tests pass, Worker dry-run passes, and the finance build
+passes. The source application has 25 pre-existing test failures; three additional
+source assertions refer to the old root URLs and require the `/finance` prefix.
+Accounting logic is retained, not revised as part of the migration.
