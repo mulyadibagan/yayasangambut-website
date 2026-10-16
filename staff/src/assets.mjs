@@ -1,0 +1,67 @@
+import {fail,now,imageType} from './core.mjs';
+const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
+const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
+const managers=new Set(['mulyadi@yayasangambut.org','rajaalpian@yayasangambut.org']);
+export const assetManager=u=>!!u&&!u.disabled&&managers.has(u.email?.toLowerCase());
+export const assetCode=id=>'YG-AST-'+String(id).padStart(4,'0');
+export const conditions=['Perlu verifikasi','Baik','Perlu perbaikan','Rusak'];
+const fields=['name','category','acquired_date','purchase_price','location','custodian','condition','serial_number','notes'];
+export function assetInput(input){
+ const out={};for(const key of fields){if(key==='purchase_price')continue;const value=String(input[key]??'').trim();if(value.length>(key==='notes'?4000:200))fail(400,'Isian terlalu panjang.');out[key]=value;}
+ if(!out.name)fail(400,'Nama aset wajib diisi.');
+ if(out.acquired_date&&(!/^\d{4}-\d{2}-\d{2}$/.test(out.acquired_date)||!Number.isFinite(Date.parse(out.acquired_date))||new Date(out.acquired_date).toISOString().slice(0,10)!==out.acquired_date))fail(400,'Tanggal perolehan tidak valid.');
+ if(!conditions.includes(out.condition))fail(400,'Kondisi tidak valid.');
+ out.purchase_price=input.purchase_price===''||input.purchase_price==null?null:Number(input.purchase_price);
+ if(out.purchase_price!==null&&(!Number.isFinite(out.purchase_price)||out.purchase_price<0||out.purchase_price>1e14))fail(400,'Harga perolehan tidak valid.');return out;
+}
+export function publicAsset(asset,manage){
+ const {purchase_price,created_by,updated_by,source_key,...rest}=asset;
+ return {...rest,code:assetCode(asset.id),...(manage?{purchase_price}:{})};
+}
+async function history(env,id,u,action){await q(env,'INSERT INTO inventory_history VALUES(?,?,?,?,?)',crypto.randomUUID(),id,u.id,action,now()).run();}
+async function detail(env,asset,manage){const photos=(await q(env,'SELECT id,created_at FROM inventory_photos WHERE asset_id=? ORDER BY created_at,id',asset.id).all()).results;const events=(await q(env,'SELECT h.action,h.created_at,u.name AS actor FROM inventory_history h LEFT JOIN users u ON u.id=h.actor WHERE asset_id=? ORDER BY h.created_at DESC,h.id DESC LIMIT 50',asset.id).all()).results;return {...publicAsset(asset,manage),photos:photos.map(p=>({...p,url:`/api/assets/${asset.id}/photos/${p.id}`})),history:events};}
+async function insert(env,data,u,sourceKey=null,sourceNote=''){
+ const time=now();return q(env,`INSERT OR IGNORE INTO inventory_assets (${fields.join(',')},source_key,source_note,created_by,updated_by,created_at,updated_at) VALUES (${Array(15).fill('?').join(',')})`,...fields.map(k=>data[k]),sourceKey,sourceNote,u.id,u.id,time,time);
+}
+export async function assetApi(req,env,url,u,{payload,readLimited}){
+ const manage=assetManager(u),path=url.pathname,method=req.method;
+ if(path==='/api/assets'&&method==='GET'){
+  const assets=(await q(env,'SELECT a.*, (SELECT id FROM inventory_photos p WHERE p.asset_id=a.id ORDER BY created_at,id LIMIT 1) AS photo_id FROM inventory_assets a WHERE archived=? ORDER BY a.id DESC',url.searchParams.get('archive')==='1'?1:0).all()).results;
+  return json({manage,assets:assets.map(a=>publicAsset(a,manage))});
+ }
+ if(path==='/api/assets/import'&&method==='POST'){
+  if(!manage)fail(403,'Hanya Mulyadi dan Raja Alpian dapat mengimpor aset.');
+  const input=await payload(req);if(!Array.isArray(input.assets)||!input.assets.length||input.assets.length>100)fail(400,'Impor harus berisi 1–100 unit aset.');
+  const rows=input.assets.map(row=>{if(!/^yg-2024-\d+-\d+$/.test(row.source_key||''))fail(400,'Kode sumber impor tidak valid.');return {data:assetInput(row),key:row.source_key};});
+  if(new Set(rows.map(r=>r.key)).size!==rows.length)fail(400,'Kode sumber ganda.');
+  const statements=[];for(const r of rows)statements.push(await insert(env,r.data,u,r.key,'Daftar Aset Yayasan Gambut.xlsx · per 31 Desember 2024'));
+  // Stable source keys make a repeated import safe without overwriting edited records.
+  const results=await env.DB.batch(statements.map(s=>s));return json({imported:results.reduce((n,r)=>n+(r.meta.changes||0),0)},201);
+ }
+ if(path==='/api/assets'&&method==='POST'){
+  if(!manage)fail(403,'Hanya Mulyadi dan Raja Alpian dapat menambah aset.');
+  const data=assetInput(await payload(req)),result=await (await insert(env,data,u)).run();const id=result.meta.last_row_id;await history(env,id,u,'Aset ditambahkan');return json(await detail(env,await q(env,'SELECT * FROM inventory_assets WHERE id=?',id).first(),manage),201);
+ }
+ const match=/^\/api\/assets\/([1-9]\d*)(?:\/(photos)(?:\/([a-f0-9-]{36}))?)?$/.exec(path);if(!match)fail(404,'Layanan aset tidak ditemukan.');
+ const [,id,action,photoId]=match,asset=await q(env,'SELECT * FROM inventory_assets WHERE id=?',Number(id)).first();if(!asset)fail(404,'Aset tidak ditemukan.');
+ if(action==='photos'&&photoId&&method==='GET'){
+  const photo=await q(env,'SELECT * FROM inventory_photos WHERE id=? AND asset_id=?',photoId,Number(id)).first();if(!photo)fail(404,'Foto tidak ditemukan.');const obj=await env.MEDIA.get(photo.object_key);if(!obj)fail(404,'Foto tidak ditemukan.');return new Response(obj.body,{headers:{'Content-Type':photo.type,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+ }
+ if(!action&&method==='GET')return json(await detail(env,asset,manage));
+ if(!manage)fail(403,'Hanya Mulyadi dan Raja Alpian dapat mengubah aset.');
+ if(!action&&method==='PUT'){
+  const input=await payload(req);if(!Number.isInteger(input.version)||input.version!==asset.version)fail(409,'Aset sudah diperbarui. Muat ulang sebelum menyimpan.');
+  const data=assetInput(input);if('archived' in input&&typeof input.archived!=='boolean')fail(400,'Status arsip tidak valid.');const archived='archived' in input?Number(input.archived):asset.archived;
+  const result=await q(env,`UPDATE inventory_assets SET ${fields.map(k=>k+'=?').join(',')},archived=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND version=?`,...fields.map(k=>data[k]),archived,u.id,now(),Number(id),input.version).run();if(!result.meta.changes)fail(409,'Aset sudah diperbarui. Muat ulang sebelum menyimpan.');
+  await history(env,id,u,archived!==asset.archived?(archived?'Aset diarsipkan':'Aset dipulihkan'):'Data aset diperbarui');return json(await detail(env,await q(env,'SELECT * FROM inventory_assets WHERE id=?',Number(id)).first(),manage));
+ }
+ if(action==='photos'&&!photoId&&method==='POST'){
+  if(asset.archived)fail(409,'Pulihkan aset sebelum mengunggah foto.');
+  const count=await q(env,'SELECT COUNT(*) AS n FROM inventory_photos WHERE asset_id=?',Number(id)).first();if(count.n>=12)fail(400,'Maksimal 12 foto per aset.');
+  const bytes=await readLimited(req,2*1024*1024),type=imageType(bytes);if(!type)fail(400,'Pilih foto JPEG, PNG, atau WebP.');
+  const pid=crypto.randomUUID(),key=`inventory/${id}/${pid}`;await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:type}});
+  try{await q(env,'INSERT INTO inventory_photos VALUES(?,?,?,?,?,?,?)',pid,Number(id),key,type,bytes.length,u.id,now()).run();}catch(e){await env.MEDIA.delete(key);throw e;}
+  await history(env,id,u,'Foto aset ditambahkan');return json(await detail(env,asset,manage),201);
+ }
+ fail(405,'Metode tidak tersedia.');
+}
