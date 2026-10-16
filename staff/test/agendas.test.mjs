@@ -13,3 +13,20 @@ test('Dayun agenda records three days, correct location, and registered Rasid pa
 test('staff create a shared agenda immediately without director approval',async()=>{const {env}=await setup();const r=await worker.fetch(request('/api/agendas','writer','POST',sample),env);assert.equal(r.status,201,await r.clone().text());const a=await r.json();assert.equal(a.status,'scheduled');assert.equal((await (await worker.fetch(request('/api/agendas','rasid'),env)).json()).agendas.length,2);assert.equal((await (await worker.fetch(request('/api/agendas?scope=all','director'),env)).json()).agendas.length,2);assert.equal((await (await worker.fetch(request('/api/agendas?scope=all','other'),env)).json()).agendas.length,0);});
 test('participants update results and status but cannot overwrite schedule; stale changes are rejected',async()=>{const {env}=await setup();const a=await (await worker.fetch(request('/api/agendas','writer','POST',sample),env)).json();assert.equal((await worker.fetch(request('/api/agendas/'+a.id,'rasid','PUT',{version:1,location:'Elsewhere'}),env)).status,403);assert.equal((await worker.fetch(request('/api/agendas/'+a.id,'rasid','PUT',{version:1,status:'done',results:'Pelatihan selesai.'}),env)).status,200);assert.equal((await worker.fetch(request('/api/agendas/'+a.id,'writer','PUT',{version:1,status:'cancelled'}),env)).status,409);});
 test('agenda API requires login and rejects cross-origin requests and invalid dates',async()=>{const {env}=await setup();assert.equal((await worker.fetch(new Request(origin+'/api/agendas'),env)).status,401);const r=request('/api/agendas','writer','POST',sample);r.headers.set('Origin','https://evil.org');assert.equal((await worker.fetch(r,env)).status,403);for(const input of [{start_at:'2026-02-30T08:00'},{end_at:'2026-10-19T16:00'},{status:'approved'}])assert.throws(()=>agendaInput({...sample,...input}));});
+test('director can create and update team agendas without being a participant',async()=>{
+ const {env}=await setup();
+ const created=await worker.fetch(request('/api/agendas','director','POST',{...sample,participant_ids:['rasid'],participants:'',coordinator:'Rasid'}),env);
+ assert.equal(created.status,201);const a=await created.json();assert.equal(a.creator,'director');assert.deepEqual(JSON.parse(a.participant_ids),['rasid']);
+ const withDirector=await worker.fetch(request('/api/agendas/'+a.id,'director','PUT',{version:a.version,participant_ids:['director','rasid']}),env);
+ assert.equal(withDirector.status,200);const b=await withDirector.json();
+ const removed=await worker.fetch(request('/api/agendas/'+a.id,'director','PUT',{version:b.version,participant_ids:['rasid']}),env);
+ assert.equal(removed.status,200);assert.deepEqual(JSON.parse((await removed.json()).participant_ids),['rasid']);
+ assert.equal((await worker.fetch(request('/api/agendas/'+a.id,'rasid'),env)).status,200);
+ assert.equal((await worker.fetch(request('/api/agendas/'+a.id,'other'),env)).status,403);
+});
+test('staff creator remains a participant when creating and editing their own agenda',async()=>{
+ const {env}=await setup();const a=await (await worker.fetch(request('/api/agendas','writer','POST',{...sample,participant_ids:['rasid']}),env)).json();
+ assert.deepEqual(JSON.parse(a.participant_ids),['writer','rasid']);
+ const r=await worker.fetch(request('/api/agendas/'+a.id,'writer','PUT',{version:a.version,participant_ids:['rasid']}),env);
+ assert.equal(r.status,200);assert.deepEqual(JSON.parse((await r.json()).participant_ids),['writer','rasid']);
+});
