@@ -13,13 +13,22 @@ export async function agendaApi(req,env,url,u,{payload}){
  const director=taskDirector(u,env),path=url.pathname,method=req.method;
  const people=(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access WHERE email=users.email AND scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
  const read=async id=>{const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');if(!director&&!member(a,u))fail(403,'Agenda ini tidak termasuk kegiatan Anda.');return a;};
- if(path==='/api/agendas'&&method==='GET'){const all=director&&url.searchParams.get('scope')==='all';const agendas=(await q(env,'SELECT team_agendas.*,users.name AS creatorName FROM team_agendas JOIN users ON users.id=creator '+(all?'':'WHERE creator=? OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value=?) ')+'ORDER BY start_at DESC',...(all?[]:[u.id,u.id])).all()).results;return Response.json({director,people,agendas});}
+ if(path==='/api/agendas'&&method==='GET'){const all=director&&url.searchParams.get('scope')==='all';const agendas=(await q(env,'SELECT team_agendas.*,users.name AS creatorName FROM team_agendas JOIN users ON users.id=creator '+'WHERE deleted=? '+(all?'':'AND (creator=? OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value=?)) ')+'ORDER BY start_at DESC',Number(url.searchParams.get('trash')==='1'),...(all?[]:[u.id,u.id])).all()).results;return Response.json({director,people,agendas});}
  if(path==='/api/agendas'&&method==='POST'){
   const input=await payload(req),a=agendaInput(input);if('participant_ids' in input&&!Array.isArray(input.participant_ids))fail(400,'Pilih anggota tim dengan benar.');const ids=[...new Set([...(director?[]:[u.id]),...(Array.isArray(input.participant_ids)?input.participant_ids:[])])];if(ids.length>30||ids.some(id=>!people.some(p=>p.id===id)))fail(400,'Pilih anggota tim YG yang aktif.');
   const id=crypto.randomUUID(),time=now();await q(env,'INSERT INTO team_agendas(id,creator,title,kind,kind_custom,program,location,coordinator,start_at,end_at,participant_ids,participants,description,results,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,u.id,a.title,a.kind,a.kind_custom,a.program,a.location,a.coordinator,a.start_at,a.end_at,JSON.stringify(ids),a.participants,a.description,a.results,a.status,time,time).run();return Response.json(await read(id),{status:201});
  }
- const match=/^\/api\/agendas\/([a-z0-9-]+)$/.exec(path);if(!match)fail(404,'Layanan agenda tidak ditemukan.');const a=await read(match[1]);
+ const match=/^\/api\/agendas\/([a-z0-9-]+)(?:\/(restore))?$/.exec(path);if(!match)fail(404,'Layanan agenda tidak ditemukan.');const a=await read(match[1]);
+ if(method==='DELETE'||(method==='POST'&&match[2]==='restore')){
+  if(!director&&a.creator!==u.id)fail(403,'Hanya pembuat agenda atau Direktur dapat menghapus dan memulihkan agenda.');
+  const input=await payload(req),deleted=method==='DELETE'?1:0;
+  if(input.version!==a.version||a.deleted===deleted)fail(409,'Agenda telah berubah. Muat ulang sebelum melanjutkan.');
+  const result=await q(env,'UPDATE team_agendas SET deleted=?,version=version+1,updated_at=? WHERE id=? AND version=?',deleted,now(),a.id,input.version).run();if(!result.meta.changes)fail(409,'Agenda telah berubah. Muat ulang sebelum melanjutkan.');
+  return Response.json(await read(a.id));
+ }
+ if(match[2])fail(405,'Metode tidak didukung.');
  if(method==='GET')return Response.json(a);
+ if(a.deleted)fail(409,'Pulihkan agenda sebelum menyunting.');
  if(method==='PUT'){
   const input=await payload(req);if('participant_ids' in input&&!Array.isArray(input.participant_ids))fail(400,'Pilih anggota tim dengan benar.');if(input.version!==a.version)fail(409,'Agenda telah berubah. Muat ulang sebelum menyimpan.');
   const full=director||a.creator===u.id;if(!full&&Object.keys(input).some(k=>!['version','results','status'].includes(k)))fail(403,'Peserta dapat memperbarui hasil dan status. Rincian diubah oleh pembuat agenda atau Direktur.');
