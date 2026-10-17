@@ -58,6 +58,16 @@ export async function assetApi(req,env,url,u,{payload,readLimited}){
   const result=await q(env,`UPDATE inventory_assets SET ${fields.map(k=>k+'=?').join(',')},archived=?,updated_by=?,updated_at=?,version=version+1 WHERE id=? AND version=?`,...fields.map(k=>data[k]),archived,u.id,now(),Number(id),input.version).run();if(!result.meta.changes)fail(409,'Aset sudah diperbarui. Muat ulang sebelum menyimpan.');
   await history(env,id,u,archived!==asset.archived?(archived?'Aset diarsipkan':'Aset dipulihkan'):'Data aset diperbarui');return json(await detail(env,await q(env,'SELECT * FROM inventory_assets WHERE id=?',Number(id)).first(),manage));
  }
+ if(action==='photos'&&photoId&&method==='DELETE'){
+  if(asset.archived)fail(409,'Pulihkan aset sebelum menghapus foto.');
+  const photo=await q(env,'SELECT * FROM inventory_photos WHERE id=? AND asset_id=?',photoId,Number(id)).first();if(!photo)fail(404,'Foto tidak ditemukan.');
+  await env.MEDIA.delete(photo.object_key);
+  await env.DB.batch([
+   q(env,'DELETE FROM inventory_photos WHERE id=? AND asset_id=?',photoId,Number(id)),
+   q(env,'INSERT INTO inventory_history VALUES(?,?,?,?,?)',crypto.randomUUID(),Number(id),u.id,photo.kind==='receipt'?'Bukti pembelian dihapus':'Foto aset dihapus',now())
+  ]);
+  return json(await detail(env,asset,manage));
+ }
  if(action==='photos'&&!photoId&&method==='POST'){
   if(asset.archived)fail(409,'Pulihkan aset sebelum mengunggah foto.');
   const kind=url.searchParams.get('kind')||'photo';if(!['photo','receipt'].includes(kind))fail(400,'Jenis lampiran tidak valid.');

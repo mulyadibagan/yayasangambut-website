@@ -72,3 +72,19 @@ test('purchase evidence is private to managers and never used as staff thumbnail
  const staff=await (await worker.fetch(req(path,'writer'),env)).json();assert.equal(staff.photos.length,0);
  const list=await (await worker.fetch(req('/api/assets','writer'),env)).json();assert.equal(list.assets[0].photo_id,null);
 });
+test('photo deletion is manager-only, asset-scoped, audited and removes private media',async()=>{
+ const {env}=await setup(),a=await create(env),b=await create(env),path='/api/assets/'+a.id;
+ for(const [kind,user] of [['photo','raja'],['receipt','director']]){
+  const uploaded=await worker.fetch(new Request(origin+path+'/photos?kind='+kind,{method:'POST',headers:{Origin:origin,Cookie:'__Host-yg-session=director'},body:new Uint8Array([0xff,0xd8,0xff,0xe0,0,1,2,3])}),env);
+  assert.equal(uploaded.status,201);const photo=(await uploaded.json()).photos[0];
+  assert.equal((await worker.fetch(req(photo.url,'writer','DELETE'),env)).status,403);
+  const cross=req(photo.url,'director','DELETE');cross.headers.set('Origin','https://evil.org');assert.equal((await worker.fetch(cross,env)).status,403);
+  assert.equal((await worker.fetch(req('/api/assets/'+b.id+'/photos/'+photo.id,'director','DELETE'),env)).status,404);
+  const removed=await worker.fetch(req(photo.url,user,'DELETE'),env);assert.equal(removed.status,200);
+  const detail=await removed.json();assert.equal(detail.photos.length,0);assert.ok(detail.history.some(h=>h.action===(kind==='photo'?'Foto aset dihapus':'Bukti pembelian dihapus')));
+  assert.equal(await env.MEDIA.get('inventory/'+a.id+'/'+photo.id),null);
+  assert.equal((await worker.fetch(req(photo.url,'director'),env)).status,404);
+  assert.equal((await worker.fetch(req(photo.url,'director','DELETE'),env)).status,404);
+  assert.equal((await worker.fetch(req(path,'writer'),env)).status,200);
+ }
+});
