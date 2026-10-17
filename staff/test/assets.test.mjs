@@ -7,7 +7,7 @@ import {sha} from '../src/core.mjs';
 import {assetInput,assetManager} from '../src/assets.mjs';
 const origin='https://staff.yayasangambut.org';
 async function setup(){
- const db=new DatabaseSync(':memory:');for(const file of ['0001_initial.sql','0005_webgis_sso.sql','0012_asset_inventory.sql','0013_inventory_ownership.sql','0014_inventory_photo_import.sql'])db.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
+ const db=new DatabaseSync(':memory:');for(const file of ['0001_initial.sql','0005_webgis_sso.sql','0012_asset_inventory.sql','0013_inventory_ownership.sql'])db.exec(readFileSync(new URL('../migrations/'+file,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...values){args=values;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes),last_row_id:Number(r.lastInsertRowid)}};}};},async batch(stmts){db.exec('BEGIN');try{const result=[];for(const statement of stmts)result.push(await statement.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const files=new Map(),env={APP_ORIGIN:origin,GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',ADMIN_EMAIL:'mulyadi@yayasangambut.org',GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',DB,ASSETS:{fetch:()=>new Response('asset')},MEDIA:{async put(key,bytes){files.set(key,bytes);},async get(key){const bytes=files.get(key);return bytes?{body:bytes}:null;},async delete(key){files.delete(key);}}};
  for(const [id,role,email] of [['director','admin',env.ADMIN_EMAIL],['writer','staff','writer@yayasangambut.org'],['raja','staff','rajaalpian@yayasangambut.org'],['other','staff','other@yayasangambut.org'],['editor','editor','editor@yayasangambut.org'],['admin2','admin','admin2@yayasangambut.org'],['external','staff','external@gmail.com']]){await DB.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').bind(id,email,id,role,'2026-10-14','2026-10-14').run();await DB.prepare('INSERT INTO sessions VALUES(?,?,?)').bind(await sha(id),id,Date.now()+60000).run();}
@@ -71,9 +71,4 @@ test('purchase evidence is private to managers and never used as staff thumbnail
  assert.equal((await worker.fetch(req(photo.url,'writer'),env)).status,403);assert.equal((await worker.fetch(req(photo.url,'raja'),env)).status,200);
  const staff=await (await worker.fetch(req(path,'writer'),env)).json();assert.equal(staff.photos.length,0);
  const list=await (await worker.fetch(req('/api/assets','writer'),env)).json();assert.equal(list.assets[0].photo_id,null);
-});
-test('photo import retry does not duplicate photos and cannot cross-link another asset',async()=>{
- const {env}=await setup(),a=await create(env),b=await create(env);const make=id=>new Request(origin+'/api/assets/'+id+'/photos?kind=receipt&import_key=receipt-test-once',{method:'POST',headers:{Origin:origin,Cookie:'__Host-yg-session=director'},body:new Uint8Array([0xff,0xd8,0xff,0xe0])});
- for(let i=0;i<2;i++){const r=await worker.fetch(make(a.id),env);assert(r.ok,await r.clone().text());assert.equal((await r.json()).photos.length,1);}
- assert.equal((await worker.fetch(make(b.id),env)).status,409);
 });

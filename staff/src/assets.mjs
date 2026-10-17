@@ -39,7 +39,7 @@ export async function assetApi(req,env,url,u,{payload,readLimited}){
   if(new Set(rows.map(r=>r.key)).size!==rows.length)fail(400,'Kode sumber ganda.');
   const statements=[];for(const r of rows)statements.push(await insert(env,r.data,u,r.key,r.source_note));
   // Stable source keys make a repeated import safe without overwriting edited records.
-  const results=await env.DB.batch(statements.map(s=>s));const linked=[];for(const r of rows){const a=await q(env,'SELECT id,source_key FROM inventory_assets WHERE source_key=?',r.key).first();linked.push(a);}return json({imported:results.reduce((n,r)=>n+(r.meta.changes||0),0),assets:linked},201);
+  const results=await env.DB.batch(statements.map(s=>s));return json({imported:results.reduce((n,r)=>n+(r.meta.changes||0),0)},201);
  }
  if(path==='/api/assets'&&method==='POST'){
   if(!manage)fail(403,'Hanya Mulyadi dan Raja Alpian dapat menambah aset.');
@@ -61,11 +61,10 @@ export async function assetApi(req,env,url,u,{payload,readLimited}){
  if(action==='photos'&&!photoId&&method==='POST'){
   if(asset.archived)fail(409,'Pulihkan aset sebelum mengunggah foto.');
   const kind=url.searchParams.get('kind')||'photo';if(!['photo','receipt'].includes(kind))fail(400,'Jenis lampiran tidak valid.');
-  const importKey=url.searchParams.get('import_key')||null;if(importKey&&!/^[a-z0-9-]{1,100}$/.test(importKey))fail(400,'Kode lampiran tidak valid.');if(importKey){const prior=await q(env,'SELECT id,asset_id FROM inventory_photos WHERE import_key=?',importKey).first();if(prior){if(prior.asset_id!==asset.id)fail(409,'Lampiran sudah terhubung ke aset lain.');return json(await detail(env,asset,manage));}}
   const count=await q(env,'SELECT COUNT(*) AS n FROM inventory_photos WHERE asset_id=?',Number(id)).first();if(count.n>=12)fail(400,'Maksimal 12 foto per aset.');
   const bytes=await readLimited(req,2*1024*1024),type=imageType(bytes);if(!type)fail(400,'Pilih foto JPEG, PNG, atau WebP.');
   const pid=crypto.randomUUID(),key=`inventory/${id}/${pid}`;await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:type}});
-  try{await q(env,'INSERT INTO inventory_photos VALUES(?,?,?,?,?,?,?,?,?)',pid,Number(id),key,type,bytes.length,u.id,now(),kind,importKey).run();}catch(e){await env.MEDIA.delete(key);throw e;}
+  try{await q(env,'INSERT INTO inventory_photos VALUES(?,?,?,?,?,?,?,?)',pid,Number(id),key,type,bytes.length,u.id,now(),kind).run();}catch(e){await env.MEDIA.delete(key);throw e;}
   await history(env,id,u,kind==='receipt'?'Bukti pembelian ditambahkan':'Foto aset ditambahkan');return json(await detail(env,asset,manage),201);
  }
  fail(405,'Metode tidak tersedia.');
