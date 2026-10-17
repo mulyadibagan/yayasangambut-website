@@ -47,3 +47,13 @@
 .asset-photo-item{min-width:0}.asset-photo-item a{display:block}.asset-photo-delete{width:100%;margin-top:8px;color:#923b26}.asset-photo-delete:disabled{opacity:.6;cursor:wait}
 
 .agenda-day-today{outline:2px solid #287a54;outline-offset:-2px;background:#edf8f0}.agenda-day-today .agenda-date{color:#17613c;font-weight:700}
+
+/* Keep all task status columns visible; details follow the board. */
+.task-workspace:has(.task-board){grid-template-columns:minmax(0,1fr)}
+#task-results{min-width:0}
+.task-board{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+.task-board>section,.task-card{min-width:0}
+.task-card strong,.task-card span,.task-card small{overflow-wrap:anywhere}
+.task-board h3{gap:8px;flex-wrap:wrap}
+@media(max-width:1100px){.task-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.task-board{grid-template-columns:minmax(0,1fr)}}
