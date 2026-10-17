@@ -2,7 +2,7 @@ export function assetUI({api,esc,notice,handle}){
  const root=document.querySelector('#assets');let assets=[],manage=false,selected=null,loading=false;
  const money=v=>v==null?'Belum dicatat':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(v);
  const date=v=>v?new Date(v+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'}):'Belum dicatat';
- const ownLabel=a=>a.ownership==='personal'?'Milik pribadi · '+(a.owner_name||'Pemilik belum dicatat'):'Milik Yayasan Gambut';
+ const ownLabel=a=>a.ownership==='personal'?'Peralatan pribadi untuk pekerjaan YG':'Milik Yayasan Gambut';
  const yearOf=a=>a.acquired_year?String(a.acquired_year):/^\d{4}-\d{2}-\d{2}$/.test(a.acquired_date||'')?a.acquired_date.slice(0,4):'unknown';
  const yearLabel=y=>y==='unknown'?'Tahun belum dicatat':'Tahun '+y;
  const conditions=['Perlu verifikasi','Baik','Perlu perbaikan','Rusak'];
