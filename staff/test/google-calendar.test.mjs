@@ -24,7 +24,7 @@ async function mocked(fn){const original=globalThis.fetch,calls=[],events=new Ma
  if(String(url).includes('oauth2.googleapis.com/token'))return Response.json({access_token:'access'});
  if(String(url).endsWith('/calendars')&&method==='POST')return Response.json({id:'new-calendar'});
  const id=method==='POST'?body?.id:String(url).split('/').at(-1);
- if(method==='POST'){if(events.has(id))return Response.json({}, {status:409});events.set(id,body);return Response.json(body);}
+ if(method==='POST'){assert.match(id,/^[0-9a-v]{5,1024}$/);if(events.has(id))return Response.json({}, {status:409});events.set(id,body);return Response.json(body);}
  if(method==='PUT'){events.set(id,body);return Response.json(body);}
  if(method==='DELETE'){events.delete(id);return new Response(null,{status:204});}
  throw new Error('unexpected fetch');
