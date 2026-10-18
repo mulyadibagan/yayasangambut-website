@@ -17,7 +17,7 @@ test('finance entry requires a session and rejects staff, editors and other admi
   }
  }
 });
-test('only active Mulyadi administrator reaches the private YG finance service',async()=>{
+test('active Mulyadi reaches the private YG finance service',async()=>{
  const owner={id:'owner',email:'mulyadi@yayasangambut.org',role:'admin'};
  const e=env(owner);let forwarded;
  e.FINANCE={async fetch(req){forwarded=req;return new Response('YG Finance');}};
@@ -26,7 +26,6 @@ test('only active Mulyadi administrator reaches the private YG finance service',
  assert.equal(forwarded.headers.get('cookie'),null);assert.equal(forwarded.headers.get('oai-authenticated-user-email'),owner.email);
  assert.equal((await worker.fetch(request('/finance'),env(owner))).status,503);
  assert.equal((await worker.fetch(request('/finance'),env({...owner,disabled:1}))).status,403);
- assert.equal((await worker.fetch(request('/finance'),env({...owner,role:'editor'}))).status,403);
  assert.equal((await worker.fetch(request('/api/finance/requests'),env(owner))).status,404);
 });
 
@@ -41,4 +40,21 @@ test('private assets and APIs require owner and writes require same origin',asyn
  assert.equal((await worker.fetch(malicious,e)).status,403);assert.equal(calls,3);
  const valid=new Request(origin+'/finance/api/requests',{method:'POST',headers:{Cookie:'__Host-yg-session=test',Origin:origin,'oai-authenticated-user-email':'spoof@example.com','x-yg-finance-user':'attacker'},body:'{}'});
  assert.equal((await worker.fetch(valid,e)).status,200);assert.equal(calls,4);
+});
+
+for (const email of ['mulyadi@yayasangambut.org', 'rienaprasiddha@yayasangambut.org']) {
+ test('finance allowlist and dashboard access for '+email, async()=>{
+  const user={id:email,email,role:'staff'},e=env(user);
+  e.FINANCE={async fetch(req){assert.equal(req.headers.get('oai-authenticated-user-email'),email);return new Response('private');}};
+  for(const path of ['/finance','/finance/api/requests','/finance/assets/dashboard.js','/finance/report.pdf']){
+   assert.equal((await worker.fetch(request(path),e)).status,200);
+   assert.equal((await worker.fetch(request(path),env({...user,disabled:1}))).status,403);
+  }
+  if(email===email.toLowerCase())assert.equal((await (await worker.fetch(request('/api/me'),e)).json()).financeAccess,true);
+ });
+}
+test('similar addresses cannot access finance',async()=>{
+ for(const email of ['riena@yayasangambut.org','rienaprasiddha@example.com','rienaprasiddha@yayasangambut.org.evil.example']){
+  assert.equal((await worker.fetch(request('/finance'),env({id:'other',email,role:'admin'}))).status,403);
+ }
 });

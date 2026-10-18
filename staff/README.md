@@ -130,8 +130,8 @@ Akun calon penanggung jawab muncul setelah login Workspace pertama; akun nonakti
 The finance application is prepared for `https://staff.yayasangambut.org/finance`.
 This replaces the redirect with a private `yg-finance` Worker service binding. The
 finance Worker has no public route, workers.dev URL, or preview URL. Every HTML,
-asset, PDF, and API request passes the staff session check and the Mulyadi-only
-owner check. Client identity headers are discarded and rebuilt from that session;
+asset, PDF, and API request passes the staff session check and the allowlist check for active Mulyadi and Riena accounts
+(`mulyadi@yayasangambut.org` and `rienaprasiddha@yayasangambut.org`), independent of their staff roles. Client identity headers are discarded and rebuilt from that session;
 mutations require the same Origin. Finance data does not enter public Pages assets.
 
 The protected production workflow requires an AES-256-GCM encrypted source/data
