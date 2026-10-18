@@ -1,3 +1,4 @@
+import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
 import {assetApi} from './assets.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {agendaApi} from './agendas.mjs';
@@ -40,6 +41,8 @@ async function authStart(env,external=false){
   return redirect(url.href,{'Set-Cookie':cookie('__Host-yg-oauth',state,600)});
 }
 async function authCallback(req,env,url){
+  const calendarState=cookies(req)['__Host-yg-calendar'];
+  if(calendarState&&url.searchParams.get('state')===calendarState)return calendarCallback(req,env,url,await session(req,env),async id=>{try{return (await jwtVerify(id,googleKeys,{audience:env.GOOGLE_CLIENT_ID,issuer:['https://accounts.google.com','accounts.google.com'],algorithms:['RS256']})).payload;}catch{fail(401,'Identitas Google tidak dapat diverifikasi.');}});
   const state=url.searchParams.get('state');if(!state || state!==cookies(req)['__Host-yg-oauth'])fail(403,'Sesi login tidak cocok. Mulai login kembali.');
   const row=await query(env,'DELETE FROM oauth_states WHERE id=? AND expires>? RETURNING *',await sha(state),Date.now()).first();
   if(!row)fail(403,'Permintaan login kedaluwarsa atau sudah digunakan.');
@@ -136,6 +139,7 @@ async function analytics(env,days,site='website'){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
+  if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
   if(path==='/api/assets'||path.startsWith('/api/assets/'))return assetApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload});
@@ -257,7 +261,7 @@ async function route(req,env){
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
   return env.ASSETS.fetch(req);
 }
-export default {async fetch(req,env){
+export default {async scheduled(event,env,ctx){ctx.waitUntil(syncCalendars(env));},async fetch(req,env){
   let r;try{r=await route(req,env);}catch(e){r=json({error:e instanceof HttpError?e.message:'Layanan sementara tidak tersedia. Coba kembali atau hubungi administrator.'},e instanceof HttpError?e.status:500);}
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(new URL(req.url).pathname==='/finance'||new URL(req.url).pathname.startsWith('/finance/'))out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://drive.google.com https://lh3.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://docs.google.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; frame-src 'self' blob: https://drive.google.com https://docs.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");

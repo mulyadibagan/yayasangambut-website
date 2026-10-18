@@ -152,3 +152,38 @@ Validation: all 81 staff tests pass, Worker dry-run passes, and the finance buil
 passes. The source application has 25 pre-existing test failures; three additional
 source assertions refer to the old root URLs and require the `/finance` prefix.
 Accounting logic is retained, not revised as part of the migration.
+
+## Per-staff Google Calendar sync
+
+Each staff user explicitly connects Google through the Agenda Tim or Tugas Tim
+panel. Login scopes remain unchanged. The separate consent requests only OpenID,
+email and `calendar.app.created`, using the existing `/auth/callback` redirect URI.
+Enable Google Calendar API for the existing Google OAuth project before rollout;
+Workspace admin policy must permit that scope. Do not approve consent on behalf
+of other staff. Google may require administrator approval or OAuth verification
+according to the project's audience and configuration.
+
+Migration 0017 stores per-user grants, OAuth states and event IDs in the private
+staff D1 database. Refresh tokens are encrypted with AES-GCM, authenticated to the
+user ID, using a domain-separated key derived from the existing Worker Google
+client secret. Rotating that secret requires reconnecting calendar grants.
+Tokens never enter public files, API status responses or logs.
+
+The Worker cron runs every five minutes and rotates across up to three connections
+per invocation, with up to 40 changed events per account per run. Larger imports
+continue in later runs. An account lease prevents overlapping syncs. A manual
+Sync button runs the same reconciliation. Only registered agenda participants
+and task assignees receive copies in their own dedicated secondary calendar;
+creator/director visibility alone never adds events to their calendar. No attendee
+invitations or emails are sent. Dashboard edits are authoritative. Timed agenda
+events use Asia/Jakarta; task deadlines use all-day events with exclusive end dates.
+Cancelled/deleted agendas, removed assignments and archived tasks remove their
+mapped events. Restoration recreates them. Completed tasks keep their deadline
+with the completed status in the event description.
+
+Disconnect deletes the local grant and mappings, stops future syncs, and preserves
+the existing Google calendar; users can remove it in Google Calendar and revoke
+the application grant in their Google Account. Reconnecting after disconnect
+creates a new secondary calendar. Reauthorizing an existing connection reuses its
+calendar. Do not promise live end-to-end sync before a user grants access and the
+Google API has been checked in production. Run `npm test` and `npm run check`.

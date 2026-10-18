@@ -1,3 +1,5 @@
+import {calendarUI} from './calendar.js';
+let calendarConnection;
 import {assetUI} from './assets.js';
 let inventory;
 import {agendaUI} from './agendas.js';
@@ -20,6 +22,7 @@ function handle(fn){return async(...args)=>{try{await fn(...args);}catch(e){noti
 async function lock(fn){if(busy)return;busy=true;$$('.editor-actions button').forEach(b=>b.disabled=true);try{await fn();}finally{busy=false;setEditorState();}}
 async function show(next){
  if(view==='editor'&&dirty&&next!=='editor'&&!confirm('Ada perubahan yang belum disimpan. Tinggalkan tulisan?'))return;
+ const calendarRoot=$('#calendar-connection');calendarRoot.hidden=!['agendas','tasks'].includes(next);if(!calendarRoot.hidden){calendarConnection??=calendarUI({api,esc,handle,notice});try{await calendarConnection.load();}catch{calendarRoot.textContent='Koneksi kalender belum tersedia. Coba muat ulang.';}}
  dirty=false;view=next;$$('.view').forEach(e=>e.hidden=e.id!==next);$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
  $('#view-title').textContent={overview:'Ringkasan',assets:'Daftar Aset',tasks:'Tugas Tim',agendas:'Agenda Tim',posts:'Tulisan',editor:current?'Sunting tulisan':'Tulisan baru',media:'Media',analytics:'Statistik',users:'Pengguna'}[next];$('#notice').hidden=true;
  if(next==='assets'){inventory??=assetUI({api,esc,notice,handle});await inventory.load();}
