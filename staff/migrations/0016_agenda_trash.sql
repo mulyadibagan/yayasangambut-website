@@ -1,0 +1,1 @@
+ALTER TABLE team_agendas ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0 CHECK(deleted IN (0,1));

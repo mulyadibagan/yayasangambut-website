@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Logo from '../components/Logo.astro';
+---
+<BaseLayout title="404 — Yayasan Gambut" description="Halaman tidak ditemukan. Page not found." noIndex={true} minimalChrome={true}>
+  <header class="not-found-header"><div class="container"><Logo/><nav aria-label="Pilihan bahasa · Language options"><a href="/id/" hreflang="id">Beranda ID</a><a href="/en/" hreflang="en">English home</a></nav></div></header>
+  <section class="not-found">
+    <div class="container panel">
+      <p class="code">404</p>
+      <p class="eyebrow">Halaman tidak ditemukan · Page not found</p>
+      <h1>Jejak ini berhenti di sini.<span lang="en">This trail ends here.</span></h1>
+      <p class="lede">Alamat mungkin berubah atau halaman sudah dipindahkan. Kembali ke beranda, jelajahi cerita lapangan, atau buka versi English.</p>
+      <p class="english" lang="en">The address may have changed or the page may have moved. Return home, explore field stories, or open the English site.</p>
+      <div class="actions">
+        <a class="button primary" href="/id/">Beranda Indonesia</a>
+        <a class="button secondary" href="/id/cerita/">Cerita Lapangan</a>
+        <a class="button secondary" href="/en/field-stories/" hreflang="en">Field Stories</a>
+      </div>
+    </div>
+  </section>
+  <footer class="not-found-footer"><div class="container">© {new Date().getFullYear()} Yayasan Gambut</div></footer>
+</BaseLayout>
+<style>
+  .not-found-header{border-bottom:1px solid var(--line);background:var(--paper)}.not-found-header>div{min-height:5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}.not-found-header nav{display:flex;flex-wrap:wrap;gap:1rem;font-size:.82rem;font-weight:750}.not-found{display:grid;min-height:calc(100vh - 9rem);place-items:center;padding:4rem 0;background:radial-gradient(circle at 80% 20%,rgba(145,196,205,.35),transparent 38%),var(--paper)}.panel{position:relative}.code{margin:0;color:var(--coast-700);font:500 clamp(5rem,18vw,13rem)/.75 var(--serif);letter-spacing:-.08em;opacity:.18}.eyebrow{margin-top:2.5rem}.panel h1{max-width:15ch;font-size:clamp(3rem,7vw,6.5rem)}.panel h1 span{display:block;margin-top:.15em;color:var(--forest-650);font-size:.48em;letter-spacing:-.025em}.panel .lede,.english{max-width:45rem}.english{color:var(--muted)}.actions{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;margin-top:2rem}.not-found-footer{padding:1.2rem 0;background:var(--forest-950);color:rgba(255,255,255,.72);font-size:.78rem}
+</style>
