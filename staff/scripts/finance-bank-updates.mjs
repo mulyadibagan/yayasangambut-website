@@ -16,6 +16,7 @@ export function reconcileBankUpdates(bank, snapshot, updates){
   if(!r||!Number.isInteger(r.archiveIndex)||typeof r.postedAt!=='string'||typeof r.description!=='string'||typeof r.reference!=='string'||![r.debit,r.credit,r.balance].every(n=>Number.isFinite(n)&&n>=0)||!(r.debit>0 ^ r.credit>0)||!Array.isArray(u.allocations)||!u.allocations.length)fail();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(u.asOf)||typeof u.period!=='string'||typeof u.source!=='string'||typeof u.note!=='string')fail();
   if(u.allocations.some(a=>!s.projects.some(p=>p.key===a.bucket)||!Number.isFinite(a.amount))||u.allocations.reduce((n,a)=>n+cents(a.amount),0)!==cents(r.credit)-cents(r.debit))fail();
+  if(new Set(u.allocations.map(a=>a.bucket)).size!==u.allocations.length)fail();
   if(r.evidence?.some(e=>typeof e.label!=='string'||!/^https:\/\/(drive|docs)\.google\.com\//.test(e.url)))fail();
   const matches=b.mutations.filter(x=>identity(x)===identity(r));
   if(matches.length){
@@ -28,6 +29,18 @@ export function reconcileBankUpdates(bank, snapshot, updates){
   s.entries.push({index:r.archiveIndex,date:r.postedAt,description:r.description,reference:r.reference,debit:r.debit,credit:r.credit,balance:r.balance,allocations:u.allocations});
   for(const a of u.allocations){
    const p=s.projects.find(p=>p.key===a.bucket);
+   const before=cents(p.balance),after=before+cents(a.amount);
+   const outstandingBefore=Math.max(0,-before),outstandingAfter=Math.max(0,-after);
+   const recovered=Math.max(0,outstandingBefore-outstandingAfter);
+   const issued=Math.max(0,outstandingAfter-outstandingBefore);
+   if(recovered||issued){
+    // Trace metadata only: the receipt is already in the project allocation.
+    // An additional transfer to YG here would repay the same advance twice.
+    s.projectAdvanceMovements??=[];
+    const id=`bank:${r.archiveIndex}:${a.bucket}`;
+    if(s.projectAdvanceMovements.some(m=>m.id===id))fail();
+    s.projectAdvanceMovements.push({id,bankIndex:r.archiveIndex,project:a.bucket,date:r.postedAt,reference:r.reference,before:before/100,after:after/100,recovered:recovered/100,issued:issued/100});
+   }
    p.incoming=(cents(p.incoming||0)+Math.max(cents(a.amount),0))/100;
    p.outgoing=(cents(p.outgoing||0)+Math.max(-cents(a.amount),0))/100;
    p.balance=(cents(p.balance)+cents(a.amount))/100;
