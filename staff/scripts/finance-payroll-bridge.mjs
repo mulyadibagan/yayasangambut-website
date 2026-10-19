@@ -12,8 +12,17 @@ export function decryptProfiles(bytes,hex){
 export function extractSalaryPolicy(source){
  const match=source.match(/const STAFF_POLICY[^=]*=\s*(\{[\s\S]*?\n\});/);
  if(!match)throw Error('Salary policy source missing; payroll auto-fill cannot be configured.');
- const value=JSON.parse(match[1].replace(/\b(active|monthlySalary|label)\s*:/g,'"$1":').replace(/(\d)_(?=\d)/g,'$1').replace(/,\s*}/g,'}'));
- for(const [name,p] of Object.entries(value))if(!name||typeof p.active!=='boolean'||(p.monthlySalary!==null&&(!Number.isSafeInteger(p.monthlySalary)||p.monthlySalary<0)))throw Error('Salary policy source invalid.');
+ // Read only supported literal fields. Effective policy can contain additional
+ // metadata (such as start dates); never evaluate source code or parse it as JSON.
+ const value={};
+ for(const entry of match[1].matchAll(/("(?:[^"\\]|\\.)*")\s*:\s*\{([^{}]*)\}/g)){
+  const name=JSON.parse(entry[1]),active=entry[2].match(/\bactive\s*:\s*(true|false)\b/),amount=entry[2].match(/\bmonthlySalary\s*:\s*(null|[0-9][0-9_]*)\s*(?:,|$)/),label=entry[2].match(/\blabel\s*:\s*("(?:[^"\\]|\\.)*")/);
+  if(!name||!active||!amount||Object.hasOwn(value,name))throw Error('Salary policy source invalid.');
+  const monthlySalary=amount[1]==='null'?null:Number(amount[1].replaceAll('_',''));
+  if(monthlySalary!==null&&(!Number.isSafeInteger(monthlySalary)||monthlySalary<0))throw Error('Salary policy amount invalid.');
+  value[name]={active:active[1]==='true',monthlySalary,...(label?{label:JSON.parse(label[1])}:{})};
+ }
+ if(!Object.keys(value).length)throw Error('Salary policy source empty.');
  return value;
 }
 export async function applyPayrollBridge(root,referenceProfiles){

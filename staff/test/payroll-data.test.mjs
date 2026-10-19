@@ -20,7 +20,7 @@ test('ambiguous or missing historical matches hide uncertain balances; explicit 
 test('private profile package requires correct authenticated encryption key',()=>{
  const key=randomBytes(32),iv=randomBytes(12),c=createCipheriv('aes-256-gcm',key,iv),cipher=Buffer.concat([c.update(JSON.stringify({applicant:'Synthetic',profiles:{Test:{account:'000-test'}}})),c.final()]),bytes=Buffer.concat([iv,c.getAuthTag(),cipher]);
  assert.equal(decryptProfiles(bytes,key.toString('hex')).profiles.Test.account,'000-test');assert.throws(()=>decryptProfiles(bytes,randomBytes(32).toString('hex')));bytes[bytes.length-1]^=1;assert.throws(()=>decryptProfiles(bytes,key.toString('hex')));
- assert.deepEqual(extractSalaryPolicy('const STAFF_POLICY: Record<string, object> = {\n "Test": { active: true, monthlySalary: 1_000_000, label: "Active" },\n};'),{Test:{active:true,monthlySalary:1000000,label:'Active'}});
+ assert.deepEqual(extractSalaryPolicy('const STAFF_POLICY: Record<string, object> = {\n "Test": { active: true, monthlySalary: 1_000_000, label: "Active", effectiveFrom: "2026-10-01" },\n};'),{Test:{active:true,monthlySalary:1000000,label:'Active'}});
 });
 test('print total words, escaping and approval state are derived from stored request',()=>{
  assert.equal(terbilang(30500000).replace(/\s+/g,' ').trim(),'tiga puluh juta lima ratus ribu');
