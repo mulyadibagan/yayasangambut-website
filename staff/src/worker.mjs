@@ -241,7 +241,13 @@ async function route(req,env){
   }
   if(url.pathname==='/finance'||url.pathname.startsWith('/finance/')||url.pathname==='/api/finance'||url.pathname.startsWith('/api/finance/')){
     if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');
-    const u=await session(req,env);
+    let u;
+    try { u=await session(req,env); }
+    catch(e) {
+      const pageRequest=req.method==='GET' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/finance/api/') && !url.pathname.startsWith('/finance/payroll/api') && (req.headers.get('Sec-Fetch-Mode')==='navigate'||req.headers.get('Accept')?.includes('text/html'));
+      if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/');
+      throw e;
+    }
     if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u);
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&payrollOperator(u,env)&&!financeDashboardAccess(u))return redirect(env.APP_ORIGIN+'/finance/payroll');
     if(!financeDashboardAccess(u))fail(403,'Menu Keuangan hanya dapat diakses oleh staf Finance yang ditunjuk dan Direktur.');
