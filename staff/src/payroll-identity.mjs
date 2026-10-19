@@ -9,4 +9,4 @@ export const staffNames=Object.freeze({
 });
 export function canonicalStaffName(name){const value=String(name||'').trim();return Object.entries(staffNames).find(([key,full])=>key.toLowerCase()===value.toLowerCase()||full.toLowerCase()===value.toLowerCase())?.[0]||value;}
 export const displayStaffName=name=>staffNames[canonicalStaffName(name)]||String(name||'').trim();
-export function staffDescription(description,name){const key=canonicalStaffName(name),full=displayStaffName(name),text=String(description||'Gaji '+key);if(text.includes(full)||key===full)return text;return text.replace(key==='Riena Rachmatillah'?/Riena Rachmatillah(?: P\.?)?/:new RegExp(key),full);}
+export function staffDescription(description,name){const key=canonicalStaffName(name),full=displayStaffName(name),text=String(description||'Gaji '+key);if(text.includes(full)||key===full)return text;return text.replace(key==='Riena Rachmatillah'?/Riena Rachmatillah(?: P\.?)?/:new RegExp(key),full);}
