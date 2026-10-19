@@ -4,6 +4,7 @@ import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
 import {createDecipheriv,createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
+import {applyPrivateBankUpdates} from './finance-bank-updates.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
 if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
@@ -15,9 +16,6 @@ const extracted=spawnSync('tar',['-xzf','-','-C',root],{input:archive});
 if(extracted.status!==0)throw Error('Cannot extract private finance archive.');
 function run(cmd,args,cwd=root){const r=spawnSync(cmd,args,{cwd,stdio:'inherit',env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'}});if(r.status!==0)throw Error('Finance preparation failed: '+cmd);}
 run('npm',['ci','--ignore-scripts']);
-run('npm',['run','build']);
-const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0)throw Error('Private finance integration checks failed.');
 const account=process.env.CLOUDFLARE_ACCOUNT_ID,database=process.env.STAFF_D1_DATABASE_ID;
 if(!/^[a-f0-9]{32}$/i.test(account||'')||!/^[-a-f0-9]{36}$/i.test(database||''))throw Error('Invalid account or database configuration.');
 const base=`https://api.cloudflare.com/client/v4/accounts/${account}`;
@@ -49,6 +47,14 @@ if(!old[0].results.length){
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
  console.log('Finance database tables verified; uploaded files will be verified through the private Worker binding.');
 }else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
+const bankUpdates=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['bank_statement_updates_v1']);
+if(bankUpdates[0].results.length){
+ let updates;try{updates=JSON.parse(bankUpdates[0].results[0].setting_value);}catch{throw Error('Invalid private bank update configuration.');}
+ await applyPrivateBankUpdates(root,updates);
+}
+run('npm',['run','build']);
+const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
+if(checked.status!==0)throw Error('Private finance integration checks failed.');
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
