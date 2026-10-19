@@ -84,3 +84,12 @@ test('Finance browser navigation redirects missing and expired sessions to sign-
  const write=await worker.fetch(new Request(origin+'/finance/payroll',{method:'POST',headers:{Accept:'text/html',Origin:origin}}),env(null));assert.equal(write.status,401);
  const denied=await worker.fetch(new Request(origin+'/finance',{headers:{Accept:'text/html',Cookie:'__Host-yg-session=other'}}),env({id:'other',email:'other@yayasangambut.org',role:'staff'}));assert.equal(denied.status,403);
 });
+
+test('Finance login redirect remembers the requested page and query in a short-lived secure cookie',async()=>{
+ const path='/finance/payroll/report?period=2026-10';
+ const r=await worker.fetch(new Request(origin+path,{headers:{Accept:'text/html'}}),env(null));
+ assert.equal(r.status,302);assert.equal(r.headers.get('location'),origin+'/');
+ const cookie=r.headers.get('set-cookie');
+ assert.ok(cookie.includes('__Host-yg-finance-return='+encodeURIComponent(path)));
+ for(const flag of ['HttpOnly','Secure','SameSite=Lax','Path=/','Max-Age=600'])assert.ok(cookie.includes(flag));
+});
