@@ -20,15 +20,15 @@ async function setup(){
 const request=(suffix='',user='finance',method='GET',data)=>new Request(origin+path+suffix,{method,headers:{Cookie:'__Host-yg-session='+user,Origin:origin,'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
 async function call(env,suffix='',user='finance',method='GET',data,status=200){const r=await worker.fetch(request(suffix,user,method,data),env);assert.equal(r.status,status,await r.clone().text());return r.json();}
 const create=env=>call(env,'','finance','POST',sample,201);
-test('only designated Finance and director access payroll; Finance cannot reach private legacy APIs or approve',async()=>{
+test('designated Finance reaches the full dashboard but cannot approve payroll',async()=>{
  const {env,db}=await setup();
  assert.equal((await worker.fetch(new Request(origin+path),env)).status,401);
  await call(env,'','other','GET',null,403);
  const created=await create(env);
  await call(env,'/'+created.id+'/approve','finance','POST',{version:1},403);
  await call(env,'','director','POST',sample,403);
- for(const p of ['/finance/api/requests','/finance/email-sync','/finance/assets/app.js'])assert.equal((await worker.fetch(new Request(origin+p,{headers:{Cookie:'__Host-yg-session=finance'}}),env)).status,403);
- const root=await worker.fetch(new Request(origin+'/finance',{headers:{Cookie:'__Host-yg-session=finance'}}),env);assert.equal(root.status,302);assert.equal(root.headers.get('location'),origin+'/finance/payroll');
+ env.FINANCE={async fetch(){return Response.json({sync:{},candidates:[]});}};
+ for(const p of ['/finance','/finance/api/requests','/finance/email-sync','/finance/assets/app.js'])assert.equal((await worker.fetch(new Request(origin+p,{headers:{Cookie:'__Host-yg-session=finance'}}),env)).status,200);
  const evil=request('','finance','POST',sample);evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,env)).status,403);
  db.prepare('UPDATE users SET disabled=1 WHERE id=?').run('finance');await call(env,'','finance','GET',null,401);
 });
