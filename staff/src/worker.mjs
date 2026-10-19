@@ -1,6 +1,7 @@
 import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
 import {assetApi} from './assets.mjs';
 import {financeOwner} from './finance-access.mjs';
+import {financeEmailSync} from './finance-email-sync.mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
@@ -245,6 +246,7 @@ async function route(req,env){
     headers.set('x-yg-finance-user',u.email);
     headers.set('oai-authenticated-user-email',u.email);
     headers.set('oai-authenticated-user-id',u.id);
+    if(url.pathname==='/finance/email-sync')return financeEmailSync(req,env,headers);
     const response=await env.FINANCE.fetch(new Request(req,{headers}));
     if(!response.headers.get('Content-Type')?.includes('text/html'))return response;
     // Finance has its own HTML shell; use the same identity as the staff portal.
@@ -254,6 +256,7 @@ async function route(req,env){
         const rel=(element.getAttribute('rel')||'').toLowerCase().split(/\s+/);
         if(rel.some(value=>['icon','apple-touch-icon','apple-touch-icon-precomposed','mask-icon'].includes(value)))element.remove();
       }})
+      .on('body',{element(element){element.prepend('<a href="/finance/email-sync" style="display:block;padding:12px 24px;background:#123f32;color:white;text-align:right">Sinkronisasi laporan dari email →</a>',{html:true});}})
       .on('head',{element(element){element.append(`<link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }

@@ -42,3 +42,20 @@ test('private assets and APIs require owner and writes require same origin',asyn
  const valid=new Request(origin+'/finance/api/requests',{method:'POST',headers:{Cookie:'__Host-yg-session=test',Origin:origin,'oai-authenticated-user-email':'spoof@example.com','x-yg-finance-user':'attacker'},body:'{}'});
  assert.equal((await worker.fetch(valid,e)).status,200);assert.equal(calls,4);
 });
+
+test('email sync keeps owner and origin checks and forwards only the existing intake operation',async()=>{
+ const path='/finance/email-sync',owner={id:'owner',email:'mulyadi@yayasangambut.org',role:'admin'};
+ assert.equal((await worker.fetch(request(path,false),env(null))).status,401);
+ assert.equal((await worker.fetch(request(path),env({...owner,role:'staff'}))).status,403);
+ const e=env(owner);const calls=[];
+ e.FINANCE={async fetch(req){calls.push(req);return Response.json({sync:{status:'success',scannedCount:2,imported:1,error:'secret'},candidates:[{title:'<script>bad</script>',amount:10}]});}};
+ let r=await worker.fetch(request(path),e);const html=await r.text();
+ assert.equal(r.status,200);assert.equal(calls[0].url,origin+'/finance/api/email-intake');
+ assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('secret'));
+ const post=site=>new Request(origin+path,{method:'POST',headers:{Cookie:'__Host-yg-session=test',Origin:site}});
+ assert.equal((await worker.fetch(post('https://evil.example'),e)).status,403);assert.equal(calls.length,1);
+ r=await worker.fetch(post(origin),e);assert.equal(r.status,200);
+ assert.equal(calls[1].url,origin+'/finance/api/email-intake?scan=1');
+ assert.equal(calls[1].method,'GET');assert.equal(calls[1].headers.get('cookie'),null);
+ assert.equal(calls[1].headers.get('oai-authenticated-user-email'),owner.email);
+});
