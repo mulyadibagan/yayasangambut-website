@@ -28,6 +28,12 @@ export async function applyAvailableCashDisplay(root){
  salary=replace(salary,'import { linkedSystemPosition }', 'import {availableCash} from "./available-cash.js";\nimport { linkedSystemPosition }');
  salary=replace(salary,'generalSaving: linked?.generalSaving ?? reconciliation.ygCash,','generalSaving: availableCash({generalSaving:linked?.generalSaving ?? reconciliation.ygCash,salaryReserve:0},reconciliation.projects).generalAvailable,');
  salary=replace(salary,'generalSavingAfterPlan: (linked?.generalSaving ?? reconciliation.ygCash) - targetGap,','generalSavingAfterPlan: availableCash({generalSaving:linked?.generalSaving ?? reconciliation.ygCash,salaryReserve:0},reconciliation.projects).generalAvailable - targetGap,');
- for(const [file,value] of Object.entries({'app/available-cash.js':helper,'app/closing-august-panel.tsx':summary,'app/fund-balance-details.tsx':details,'app/salary-balance-enhancer.tsx':salary}))await writeFile(resolve(root,file),value);
+ let workspace=await read('app/reconciliation-workspace.tsx');
+ workspace=replace(workspace,"import PendingStaffAllocation", "import {availableCash} from './available-cash.js';\nimport PendingStaffAllocation");
+ workspace=replace(workspace,' const linked=linkedSystemPosition(salaryRows);',' const linked=linkedSystemPosition(salaryRows);\n const cash=availableCash(linked,audit.projects);');
+ workspace=replace(workspace,'<span>Saving umum YG</span><b>{money(linked.generalSaving)}</b>','<span>Saving umum YG tersedia</span><b>{money(cash.generalAvailable)}</b>');
+ workspace=replace(workspace,'<span>Kas proyek</span><b>{money(linked.projectCash)}</b>','<span>Dana proyek tersedia</span><b>{money(cash.projectAvailable)}</b>');
+ workspace=replace(workspace,'<span>{status}</span></summary><p>{next}</p>','<span>{name==="Riena"?`Talangan tercatat ${money(linked.ygAdvance)}`:status}</span></summary><p>{name==="Riena"?"Pembayaran dan pemulihan hak staf yang teralokasi sudah diperhitungkan. Talangan sudah mengurangi saving umum dan tidak dikurangi lagi.":next}</p>');
+ for(const [file,value] of Object.entries({'app/available-cash.js':helper,'app/closing-august-panel.tsx':summary,'app/fund-balance-details.tsx':details,'app/salary-balance-enhancer.tsx':salary,'app/reconciliation-workspace.tsx':workspace}))await writeFile(resolve(root,file),value);
 }
 
