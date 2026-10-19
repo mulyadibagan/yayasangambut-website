@@ -2,7 +2,7 @@
 
 ## Arsip lampiran agenda di Google Drive
 
-Migrasi `0020_agenda_drive.sql` menambahkan koneksi Drive dan referensi berkas pada tabel lampiran, tanpa mengubah isi agenda. `AGENDA_DRIVE_ROOT_ID` menunjuk tujuan yang dipilih pemilik YG: `0AGypgEKNvNjdUk9PVA`.
+Migrasi `0020_agenda_drive.sql` menambahkan koneksi Drive dan referensi berkas pada tabel lampiran, tanpa mengubah isi agenda. `AGENDA_DRIVE_ROOT_ID` menunjuk tujuan yang dipilih pemilik YG: `1LM8jrwmbfRdYz1rfWJae67DaReOLiTFz`. Setelah mengganti tujuan, Direktur perlu menghubungkan Google Drive kembali; referensi lampiran yang sudah ada tetap dipertahankan.
 
 Setelah deployment, Direktur membuka detail salah satu agenda dan memilih **Hubungkan Google Drive**. Gunakan akun Direktur yang sama dengan akun staf. Koneksi OAuth terpisah dari Kalender/Tasks, memakai callback Google yang sudah ada, PKCE, nonce, dan token penyegaran terenkripsi. Google Drive API harus aktif pada project OAuth. Scope `drive` diperlukan untuk memeriksa dan menulis ke folder organisasi yang sudah ada tanpa Google Picker; layar koneksi menjelaskan izin tersebut. Backend membatasi operasi penyimpanan ke subfolder arsip yang dicatat, tidak menerima folder tujuan dari permintaan unggah, dan tidak mengubah izin berbagi.
 
