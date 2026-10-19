@@ -1,5 +1,6 @@
 import {fail,now,imageType} from './core.mjs';
 import {taskDirector} from './tasks.mjs';
+import {driveApi,driveStatus,drivePreviewUrl,storeDriveFile,migrateDriveFile} from './agenda-drive.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const member=(a,u)=>a.creator===u.id||JSON.parse(a.participant_ids).includes(u.id);
 export function agendaInput(input){
@@ -11,6 +12,7 @@ export function agendaInput(input){
 }
 export async function agendaApi(req,env,url,u,{payload,readLimited}){
  const director=taskDirector(u,env),path=url.pathname,method=req.method;
+ if(path==='/api/agendas/drive'||path.startsWith('/api/agendas/drive/'))return driveApi(req,env,url,u);
  const people=(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access WHERE email=users.email AND scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
  const read=async id=>{const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');if(!director&&!member(a,u))fail(403,'Agenda ini tidak termasuk kegiatan Anda.');return a;};
  if(path==='/api/agendas'&&method==='GET'){const all=director&&url.searchParams.get('scope')==='all';const agendas=(await q(env,'SELECT team_agendas.*,users.name AS creatorName FROM team_agendas JOIN users ON users.id=creator '+'WHERE deleted=? '+(all?'':'AND (creator=? OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value=?)) ')+'ORDER BY start_at DESC',Number(url.searchParams.get('trash')==='1'),...(all?[]:[u.id,u.id])).all()).results;return Response.json({director,people,agendas});}
@@ -18,29 +20,42 @@ export async function agendaApi(req,env,url,u,{payload,readLimited}){
   const input=await payload(req),a=agendaInput(input);if('participant_ids' in input&&!Array.isArray(input.participant_ids))fail(400,'Pilih anggota tim dengan benar.');const ids=[...new Set([...(director?[]:[u.id]),...(Array.isArray(input.participant_ids)?input.participant_ids:[])])];if(ids.length>30||ids.some(id=>!people.some(p=>p.id===id)))fail(400,'Pilih anggota tim YG yang aktif.');
   const id=crypto.randomUUID(),time=now();await q(env,'INSERT INTO team_agendas(id,creator,title,kind,kind_custom,program,location,coordinator,start_at,end_at,participant_ids,participants,description,results,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,u.id,a.title,a.kind,a.kind_custom,a.program,a.location,a.coordinator,a.start_at,a.end_at,JSON.stringify(ids),a.participants,a.description,a.results,a.status,time,time).run();return Response.json(await read(id),{status:201});
  }
- const match=/^\/api\/agendas\/([a-z0-9-]+)(?:\/(restore|files)(?:\/([a-f0-9-]+))?)?$/.exec(path);if(!match)fail(404,'Layanan agenda tidak ditemukan.');const a=await read(match[1]);
+ const match=/^\/api\/agendas\/([a-z0-9-]+)(?:\/(restore|files)(?:\/([a-f0-9-]+)(?:\/(drive))?)?)?$/.exec(path);if(!match)fail(404,'Layanan agenda tidak ditemukan.');const a=await read(match[1]);
  if(match[2]==='files'){
   const fileId=match[3];
-  if(method==='GET'&&!fileId)return Response.json({files:(await q(env,'SELECT agenda_files.*,users.name AS actorName FROM agenda_files JOIN users ON users.id=actor WHERE agenda_id=? ORDER BY created_at DESC,id DESC',a.id).all()).results});
-  if(method==='GET'&&fileId){
+  if(method==='GET'&&!fileId)return Response.json({files:(await q(env,'SELECT agenda_files.*,users.name AS actorName FROM agenda_files JOIN users ON users.id=actor WHERE agenda_id=? ORDER BY created_at DESC,id DESC',a.id).all()).results,drive:await driveStatus(env)});
+  if(method==='GET'&&fileId&&!match[4]){
    const file=await q(env,'SELECT * FROM agenda_files WHERE id=? AND agenda_id=?',fileId,a.id).first();if(!file)fail(404,'Lampiran tidak ditemukan.');
+   if(file.drive_file_id)return new Response(null,{status:302,headers:{Location:drivePreviewUrl(file.drive_web_url),'Cache-Control':'private, no-store'}});
    if(!env.MEDIA)fail(503,'Penyimpanan lampiran belum tersedia.');const object=await env.MEDIA.get('agendas/'+fileId);if(!object)fail(404,'Lampiran tidak ditemukan.');
    return new Response(object.body,{headers:{'Content-Type':file.type,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
   }
   if(!director&&a.creator!==u.id)fail(403,'Hanya pembuat agenda atau Direktur dapat mengelola lampiran.');
   if(a.deleted)fail(409,'Pulihkan agenda sebelum mengubah lampiran.');
-  if(!env.MEDIA)fail(503,'Penyimpanan lampiran belum tersedia.');
+  if(method==='POST'&&fileId&&match[4]==='drive'){
+   const file=await q(env,'SELECT * FROM agenda_files WHERE id=? AND agenda_id=?',fileId,a.id).first();if(!file)fail(404,'Lampiran tidak ditemukan.');await migrateDriveFile(env,file);return Response.json({ok:true});
+  }
+  if(match[4])fail(405,'Metode tidak didukung.');
   if(method==='POST'&&!fileId){
    const bytes=await readLimited(req,5*1024*1024);if(!bytes.length)fail(400,'Pilih berkas lampiran.');
    const type=imageType(bytes)||(new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':null);if(!type)fail(400,'Gunakan PDF, JPEG, PNG, atau WebP. Maksimal 5 MB per berkas.');
    let filename;try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Lampiran').replace(/[\x00-\x1f\x7f"\\/]/g,'_').trim().slice(0,180)||'Lampiran';}catch{fail(400,'Nama berkas tidak valid.');}
-   const id=crypto.randomUUID();await env.MEDIA.put('agendas/'+id,bytes,{httpMetadata:{contentType:type}});
-   try{await q(env,'INSERT INTO agenda_files(id,agenda_id,actor,filename,type,size,created_at) VALUES(?,?,?,?,?,?,?)',id,a.id,u.id,filename,type,bytes.length,now()).run();}catch(error){await env.MEDIA.delete('agendas/'+id);throw error;}
+   const id=crypto.randomUUID();
+   if(env.AGENDA_DRIVE_ROOT_ID){
+    const stored=await storeDriveFile(env,{id,agendaId:a.id,filename,type,bytes});
+    try{await q(env,'INSERT INTO agenda_files(id,agenda_id,actor,filename,type,size,created_at,drive_file_id,drive_web_url) VALUES(?,?,?,?,?,?,?,?,?)',id,a.id,u.id,filename,type,bytes.length,now(),stored.id,stored.url).run();}catch(error){await stored.discard().catch(()=>{});throw error;}
+   }else{
+    if(!env.MEDIA)fail(503,'Penyimpanan lampiran belum tersedia.');await env.MEDIA.put('agendas/'+id,bytes,{httpMetadata:{contentType:type}});
+    try{await q(env,'INSERT INTO agenda_files(id,agenda_id,actor,filename,type,size,created_at) VALUES(?,?,?,?,?,?,?)',id,a.id,u.id,filename,type,bytes.length,now()).run();}catch(error){await env.MEDIA.delete('agendas/'+id);throw error;}
+   }
    return Response.json({id,filename},{status:201});
   }
   if(method==='DELETE'&&fileId){
    const file=await q(env,'SELECT * FROM agenda_files WHERE id=? AND agenda_id=?',fileId,a.id).first();if(!file)fail(404,'Lampiran tidak ditemukan.');
-   await env.MEDIA.delete('agendas/'+fileId);await q(env,'DELETE FROM agenda_files WHERE id=? AND agenda_id=?',fileId,a.id).run();return Response.json({ok:true});
+   if(file.drive_lease_until>Date.now())fail(409,'Lampiran sedang dipindahkan. Tunggu sampai selesai.');
+   // Removing an agenda link must not destroy the organization's Drive archive.
+   if(!file.drive_file_id){if(!env.MEDIA)fail(503,'Penyimpanan lampiran belum tersedia.');await env.MEDIA.delete('agendas/'+fileId);}
+   await q(env,'DELETE FROM agenda_files WHERE id=? AND agenda_id=?',fileId,a.id).run();return Response.json({ok:true});
   }
   fail(405,'Metode tidak didukung.');
  }

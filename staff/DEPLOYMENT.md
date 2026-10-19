@@ -1,5 +1,17 @@
 # Aktivasi melalui GitHub Actions
 
+## Arsip lampiran agenda di Google Drive
+
+Migrasi `0020_agenda_drive.sql` menambahkan koneksi Drive dan referensi berkas pada tabel lampiran, tanpa mengubah isi agenda. `AGENDA_DRIVE_ROOT_ID` menunjuk tujuan yang dipilih pemilik YG: `0AGypgEKNvNjdUk9PVA`.
+
+Setelah deployment, Direktur membuka detail salah satu agenda dan memilih **Hubungkan Google Drive**. Gunakan akun Direktur yang sama dengan akun staf. Koneksi OAuth terpisah dari Kalender/Tasks, memakai callback Google yang sudah ada, PKCE, nonce, dan token penyegaran terenkripsi. Google Drive API harus aktif pada project OAuth. Scope `drive` diperlukan untuk memeriksa dan menulis ke folder organisasi yang sudah ada tanpa Google Picker; layar koneksi menjelaskan izin tersebut. Backend membatasi operasi penyimpanan ke subfolder arsip yang dicatat, tidak menerima folder tujuan dari permintaan unggah, dan tidak mengubah izin berbagi.
+
+Callback memverifikasi akses tujuan, membuat/menggunakan subfolder **Lampiran Agenda YG**, lalu mengaktifkan unggahan Drive bagi pembuat agenda dan Direktur. Dokumen mewarisi izin Shared Drive; hak akses Drive dapat mencakup anggota selain peserta agenda. Tautan pada detail agenda tetap memerlukan akses agenda sebelum mengarahkan ke pratinjau Drive; setelah itu Google memeriksa akses akun Drive.
+
+Sebelum koneksi diberikan, unduhan lama tetap berfungsi dan unggahan baru meminta koneksi Drive (tidak diam-diam kembali menyimpan ke R2). Tombol **Salin lampiran lama ke Google Drive** memindahkan referensi untuk lampiran event tersebut setelah ukuran dan checksum salinan lolos pemeriksaan. Salinan R2 tetap disimpan untuk pemulihan. Mengulangi penyalinan tidak menggandakan berkas yang sudah terhubung; lease per lampiran melindungi proses bersamaan. Melepaskan lampiran Drive dari agenda hanya menghapus referensi agenda, bukan dokumen arsip Drive.
+
+Verifikasi penerimaan setelah persetujuan OAuth: unggah PDF kecil, buka pratinjau menggunakan akun peserta yang memiliki akses Drive, salin lampiran lama, lalu periksa bahwa judul/jadwal/peserta agenda tetap sama. Pengujian unit menggunakan Google API tiruan; keberhasilan unit dan deployment bukan bukti bahwa pemilik sudah memberikan izin Drive.
+
 Status: workflow disiapkan di PR; belum dijalankan di Cloudflare. Token Cloudflare saja belum mengaktifkan login Google, publikasi, atau Analytics.
 
 ## Akses Cloudflare

@@ -1,4 +1,5 @@
 import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
+import {driveCallback} from './agenda-drive.mjs';
 import {assetApi} from './assets.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {financeEmailSync} from './finance-email-sync.mjs';
@@ -42,6 +43,8 @@ async function authStart(env,external=false){
   return redirect(url.href,{'Set-Cookie':cookie('__Host-yg-oauth',state,600)});
 }
 async function authCallback(req,env,url){
+  const driveState=cookies(req)['__Host-yg-drive'];
+  if(driveState&&url.searchParams.get('state')===driveState)return driveCallback(req,env,url,await session(req,env),async id=>{try{return (await jwtVerify(id,googleKeys,{audience:env.GOOGLE_CLIENT_ID,issuer:['https://accounts.google.com','accounts.google.com'],algorithms:['RS256']})).payload;}catch{fail(401,'Identitas Google tidak dapat diverifikasi.');}});
   const calendarState=cookies(req)['__Host-yg-calendar'];
   if(calendarState&&url.searchParams.get('state')===calendarState)return calendarCallback(req,env,url,await session(req,env),async id=>{try{return (await jwtVerify(id,googleKeys,{audience:env.GOOGLE_CLIENT_ID,issuer:['https://accounts.google.com','accounts.google.com'],algorithms:['RS256']})).payload;}catch{fail(401,'Identitas Google tidak dapat diverifikasi.');}});
   const state=url.searchParams.get('state');if(!state || state!==cookies(req)['__Host-yg-oauth'])fail(403,'Sesi login tidak cocok. Mulai login kembali.');
