@@ -5,9 +5,10 @@ import {readFileSync} from 'node:fs';
 import {calendarEvent,sealToken,openToken,calendarConnect,calendarCallback,calendarApi,syncCalendar,syncCalendars,calendarScope} from '../src/google-calendar.mjs';
 import worker from '../src/worker.mjs';
 import {sha} from '../src/core.mjs';
+import {tasksScope,taskBody} from '../src/google-tasks.mjs';
 const origin='https://staff.yayasangambut.org';
 async function setup(){
- const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0010_team_tasks.sql','0011_team_agendas.sql','0015_agenda_custom_kind.sql','0016_agenda_trash.sql','0017_google_calendar.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0010_team_tasks.sql','0011_team_agendas.sql','0015_agenda_custom_kind.sql','0016_agenda_trash.sql','0017_google_calendar.sql','0019_google_tasks.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(stmts){db.exec('BEGIN');try{const r=[];for(const s of stmts)r.push(await s.run());db.exec('COMMIT');return r;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'client',GOOGLE_CLIENT_SECRET:'secret',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',ADMIN_EMAIL:'a@yayasangambut.org'};
  const users=[{id:'a',email:'a@yayasangambut.org',name:'A'},{id:'b',email:'b@yayasangambut.org',name:'B'}];
@@ -81,4 +82,43 @@ test('lease prevents simultaneous sync and disconnect; disconnect removes grant 
  const {env,db,users}=await setup();await connect(env,users[0]);db.prepare('UPDATE calendar_connections SET lease_until=?').run(Date.now()+100000);
  await mocked(async({calls})=>{assert.deepEqual(await syncCalendar(env,'a'),{busy:true});await assert.rejects(calendarApi(new Request(origin+'/api/calendar',{method:'DELETE'}),env,new URL(origin+'/api/calendar'),users[0]),/sedang berjalan/);assert.equal(calls.length,0);
  db.prepare('UPDATE calendar_connections SET lease_until=0').run();await calendarApi(new Request(origin+'/api/calendar',{method:'DELETE'}),env,new URL(origin+'/api/calendar'),users[0]);assert.equal(db.prepare('SELECT count(*) n FROM calendar_connections').get().n,0);assert.equal(calls.length,0);});
+});
+
+test('Tasks permission is opt-in and partial consent is rejected without replacing an existing grant',async()=>{
+ const {env,db,users}=await setup();await connect(env,users[0]);
+ const response=await calendarConnect(env,users[0],true),auth=new URL((await response.json()).url),state=auth.searchParams.get('state');
+ assert.ok(auth.searchParams.get('scope').includes(tasksScope));
+ const original=globalThis.fetch;globalThis.fetch=async()=>Response.json({id_token:'jwt',refresh_token:'new',scope:calendarScope});
+ try{await assert.rejects(calendarCallback(new Request(origin+'/auth/callback',{headers:{Cookie:'__Host-yg-calendar='+state}}),env,new URL(origin+'/auth/callback?state='+state+'&code=x'),users[0],async()=>({sub:'a',email:users[0].email,email_verified:true,hd:env.GOOGLE_WORKSPACE_DOMAIN,nonce:auth.searchParams.get('nonce')})),/Izin Google Tasks/);
+ assert.equal(await openToken(env,'a',db.prepare('SELECT refresh_token FROM calendar_connections').get().refresh_token),'refresh-a');
+ }finally{globalThis.fetch=original;}
+});
+test('Tasks payload respects notes limit, completion and date-only scheduling',()=>{
+ const body=taskBody({title:'Tugas',description:'x'.repeat(10000),status:'done',due_date:'2026-10-20'},origin,'[YG:marker]');
+ assert.ok(body.notes.length<=8192);assert.ok(body.notes.endsWith('[YG:marker]'));assert.equal(body.status,'completed');assert.equal(body.due,'2026-10-20T00:00:00.000Z');
+});
+test('Tasks sync recovers lost insert response, updates and removes only managed assigned copies',async()=>{
+ const {env,db,users}=await setup();seed(db);await connect(env,users[1]);db.exec("UPDATE calendar_connections SET tasks_enabled=1,tasklist_id='yg-list'");
+ await mocked(async()=>{
+  const calendarFetch=globalThis.fetch,remote=new Map([['personal',{id:'personal',title:'Personal task'}]]);let lost=true,posts=0;
+  globalThis.fetch=async(url,options={})=>{
+   if(!String(url).includes('tasks.googleapis.com'))return calendarFetch(url,options);
+   const method=options.method||'GET',body=options.body?JSON.parse(options.body):null;
+   if(method==='GET')return Response.json({items:[...remote.values()]});
+   if(method==='POST'){posts++;const task={...body,id:'managed'};remote.set(task.id,task);if(lost){lost=false;throw new Error('lost response');}return Response.json(task);}
+   if(method==='PATCH'){const id=String(url).split('/').at(-1);remote.set(id,{...body,id});return Response.json(remote.get(id));}
+   if(method==='DELETE'){remote.delete(String(url).split('/').at(-1));return new Response(null,{status:204});}
+   throw new Error('unexpected Tasks operation');
+  };
+  let r=await syncCalendar(env,'b');assert.ok(r.tasks.error);assert.ok(db.prepare('SELECT last_synced FROM calendar_connections').get().last_synced);
+  r=await syncCalendar(env,'b');assert.equal(r.tasks.error,undefined);assert.equal(posts,1);assert.equal(remote.size,2);
+  await syncCalendar(env,'b');assert.equal(posts,1);
+  db.exec("UPDATE team_tasks SET title='Revisi',status='done'");await syncCalendar(env,'b');assert.equal(remote.get('managed').title,'Revisi');assert.equal(remote.get('managed').status,'completed');
+  db.exec("UPDATE team_tasks SET assignees='[\"a\"]'");await syncCalendar(env,'b');assert.deepEqual([...remote.keys()],['personal']);assert.equal(db.prepare('SELECT count(*) n FROM google_task_links').get().n,0);
+ });
+});
+test('Tasks API rejection does not prevent Calendar success',async()=>{
+ const {env,db,users}=await setup();seed(db);await connect(env,users[0]);db.exec('UPDATE calendar_connections SET tasks_enabled=1');
+ await mocked(async()=>{const calendarFetch=globalThis.fetch;globalThis.fetch=(url,opts)=>String(url).includes('tasks.googleapis.com')?Promise.resolve(Response.json({},{status:403})):calendarFetch(url,opts);
+ const r=await syncCalendar(env,'a');assert.equal(r.error,undefined);assert.match(r.tasks.error,/Tasks menolak/);assert.ok(db.prepare('SELECT last_synced FROM calendar_connections').get().last_synced);});
 });
