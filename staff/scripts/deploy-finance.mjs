@@ -7,6 +7,7 @@ import {resolve} from 'node:path';
 import {applyPrivateBankUpdates} from './finance-bank-updates.mjs';
 import {applyPrivateSourceUpdates} from './finance-private-source-updates.mjs';
 import {applyPrivateReconciliationUpdates} from './finance-reconciliation-updates.mjs';
+import {applyAvailableCashDisplay} from './finance-available-display.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
 if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
@@ -64,6 +65,7 @@ if(reconciliationUpdates[0].results.length){
  let config;try{config=JSON.parse(reconciliationUpdates[0].results[0].setting_value);}catch{throw Error('Invalid private reconciliation configuration.');}
  await applyPrivateReconciliationUpdates(root,config);
 }
+await applyAvailableCashDisplay(root);
 run('npm',['run','build']);
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
 if(checked.status!==0)throw Error('Private finance integration checks failed.');
