@@ -208,7 +208,7 @@ async function route(req,env){
   const url=new URL(req.url);
   if(url.origin!==env.APP_ORIGIN)fail(403,'Alamat dashboard tidak sesuai konfigurasi.');
   // Browser favicon requests must resolve to an image, including before login.
-  if(['/favicon.ico','/favicon.png','/apple-touch-icon.png','/finance/favicon.ico','/finance/favicon.png','/finance/apple-touch-icon.png'].includes(url.pathname)){
+  if(['/favicon.ico','/favicon.png','/apple-touch-icon.png','/finance/favicon.svg','/finance/logo-yayasan-gambut.png','/finance/og.png','/finance/favicon.ico','/finance/favicon.png','/finance/apple-touch-icon.png'].includes(url.pathname)){
     const icon=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png', {method:req.method==='HEAD'?'HEAD':'GET'}));
     const headers=new Headers(icon.headers);headers.set('Cache-Control','no-store');headers.set('Content-Type','image/png');headers.set('X-Content-Type-Options','nosniff');
     return new Response(icon.body,{status:icon.status,headers});
@@ -250,12 +250,14 @@ async function route(req,env){
     const response=await env.FINANCE.fetch(new Request(req,{headers}));
     if(!response.headers.get('Content-Type')?.includes('text/html'))return response;
     // Finance has its own HTML shell; use the same identity as the staff portal.
-    const brandIcon='/favicon.png?v=yg-20261017-2';
+    const brandIcon='/favicon.png?v=yg-20261019-1';
     return new HTMLRewriter()
       .on('link[rel]',{element(element){
         const rel=(element.getAttribute('rel')||'').toLowerCase().split(/\s+/);
         if(rel.some(value=>['icon','apple-touch-icon','apple-touch-icon-precomposed','mask-icon'].includes(value)))element.remove();
       }})
+      .on('img[alt="Logo Yayasan Gambut"]',{element(element){element.setAttribute('src','/brand/yayasan-gambut-logo.png');element.setAttribute('style','width:46px;height:46px;object-fit:contain');}})
+      .on('meta[property="og:image"],meta[name="twitter:image"]',{element(element){element.setAttribute('content',env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png');}})
       .on('body',{element(element){element.prepend('<a href="/finance/email-sync" style="display:block;padding:12px 24px;background:#123f32;color:white;text-align:right">Sinkronisasi laporan dari email →</a>',{html:true});}})
       .on('head',{element(element){element.append(`<link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
