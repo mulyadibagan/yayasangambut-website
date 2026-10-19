@@ -54,6 +54,14 @@ Verifikasi live tetap wajib: login admin/editor/staf, penolakan domain lain, ung
 
 Referensi resmi: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/ dan https://developers.cloudflare.com/fundamentals/api/reference/permissions/
 
+## Pemulihan talangan gaji pada Finance privat
+
+Mutasi baru dana pengganti gaji masuk melalui `bank_statement_updates_v1` dengan bucket `STAFF_PENDING`. Setelah bukti dan staf penerima terverifikasi, tambahkan atribusi pada `finance_reconciliation_v1.staffAllocations`, memakai identitas mutasi yang sama dan `savingId` unik untuk setiap baris staf. Untuk penerimaan gaji gunakan `SALARY_CONFIRMED`; donasi tetap `DONATION_CONFIRMED`. Jangan mengakui ulang hak gaji yang sudah ada di sumber saving; cocokkan identitas bukti dan baris sumber terlebih dahulu.
+
+Untuk alokasi baru, hilangkan properti `allocations`: rekonsiliasi menghitung pembagian otomatis. Posisi minus staf dipulihkan ke `YG` lebih dahulu, lalu kelebihannya ke `STAFF`. Atribusi staf dan jumlah harus cocok dengan mutasi; penerimaan yang belum memiliki atribusi tetap pending, bukan pelunasan otomatis kepada staf sembarang. Alokasi eksplisit lama tetap divalidasi terhadap hasil perhitungan yang sama.
+
+Deploy Finance membaca konfigurasi privat tersebut dan memperbarui saving staf, saving umum, dan rincian talangan dari satu jurnal. Tidak ada transaksi bank atau transfer kedua. Identitas alokasi awal dipertahankan agar pemrosesan ulang mutasi sesudah rekonsiliasi tidak menggandakan saldo. Ini bukan koneksi otomatis ke bank; hanya mutasi yang sudah diposting dan diverifikasi yang diperhitungkan. Jangan memasukkan data keuangan atau kredensial privat ke repository publik.
+
 ## Pratinjau website
 
 Tombol Pratinjau website membuka tab privat menggunakan header, footer, dan CSS hasil build website publik. Isi formulir dikirim ke endpoint staf yang memerlukan sesi, disanitasi, lalu dirender tanpa menyimpan atau menerbitkan artikel. Draf tidak dimasukkan ke URL, penyimpanan browser, atau Analytics. Foto tetap mengikuti izin media staf.
