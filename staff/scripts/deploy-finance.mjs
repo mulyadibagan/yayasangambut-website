@@ -11,6 +11,7 @@ import {applyAvailableCashDisplay} from './finance-available-display.mjs';
 import {applyAdvanceBreakdown} from './finance-advance-display.mjs';
 import {applyTerminDisplay} from './finance-termin-display.mjs';
 import {applyPayrollBridge} from './finance-payroll-bridge.mjs';
+import {applyUmReturnIntegration} from './finance-um-return-display.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
 if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
@@ -70,6 +71,7 @@ if(reconciliationUpdates[0].results.length){
 }
 await applyAvailableCashDisplay(root);
 await applyAdvanceBreakdown(root,reconciliationUpdates[0].results.length?JSON.parse(reconciliationUpdates[0].results[0].setting_value):{staffAllocations:[]});
+await applyUmReturnIntegration(root,reconciliationUpdates[0].results.length?JSON.parse(reconciliationUpdates[0].results[0].setting_value):{});
 await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 run('npm',['run','build']);
