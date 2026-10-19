@@ -273,8 +273,9 @@ async function route(req,env,ctx){
       }})
       .on('img[alt="Logo Yayasan Gambut"]',{element(element){element.setAttribute('src','/brand/yayasan-gambut-logo.png');element.setAttribute('style','width:46px;height:46px;object-fit:contain');}})
       .on('meta[property="og:image"],meta[name="twitter:image"]',{element(element){element.setAttribute('content',env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png');}})
-      .on('body',{element(element){element.prepend('<nav aria-label="Layanan Finance" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:24px;padding:12px 24px;background:#123f32"><a href="/finance/payroll" style="color:white">Pengajuan gaji bulanan →</a><a href="/finance/email-sync" style="color:white">Sinkronisasi laporan dari email →</a></nav>',{html:true});}})
-      .on('head',{element(element){element.append(`<link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
+      .on('body > a[href="/"]',{element(element){if((element.getAttribute('style')||'').includes('background:#123f32'))element.remove();}})
+      .on('body',{element(element){element.prepend('<nav class="yg-finance-tools" aria-label="Layanan Finance"><a class="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>',{html:true});}})
+      .on('head',{element(element){element.append(`<link rel="stylesheet" href="/finance-shell.css?v=20261019-2"><link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}

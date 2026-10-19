@@ -55,7 +55,11 @@ export default function PayrollPaymentsPanel(){
  const [data,setData]=useState<any>(null),[error,setError]=useState('');
  useEffect(()=>{const c=new AbortController();fetch('/finance/payroll/api/report',{signal:c.signal,cache:'no-store'}).then(async r=>{if(!r.ok)throw Error('Laporan pembayaran belum dapat dimuat.');return r.json();}).then(setData).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>c.abort();},[]);
  const money=(n:number|null)=>n===null?'Perlu rekonsiliasi':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
- return <section aria-label="Pembayaran gaji dari pengajuan" style={{padding:20,margin:'20px 0',border:'1px solid #dce5dc',borderRadius:12,background:'#f8fbf6'}}><h2>Pengajuan dan pembayaran gaji</h2><p>Terhubung dengan alokasi gaji dan bukti transfer. Rekonsiliasi bank historis tetap memakai tanggal sumbernya.</p>{error?<p role="alert">{error}</p>:!data?<p>Memuat pembayaran…</p>:<><p><b>{data.payments.length} pembayaran</b> · Tercatat {money(data.totalPaid)} · Sudah tercakup di mutasi {money(data.bankMatched)} · Belum tercakup di mutasi {money(data.bankAdditional)}</p>{data.payments.length>0&&<p>Saldo menurut catatan setelah pembayaran gaji {money(data.bookBalance)}. Saldo mutasi per {data.sourceAsOf}: {money(data.bankBalance)}.</p>}{data.issues.length>0&&<p role="alert">{data.issues.length} pembayaran perlu diperiksa kecocokan mutasi/alokasinya.</p>}</>}<p><a href="/finance/payroll">Buka pengajuan gaji</a> · <a href="/finance/payroll/report">Laporan pembayaran dan bukti transfer</a></p></section>;
+ return <section className="yg-payroll-panel" aria-label="Pembayaran gaji dari pengajuan">
+ <div className="yg-payroll-heading"><div><span className="yg-payroll-eyebrow">GAJI BULANAN</span><h2>Pengajuan & pembayaran gaji</h2><p>Kelola pengajuan, persetujuan, dan bukti transfer tim.</p></div><div className="yg-payroll-actions"><a className="yg-payroll-primary" href="/finance/payroll">Buka pengajuan <span aria-hidden="true">→</span></a><a href="/finance/payroll/report">Laporan & bukti transfer</a></div></div>
+ {error?<p className="yg-payroll-error" role="alert">{error}</p>:!data?<p className="yg-payroll-note" role="status">Memuat pembayaran…</p>:data.payments.length===0?<div className="yg-payroll-empty"><span className="yg-payroll-dot" aria-hidden="true"/><p><strong>Belum ada pembayaran dari pengajuan</strong><span>Pembayaran dan bukti transfer akan muncul setelah dicatat Finance.</span></p></div>:<><dl className="yg-payroll-metrics"><div><dt>Pembayaran tercatat</dt><dd>{data.payments.length}<small>transaksi</small></dd></div><div><dt>Total pembayaran</dt><dd>{money(data.totalPaid)}</dd></div><div><dt>Tercakup di mutasi</dt><dd>{money(data.bankMatched)}</dd></div><div><dt>Belum tercakup di mutasi</dt><dd>{money(data.bankAdditional)}</dd></div></dl><p className="yg-payroll-note">Saldo menurut catatan: <strong>{money(data.bookBalance)}</strong>. Saldo mutasi per {data.sourceAsOf}: {money(data.bankBalance)}.</p></>}
+ {data?.issues.length>0&&<p className="yg-payroll-error" role="alert">{data.issues.length} pembayaran perlu diperiksa kecocokan mutasi/alokasinya.</p>}
+ </section>;
 }`;
  await writeFile(resolve(root,'app/payroll-payments-panel.tsx'),component);
  let page=await readFile(resolve(root,'app/finance-archive-dashboard.tsx'),'utf8');
@@ -63,7 +67,9 @@ export default function PayrollPaymentsPanel(){
   const anchor='      <section className="archive-workspace">';
   if(!page.includes(anchor))throw Error('Finance dashboard payroll insertion point missing.');
   page=page.replace('import ClosingAugustPanel',"import PayrollPaymentsPanel from './payroll-payments-panel';\nimport ClosingAugustPanel");
-  page=page.replace(anchor,anchor+'\n        <PayrollPaymentsPanel />');
+  const headerEnd=page.indexOf('</header>',page.indexOf(anchor));
+  if(headerEnd<0)throw Error('Finance page heading missing.');
+  page=page.slice(0,headerEnd+9)+'\n        <PayrollPaymentsPanel />'+page.slice(headerEnd+9);
   await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),page);
  }
  let workspace=await readFile(resolve(root,'app/reconciliation-workspace.tsx'),'utf8');
