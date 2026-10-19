@@ -2,6 +2,7 @@ import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs'
 import {driveCallback} from './agenda-drive.mjs';
 import {assetApi} from './assets.mjs';
 import {financeOwner} from './finance-access.mjs';
+import {payrollAccess,payrollOperator,payrollRoute} from './payroll.mjs';
 import {financeEmailSync} from './finance-email-sync.mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
@@ -148,7 +149,7 @@ async function api(req,env,url,u){
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:financeOwner(u),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
@@ -241,6 +242,8 @@ async function route(req,env){
   if(url.pathname==='/finance'||url.pathname.startsWith('/finance/')||url.pathname==='/api/finance'||url.pathname.startsWith('/api/finance/')){
     if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');
     const u=await session(req,env);
+    if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u);
+    if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&payrollOperator(u,env)&&!financeOwner(u))return redirect(env.APP_ORIGIN+'/finance/payroll');
     if(!financeOwner(u))fail(403,'Menu Keuangan hanya dapat diakses oleh Mulyadi.');
     if(url.pathname.startsWith('/api/finance'))fail(404,'Halaman tidak ditemukan.');
     if(!env.FINANCE)fail(503,'Aplikasi keuangan sedang disiapkan.');
@@ -261,7 +264,7 @@ async function route(req,env){
       }})
       .on('img[alt="Logo Yayasan Gambut"]',{element(element){element.setAttribute('src','/brand/yayasan-gambut-logo.png');element.setAttribute('style','width:46px;height:46px;object-fit:contain');}})
       .on('meta[property="og:image"],meta[name="twitter:image"]',{element(element){element.setAttribute('content',env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png');}})
-      .on('body',{element(element){element.prepend('<a href="/finance/email-sync" style="display:block;padding:12px 24px;background:#123f32;color:white;text-align:right">Sinkronisasi laporan dari email →</a>',{html:true});}})
+      .on('body',{element(element){element.prepend('<nav aria-label="Layanan Finance" style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:24px;padding:12px 24px;background:#123f32"><a href="/finance/payroll" style="color:white">Pengajuan gaji bulanan →</a><a href="/finance/email-sync" style="color:white">Sinkronisasi laporan dari email →</a></nav>',{html:true});}})
       .on('head',{element(element){element.append(`<link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }

@@ -1,0 +1,49 @@
+const $=s=>document.querySelector(s),form=$('#payroll-form'),base='/finance/payroll/api';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+const labels={draft:'Draf',submitted:'Diajukan',returned:'Dikembalikan',approved:'Disetujui'};
+const month=p=>new Date(p+'-01T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+const date=s=>new Date(s).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
+let user,current=null,requests=[],busy=false,dirty=false;
+const editable=()=>user?.operator&&(!current||['draft','returned'].includes(current.status)&&current.creator_email===user.email);
+async function api(path='',method='GET',data){const r=await fetch(base+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});const result=await r.json();if(!r.ok)throw Error(result.error||'Permintaan gagal.');return result;}
+function notice(text,error=false){$('#notice').textContent=text;$('#notice').classList.toggle('error',error);}
+function lock(value){busy=value;document.querySelectorAll('button').forEach(b=>b.disabled=value);form.querySelectorAll('input,textarea').forEach(i=>i.disabled=value||!editable());$('#director-note').disabled=value||!user?.director||current?.status!=='submitted';}
+async function run(fn){if(busy)return;lock(true);notice('');try{await fn();}catch(e){notice(e.message,true);}finally{lock(false);}}
+function badge(status){return '<span class="badge" data-status="'+status+'">'+labels[status]+'</span>';}
+function list(){ $('#requests').innerHTML=requests.length?requests.map(r=>'<button type="button" class="request" data-id="'+r.id+'" aria-current="'+(current?.id===r.id)+'"><strong>'+month(r.period)+'</strong><small>'+money(r.total)+'</small>'+badge(r.status)+'</button>').join(''):'<p class="muted">Belum ada pengajuan gaji.</p>'; }
+async function loadList(){const data=await api();user=data.user;requests=data.requests;$('#account').textContent=user.name+' · '+(user.director?'Direktur':'Finance');$('#finance-home').hidden=!user.director;$('#new-request').hidden=!user.operator;list();}
+function row(item={name:'',program:'',bank:'',account:'',base:0,allowance:0,deduction:0}){
+ const el=document.createElement('article');el.className='recipient';const disabled=editable()?'':' disabled';
+ const field=(key,label,type='text')=>'<label>'+label+'<input data-key="'+key+'" type="'+type+'" value="'+esc(item[key])+'"'+disabled+(type==='number'?' min="0" max="10000000000" step="1" required':(key==='name'||key==='program'?' required':'')+' maxlength="'+({name:160,program:200,bank:80,account:80}[key])+'"')+'></label>';
+ el.innerHTML='<div class="recipient-heading"><strong class="recipient-number"></strong><button type="button" class="quiet" data-remove'+(editable()?'':' hidden')+'>Hapus baris</button></div><div class="recipient-grid">'+field('name','Nama penerima')+field('program','Program / sumber dana')+field('bank','Bank (opsional)')+field('account','Nomor rekening (opsional)')+'</div><div class="amounts">'+field('base','Gaji pokok (Rp)','number')+field('allowance','Tunjangan / tambahan (Rp)','number')+field('deduction','Potongan (Rp)','number')+'</div><div class="net"><span>Gaji bersih</span><strong data-net></strong></div>';
+ $('#items').append(el);calculate();
+}
+function values(){return [...$('#items').children].map(el=>Object.fromEntries([...el.querySelectorAll('[data-key]')].map(i=>[i.dataset.key,i.type==='number'?(i.value===''?NaN:Number(i.value)):i.value])));}
+function calculate(){let total=0;values().forEach((r,i)=>{const el=$('#items').children[i],net=r.base+r.allowance-r.deduction;el.querySelector('.recipient-number').textContent='Penerima '+(i+1);el.querySelector('[data-net]').textContent=Number.isFinite(net)?money(net):'—';total+=net;});$('#total').textContent=Number.isFinite(total)?money(total):'—';}
+function render(r){
+ current=r;dirty=false;$('#empty').hidden=true;form.hidden=false;const edit=editable();
+ $('#detail-title').textContent=r?'Gaji '+month(r.period):'Pengajuan baru';$('#status').textContent=labels[r?.status||'draft'];$('#status').dataset.status=r?.status||'draft';$('#request-meta').textContent=r?'Dibuat oleh '+r.creator_email+' · '+date(r.created_at):'Draf dapat diperiksa dan dilengkapi sebelum diajukan.';
+ form.elements.period.value=r?.period||new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,7);form.elements.notes.value=r?.notes||'';form.elements.period.disabled=!edit;form.elements.notes.disabled=!edit;
+ $('#items').innerHTML='';(r?.items||[{}]).forEach(v=>row(Object.keys(v).length?v:undefined));$('#add-row').hidden=!edit;
+ $('#review-note').hidden=!r?.review_note;$('#review-note').textContent=r?.review_note?'Catatan Direktur: '+r.review_note:'';
+ $('#save').hidden=!edit;$('#submit').hidden=!edit||!r;$('#upload-label').hidden=!edit||!r;$('#upload-hint').textContent=!r?'Simpan draf terlebih dahulu untuk menambahkan dokumen.':edit?'Lampiran tersimpan secara privat dan hanya dapat dibuka oleh Finance yang ditunjuk serta Direktur.':'Lampiran dikunci bersama pengajuan.';
+ $('#files').innerHTML=r?.files?.length?r.files.map(f=>'<div class="file"><a href="'+base+'/'+r.id+'/files/'+f.id+'">'+esc(f.filename)+'</a><small>'+Math.ceil(f.size/1024)+' KB · '+esc(f.actor_email)+'</small></div>').join(''):'<p class="muted">Belum ada dokumen pendukung.</p>';
+ const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review;$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=!r;
+ const actions={created:'Draf dibuat',updated:'Draf diperbarui',attached:'Dokumen dilampirkan',submitted:'Diajukan kepada Direktur',returned:'Dikembalikan untuk diperbaiki',approved:'Disetujui Direktur'};
+ $('#events').innerHTML=(r?.events||[]).map(e=>'<div class="event"><strong>'+actions[e.action]+'</strong><br><small>'+esc(e.actor_email)+' · '+date(e.created_at)+' · Versi '+e.version+'</small>'+(e.snapshot.review_note?'<p>'+esc(e.snapshot.review_note)+'</p>':'')+'</div>').join('');$('#history').hidden=!r;list();lock(busy);
+}
+async function save(){if(!form.reportValidity())return false;const payload={period:form.elements.period.value,notes:form.elements.notes.value,items:values(),...(current?{version:current.version}:{})};const result=await api(current?'/'+current.id:'',current?'PUT':'POST',payload);render(result);await loadList();return true;}
+form.addEventListener('input',e=>{if(e.target.id==='director-note'||e.target.id==='file')return;dirty=true;calculate();});
+form.onsubmit=e=>{e.preventDefault();run(async()=>{if(await save())notice('Draf gaji tersimpan.');});};
+$('#add-row').onclick=()=>{if($('#items').children.length>=100)return notice('Maksimal 100 penerima.',true);row();dirty=true;};
+$('#items').onclick=e=>{const b=e.target.closest('[data-remove]');if(!b||!editable())return;if($('#items').children.length===1)return notice('Minimal satu penerima gaji.',true);b.closest('.recipient').remove();dirty=true;calculate();};
+$('#new-request').onclick=()=>{if(dirty&&!confirm('Tinggalkan perubahan yang belum disimpan?'))return;render(null);notice('');form.elements.period.focus();};
+$('#requests').onclick=e=>{const b=e.target.closest('[data-id]');if(!b)return;if(dirty&&!confirm('Tinggalkan perubahan yang belum disimpan?'))return;run(async()=>render(await api('/'+b.dataset.id)));};
+$('#refresh').onclick=()=>{if(dirty&&!confirm('Muat ulang dan tinggalkan perubahan yang belum disimpan?'))return;run(async()=>{await loadList();if(current)render(await api('/'+current.id));else if(!form.hidden)render(null);notice('Daftar pengajuan diperbarui.');});};
+$('#submit').onclick=()=>run(async()=>{if(dirty){notice('Simpan perubahan draf sebelum mengajukan.',true);return;}if(!confirm('Ajukan gaji '+month(current.period)+' sebesar '+money(current.total)+' kepada Direktur? Rincian akan dikunci sampai dikembalikan.'))return;render(await api('/'+current.id+'/submit','POST',{version:current.version}));await loadList();notice('Pengajuan sudah masuk ke daftar tinjauan Direktur.');});
+for(const action of ['approve','return'])$('#'+action).onclick=()=>run(async()=>{const note=$('#director-note').value.trim();if(action==='return'&&!note)return notice('Isi catatan perbaikan terlebih dahulu.',true);if(!confirm(action==='approve'?'Setujui gaji '+month(current.period)+' sebesar '+money(current.total)+'?':'Kembalikan pengajuan ini kepada Finance?'))return;render(await api('/'+current.id+'/'+action,'POST',{version:current.version,note}));await loadList();notice(action==='approve'?'Pengajuan disetujui. Belum ada pencatatan pembayaran otomatis.':'Pengajuan dikembalikan beserta catatan perbaikan.');});
+$('#file').onchange=()=>{const file=$('#file').files[0];if(!file)return;run(async()=>{try{if(dirty)throw Error('Simpan perubahan draf sebelum menambahkan dokumen.');if(file.size>5*1024*1024)throw Error('Ukuran maksimal 5 MB.');notice('Mengunggah dokumen…');const r=await fetch(base+'/'+current.id+'/files',{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type,'X-Filename':encodeURIComponent(file.name),'X-Payroll-Version':String(current.version)},body:file});const result=await r.json();if(!r.ok)throw Error(result.error);render(result);notice('Dokumen pendukung tersimpan.');}finally{$('#file').value='';}});};
+$('#print').onclick=()=>window.print();
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+run(async()=>{await loadList();const requested=new URLSearchParams(location.search).get('id');if(requested&&requests.some(r=>r.id===requested))render(await api('/'+requested));else if(requests.length)render(await api('/'+requests[0].id));else if(user.operator)render(null);});

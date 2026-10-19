@@ -13,6 +13,7 @@
     "PUBLIC_SITE_ORIGIN": "https://yayasangambut.org",
     "GOOGLE_WORKSPACE_DOMAIN": "yayasangambut.org",
     "ADMIN_EMAIL": "mulyadi@yayasangambut.org",
+    "PAYROLL_FINANCE_EMAIL": "rienaprasiddha@yayasangambut.org",
     "AGENDA_DRIVE_ROOT_ID": "1LM8jrwmbfRdYz1rfWJae67DaReOLiTFz",
     "EDITOR_EMAIL": "zamharier@yayasangambut.org",
     "GITHUB_REPOSITORY": "mulyadibagan/yayasangambut-website",
