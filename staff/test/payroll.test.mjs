@@ -1,3 +1,4 @@
+import {sendPayrollNotifications,payrollRecipients} from '../src/payroll-notifications.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -9,7 +10,7 @@ const origin='https://staff.yayasangambut.org',path='/finance/payroll/api';
 const sample={period:'2026-10',notes:'Contoh pengujian, bukan gaji nyata.',items:[{name:'Penerima uji',program:'Program uji',bank:'Bank uji',account:'001234',base:5000000,allowance:500000,deduction:100000}]};
 async function setup(){
  const db=new DatabaseSync(':memory:');
- for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',PAYROLL_FINANCE_EMAIL:'rienaprasiddha@yayasangambut.org'};
  for(const [id,email,role] of [['finance',env.PAYROLL_FINANCE_EMAIL,'staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-19','2026-10-19');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+60000);}
@@ -40,7 +41,7 @@ test('submit, return, revise and approve preserve audit snapshots and existing f
  r=await call(env,'/'+a.id+'/return','director','POST',{version:r.version,note:'Perbaiki komponen tunjangan.'});assert.equal(r.status,'returned');
  r=await call(env,'/'+a.id,'finance','PUT',{...sample,version:r.version,items:[{...sample.items[0],allowance:600000}]});
  r=await call(env,'/'+a.id+'/submit','finance','POST',{version:r.version});
- r=await call(env,'/'+a.id+'/approve','director','POST',{version:r.version,note:'Disetujui.'});assert.equal(r.status,'approved');assert.equal(r.total,5500000);assert.equal(r.reviewer_email,'mulyadi@yayasangambut.org');
+ r=await call(env,'/'+a.id+'/approve','director','POST',{version:r.version,note:'Disetujui.',review_confirmed:true,review_token:await reviewToken(env,r)});assert.equal(r.status,'approved');assert.equal(r.total,5500000);assert.equal(r.reviewer_email,'mulyadi@yayasangambut.org');
  assert.deepEqual(r.events.map(e=>e.action),['created','submitted','returned','updated','submitted','approved']);assert.equal(r.events[1].snapshot.total,5400000);assert.equal(r.events.at(-1).snapshot.total,5500000);
  await call(env,'/'+a.id,'finance','PUT',{...sample,version:r.version},409);
  await call(env,'/'+a.id+'/approve','director','POST',{version:r.version},409);
@@ -76,7 +77,7 @@ test('server computes totals, validates rupiah integers and rejects duplicates a
 
 const sourceFixture=()=>({asOf:'2026-10-01',mode:'snapshot',policy:{'Penerima uji':{active:true,monthlySalary:5400000},'Tidak aktif':{active:false,monthlySalary:100}},profiles:{profiles:{'Penerima uji':{bank:'Bank contoh',account:'009900',account_name:'Penerima uji',description:'Gaji penerima uji'}},applicant:'Pengaju contoh',title:'Bendahara'},rows:[{staff:'Penerima uji',year:2026,expenseDate:'2026-09-01',carryForward:0,claimAmount:9000000,paidAmount:0,usageAmount:0,savingId:'allocation-test',project:'Program uji'}],entries:[],bank:{account:'BANK-SOURCE-TEST',closing:20000000},generalSaving:11000000});
 function bindSource(env,source=sourceFixture()){env.FINANCE={async fetch(req){assert.equal(new URL(req.url).pathname,'/finance/api/payroll-source');return Response.json(source);}};return source;}
-async function approve(env){let a=await create(env);a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});return call(env,'/'+a.id+'/approve','director','POST',{version:a.version});}
+async function approve(env){let a=await create(env);a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});return reviewedApprove(env,a);}
 async function proof(env,a){const r=await worker.fetch(new Request(origin+path+'/'+a.id+'/files',{method:'POST',headers:{Cookie:'__Host-yg-session=finance',Origin:origin,'X-Filename':'Transfer.pdf','X-Payroll-Version':String(a.version),'X-File-Purpose':'payment'},body:'%PDF-1.7\nsynthetic transfer proof'}),env);assert.equal(r.status,201,await r.clone().text());return r.json();}
 const payment=(a,amount=2000000)=>({id:crypto.randomUUID(),version:a.version,paid_date:'2026-10-02',source_account:'BANK-SOURCE-TEST',reference:'TEST-TRANSFER-001',notes:'Test only',allocations:[{staff_id:'staff:penerima-uji',amount}],proof_ids:a.files.filter(f=>f.purpose==='payment').map(f=>f.id)});
 
@@ -92,7 +93,7 @@ test('auto-fill uses effective monthly policy and private profile, keeps allocat
 test('payments require approval, Finance, private proof, positive approved allocations; partial and full payments stay audited',async()=>{
  const {env,db}=await setup();bindSource(env);let a=await create(env);
  await call(env,'/'+a.id+'/payments','finance','POST',payment(a),409);
- a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});a=await call(env,'/'+a.id+'/approve','director','POST',{version:a.version});
+ a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});a=await reviewedApprove(env,a);
  await call(env,'/'+a.id+'/payments','director','POST',payment(a),403);
  await call(env,'/'+a.id+'/payments','finance','POST',payment(a),400);
  a=await proof(env,a);let p=payment(a);
@@ -140,8 +141,54 @@ test('Director can create and edit own draft; Finance can review it; other admin
 test('Director may submit and approve own payroll with explicit audit flag; Finance payment permissions unchanged',async()=>{
  const {env,db}=await setup();bindSource(env);let a=await call(env,'','director','POST',sample,201);
  a=await call(env,'/'+a.id+'/submit','director','POST',{version:a.version});assert.equal(a.status,'submitted');assert.equal(a.events.at(-1).snapshot.submitted_by,'mulyadi@yayasangambut.org');
- a=await call(env,'/'+a.id+'/approve','director','POST',{version:a.version});assert.equal(a.status,'approved');assert.equal(a.events.at(-1).snapshot.self_approved,true);assert.equal(a.events.at(-1).actor_email,'mulyadi@yayasangambut.org');
+ a=await reviewedApprove(env,a);assert.equal(a.status,'approved');assert.equal(a.events.at(-1).snapshot.self_approved,true);assert.equal(a.events.at(-1).actor_email,'mulyadi@yayasangambut.org');
  await call(env,'/'+a.id+'/payments','director','POST',payment(a),403);
  a=await proof(env,a);a=await call(env,'/'+a.id+'/payments','finance','POST',payment(a,5400000),201);assert.equal(a.payment_status,'paid');
  assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
+});
+
+async function reviewToken(env,a,openPrint=true){
+ const page=await worker.fetch(new Request(origin+'/finance/payroll/review/'+a.id,{headers:{Cookie:'__Host-yg-session=director'}}),env);
+ assert.equal(page.status,200);const html=await page.text();assert.match(html,/Formulir Permintaan Dana/);assert.match(html,/Rincian pemeriksaan/);
+ const token=html.match(/data-token="([^"]+)"/)[1];
+ if(openPrint){const printed=await worker.fetch(new Request(origin+'/finance/payroll/print/'+a.id+'?review='+token,{headers:{Cookie:'__Host-yg-session=director'}}),env);assert.equal(printed.status,200);}
+ return token;
+}
+async function reviewedApprove(env,a){return call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:await reviewToken(env,a)});}
+test('approval requires Director review and printed version; return and resubmit invalidate evidence',async()=>{
+ const {env,db}=await setup();let a=await create(env);a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version},409);
+ const token=await reviewToken(env,a,false);
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:token},409);
+ a=await call(env,'/'+a.id+'/return','director','POST',{version:a.version,note:'Revise'});
+ a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:token},409);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_notifications').get().n,0);
+ a=await reviewedApprove(env,a);
+ assert.equal(a.notification.status,'pending');assert.ok(a.events.at(-1).snapshot.review_evidence.print_opened_at);
+ const payload=JSON.parse(db.prepare('SELECT payload FROM yg_payroll_notifications').get().payload);
+ assert.deepEqual(payload.recipients,['hisamsetiawan@yayasangambut.org','serena@gec.org.my','rienaprasiddha@yayasangambut.org']);
+ assert.equal(payload.total,5400000);assert.equal(payload.account,undefined);
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:token},409);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_notifications').get().n,1);
+});
+
+test('email queue deduplicates confirmed delivery, validates recipients, and does not modify approval or financial rows',async()=>{
+ const {env,db}=await setup();const a=await approve(env);const before=db.prepare('SELECT * FROM yg_payroll_requests').get();
+ db.exec("CREATE TABLE finance_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT);INSERT INTO finance_settings VALUES('webhook_url','https://script.google.com/macros/s/test/exec'),('webhook_secret','test-secret')");
+ let sends=0;
+ const send=async(url,options)=>{sends++;const payload=JSON.parse(options.body);assert.equal(payload.action,'sendPayrollApproval');assert.equal(payload.account,undefined);return Response.json({ok:true,sent:true,messageId:'test-gmail-id',recipients:payrollRecipients});};
+ await Promise.all([sendPayrollNotifications(env,a.id,send),sendPayrollNotifications(env,a.id,send)]);
+ assert.equal(sends,1);assert.equal(db.prepare('SELECT status FROM yg_payroll_notifications').get().status,'sent');
+ await sendPayrollNotifications(env,a.id,send);assert.equal(sends,1);
+ assert.deepEqual(db.prepare('SELECT * FROM yg_payroll_requests').get(),before);
+ assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
+});
+test('uncertain email response stays pending and cannot falsely claim success',async()=>{
+ const {env,db}=await setup();const a=await approve(env);
+ db.exec("CREATE TABLE finance_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT);INSERT INTO finance_settings VALUES('webhook_url','https://script.google.com/macros/s/test/exec'),('webhook_secret','test-secret')");
+ await sendPayrollNotifications(env,a.id,async()=>Response.json({ok:true,sent:true,messageId:'wrong-recipient',recipients:['other@example.org']}));
+ assert.equal(db.prepare('SELECT status FROM yg_payroll_notifications').get().status,'pending');
+ assert.equal(db.prepare('SELECT status FROM yg_payroll_requests').get().status,'approved');
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_payments').get().n,0);
 });

@@ -7,7 +7,7 @@ Halaman `/finance/payroll` tersedia dari menu Keuangan YG. Finance yang ditunjuk
 1. Finance memilih **Pengajuan baru**. Daftar staf aktif dan nominal bulanan berasal dari kebijakan gaji efektif sistem, setelah pembaruan privat diterapkan. Posisi saving ditampilkan sebagai konteks alokasi, bukan nominal gaji yang diminta.
 2. Profil penerima/rekening dari Excel referensi mengisi informasi transfer. Data terakhir yang disimpan Finance mengungguli profil awal. Staf yang tidak memiliki profil harus dilengkapi Finance. Nominal historis Excel dan gambar tanda tangan tidak diimpor.
 3. Periksa periode, tanggal, pengaju, keperluan, kode anggaran dan rekening. Nomor formulir dibuat otomatis saat menyimpan, atau dapat diisi sesuai penomoran organisasi. Penyesuaian nominal dari kebijakan memerlukan alasan. Simpan draf; lampirkan dokumen pendukung bila perlu.
-4. Ajukan kepada Direktur. Rincian terkunci sampai dikembalikan. Direktur menyetujui atau mengembalikan dengan catatan. Tidak ada email otomatis. Persetujuan belum mengurangi kas.
+4. Ajukan kepada Direktur. Rincian terkunci sampai dikembalikan. Direktur menyetujui atau mengembalikan dengan catatan. Email otomatis dikirim hanya setelah persetujuan, bukan saat pengajuan. Persetujuan belum mengurangi kas.
 5. **Cetak** membuka Formulir Permintaan Dana dengan rincian, total, terbilang dan jejak persetujuan akun. Ctrl+P untuk cetak/PDF. Contoh lima penerima diuji satu halaman A4; catatan panjang atau realisasi pembayaran dapat menambah halaman.
 6. Setelah transfer dilakukan melalui bank, Finance membuka **Realisasi pembayaran**. Isi tanggal dan referensi transfer, nominal per penerima, unggah/pilih bukti, lalu **Simpan pembayaran**. Aplikasi hanya mencatat transfer yang sudah dilakukan. Pembayaran dapat sebagian; tidak dapat melebihi nominal yang disetujui per penerima.
 7. Bila transfer sudah ada dalam register bank, **Muat mutasi bank** dan pilih mutasi yang tepat. Tanggal, rekening, referensi dan jumlah harus sesuai. Pembayaran historis yang tidak dapat dicocokkan ditolak agar tidak dihitung ganda.
@@ -27,3 +27,23 @@ Deployment membandingkan checksum tabel historis keuangan dan agenda sebelum/ses
 ## Panduan dan pengajuan oleh Direktur
 
 Panduan ringkas tersedia pada `/finance/payroll/guide` dari tautan **Panduan gaji**. Direktur dapat memilih **Pengajuan baru**, menyimpan draf, mengirim, dan menyetujui pengajuannya sendiri sesuai izin eksplisit pengguna. Konfirmasi menyebut pengajuan sendiri; snapshot audit approval mencatat `self_approved: true` bersama aktor/waktu/versi. Finance dapat memeriksa dan menyunting draf Direktur, tetapi tetap tidak dapat menyetujui. Direktur hanya menyunting draf miliknya sendiri. Semua rincian terkunci setelah diajukan. Pembayaran dan bukti transfer tetap khusus Finance. **Pratinjau form Finance** menyediakan mode baca saja tanpa membuat pengajuan.
+
+
+## Review wajib dan email persetujuan
+Direktur membuka Review formulir & hasil cetak, membuka hasil cetak versi yang sama,
+dan mencentang pemeriksaan sebelum menyetujui. API memeriksa token, aktor,
+versi dan waktu pembukaan cetak. Pengajuan yang dikembalikan/diajukan ulang
+harus direview ulang. Snapshot audit memuat bukti pemeriksaan.
+Migration 0023 hanya menambahkan tabel review dan outbox; tidak mengubah riwayat.
+
+Outbox dibuat atomik bersama persetujuan baru, tanpa backfill pengajuan lama.
+Worker mencoba pengiriman setelah respons persetujuan dan cron setiap 5 menit.
+Tujuan tetap: Hisam, Serena, Riena. Email hanya berisi nomor formulir, periode,
+total, akun Direktur, waktu persetujuan dan tautan privat (tidak membuka akses baru).
+Integrasi memakai webhook Apps Script yang sudah ada di finance_settings.
+Handler tambahan ada di integrations/PayrollNotifications.gs, dipanggil di doPost
+setelah requireWebhookSecret_ untuk action sendPayrollApproval.
+Apps Script memakai lock, sidik isi dan penanda Gmail untuk mencegah kirim ganda.
+Jika status tidak pasti, hanya cari pesan yang sudah terkirim; jangan kirim ulang
+secara buta. Status sent memerlukan message ID dan verifikasi tiga penerima.
+Gagal email tidak membatalkan persetujuan dan tidak membuat pembayaran.

@@ -1,3 +1,5 @@
+import {payrollReviewPage} from './payroll-review.mjs';
+import {payrollNotificationStatement,payrollNotificationStatus,sendPayrollNotifications,payrollEmailService} from './payroll-notifications.mjs';
 import {payrollGuide} from './payroll-guide.mjs';
 import {canonicalStaffName,displayStaffName} from './payroll-identity.mjs';
 import {fail,now} from './core.mjs';
@@ -31,7 +33,7 @@ async function body(req,limit=150000){const reader=req.body?.getReader();if(!rea
 async function input(req){try{const value=JSON.parse(new TextDecoder().decode(await body(req)));if(!value||typeof value!=='object'||Array.isArray(value))fail(400,'Data tidak valid.');return value;}catch(e){if(e.status)throw e;fail(400,'Data tidak valid.');}}
 const serialize=r=>({...r,items:JSON.parse(r.items),form_meta:JSON.parse(r.form_meta||'{}')});
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_payroll_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-async function detail(env,id){const row=await read(env,id),payments=(await q(env,'SELECT * FROM yg_payroll_payments WHERE request_id=? ORDER BY paid_date,created_at',id).all()).results.map(p=>({...p,allocations:JSON.parse(p.allocations),proof_ids:JSON.parse(p.proof_ids)})),paid=payments.reduce((s,p)=>s+p.amount,0);return {...serialize(row),payments,paid,remaining:row.total-paid,payment_status:paid===row.total?'paid':paid?'partial':'unpaid',files:(await q(env,'SELECT id,filename,mime,size,purpose,actor_email,created_at FROM yg_payroll_files WHERE request_id=? ORDER BY created_at,id',id).all()).results,events:(await q(env,'SELECT id,actor_email,action,version,created_at,snapshot FROM yg_payroll_events WHERE request_id=? ORDER BY version',id).all()).results.map(e=>({...e,snapshot:JSON.parse(e.snapshot)}))};}
+async function detail(env,id){const notification=await payrollNotificationStatus(env,id);const row=await read(env,id),payments=(await q(env,'SELECT * FROM yg_payroll_payments WHERE request_id=? ORDER BY paid_date,created_at',id).all()).results.map(p=>({...p,allocations:JSON.parse(p.allocations),proof_ids:JSON.parse(p.proof_ids)})),paid=payments.reduce((s,p)=>s+p.amount,0);return {...serialize(row),notification,payments,paid,remaining:row.total-paid,payment_status:paid===row.total?'paid':paid?'partial':'unpaid',files:(await q(env,'SELECT id,filename,mime,size,purpose,actor_email,created_at FROM yg_payroll_files WHERE request_id=? ORDER BY created_at,id',id).all()).results,events:(await q(env,'SELECT id,actor_email,action,version,created_at,snapshot FROM yg_payroll_events WHERE request_id=? ORDER BY version',id).all()).results.map(e=>({...e,snapshot:JSON.parse(e.snapshot)}))};}
 async function formMeta(env,u,input,data,id,old={}){
  if(!input)return old;
  const meta={number:text(input.number||old.number||'GJ-'+id.slice(0,8).toUpperCase()+'/YG-Bnd/'+data.period.slice(5)+'/'+data.period.slice(0,4),100,true),date:validDate(input.date),applicant:text(input.applicant,160,true),title:text(input.title,160,true),purpose:text(input.purpose,500,true),place:text(input.place||'',160),adjustment_note:text(input.adjustment_note||'',2000)};
@@ -44,7 +46,7 @@ function version(row,v){if(!Number.isInteger(v)||row.version!==v)fail(409,'Penga
 function eventStatement(env,id,event,u,action,snapshot){return q(env,'INSERT INTO yg_payroll_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_payroll_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),id,event);}
 async function mutate(env,statements){try{const result=await env.DB.batch(statements);if(!result[0].meta.changes)fail(409,'Pengajuan telah berubah. Muat ulang sebelum melanjutkan.');}catch(e){if(String(e.message).includes('UNIQUE constraint failed: yg_payroll_requests.period'))fail(409,'Sudah ada pengajuan aktif atau disetujui untuk bulan ini.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Nomor formulir, referensi pembayaran, atau mutasi sudah digunakan.');throw e;}}
 
-export async function payrollRoute(req,env,u){
+export async function payrollRoute(req,env,u,ctx){
  if(!payrollAccess(u,env))fail(403,'Pengajuan gaji hanya untuk staf Finance yang ditunjuk dan Direktur.');
  const url=new URL(req.url),path=url.pathname;
  if(req.method!=='GET'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
@@ -54,6 +56,7 @@ export async function payrollRoute(req,env,u){
  }
  if(path==='/finance/payroll/guide'&&req.method==='GET')return new Response(payrollGuide(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  const prefix='/finance/payroll/api';
+ if(path===prefix+'/email-service'&&req.method==='GET')return Response.json(await payrollEmailService(env));
  if(path==='/finance/payroll/report'&&req.method==='GET')return new Response(payrollReportPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix+'/defaults'&&req.method==='GET')return Response.json(await payrollDefaults(env,u,url.searchParams.get('period')));
  if(path===prefix+'/report'&&req.method==='GET')return Response.json(await payrollReport(env,u));
@@ -65,7 +68,26 @@ export async function payrollRoute(req,env,u){
   const period=url.searchParams.get('period')||today().slice(0,7),data=await payrollDefaults(env,u,period);
   return new Response(payrollPrint({...data,id:'preview',preview:true,status:'preview',period,total:data.items.reduce((sum,i)=>sum+i.net,0),created_at:today(),creator_email:'',version:0,form_meta:{...data.form_meta,number:'PRATINJAU — belum diberi nomor'},payments:[]}),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  }
- const print=path.match(/^\/finance\/payroll\/print\/([a-f0-9-]{36})$/);if(print&&req.method==='GET')return new Response(payrollPrint(await detail(env,print[1])),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+ const reviewPage=path.match(/^\/finance\/payroll\/review\/([a-f0-9-]{36})$/);
+ if(reviewPage&&req.method==='GET'){
+  const r=await detail(env,reviewPage[1]);let review=null;
+  if(financeOwner(u)&&r.status==='submitted'){
+   await q(env,'INSERT OR IGNORE INTO yg_payroll_reviews(token,request_id,actor_email,version,opened_at) VALUES(?,?,?,?,?)',uuid(),r.id,u.email,r.version,now()).run();
+   review=await q(env,'SELECT * FROM yg_payroll_reviews WHERE request_id=? AND actor_email=? AND version=?',r.id,u.email,r.version).first();
+  }
+  return new Response(payrollReviewPage(r,review),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+ }
+ const print=path.match(/^\/finance\/payroll\/print\/([a-f0-9-]{36})$/);
+ if(print&&req.method==='GET'){
+  const r=await detail(env,print[1]),token=url.searchParams.get('review');
+  if(token){
+   if(!financeOwner(u))fail(403,'Hanya Direktur yang dapat mencatat pemeriksaan.');
+   const evidence=await q(env,'SELECT * FROM yg_payroll_reviews WHERE token=? AND request_id=? AND actor_email=? AND version=?',token,r.id,u.email,r.version).first();
+   if(!evidence||r.status!=='submitted')fail(409,'Formulir berubah. Buka ulang review versi terbaru.');
+   await q(env,'UPDATE yg_payroll_reviews SET print_opened_at=? WHERE token=?',now(),token).run();
+  }
+  return new Response(payrollPrint(r),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+ }
  if(path===prefix&&req.method==='GET')return Response.json({user:{name:u.name,email:u.email,director:financeOwner(u),operator:payrollOperator(u,env)},requests:(await q(env,'SELECT id,period,status,total,creator_email,version,created_at,updated_at FROM yg_payroll_requests ORDER BY period DESC,created_at DESC LIMIT 500').all()).results});
  if(path===prefix&&req.method==='POST'){
   if(!payrollAccess(u,env))fail(403,'Pengajuan dibuat oleh Finance atau Direktur.');
@@ -73,10 +95,16 @@ export async function payrollRoute(req,env,u){
   await mutate(env,[q(env,"INSERT INTO yg_payroll_requests(id,period,status,creator,creator_email,items,total,notes,last_event,created_at,updated_at,form_meta) VALUES(?,?,'draft',?,?,?,?,?,?,?,?,?)",id,data.period,u.id,u.email,JSON.stringify(data.items),data.total,data.notes,event,at,at,JSON.stringify(meta)),eventStatement(env,id,event,u,'created',{...data,form_meta:meta})]);
   return Response.json(await detail(env,id),{status:201});
  }
- const match=path.match(/^\/finance\/payroll\/api\/([a-f0-9-]{36})(?:\/(submit|approve|return|files|payments)(?:\/([a-f0-9-]{36}))?)?$/);
+ const match=path.match(/^\/finance\/payroll\/api\/([a-f0-9-]{36})(?:\/(submit|approve|return|files|payments|notify)(?:\/([a-f0-9-]{36}))?)?$/);
  if(!match)fail(404,'Halaman pengajuan tidak ditemukan.');
  const [,id,action,fileId]=match,row=await read(env,id);
  if(!action&&req.method==='GET')return Response.json(await detail(env,id));
+ if(action==='notify'&&!fileId&&req.method==='POST'){
+  if(row.status!=='approved')fail(409,'Email hanya untuk pengajuan yang telah disetujui.');
+  await q(env,"UPDATE yg_payroll_notifications SET attempts=0,next_attempt_at=? WHERE request_id=? AND status!='sent' AND (lease_until IS NULL OR lease_until<?)",now(),id,now()).run();
+  await sendPayrollNotifications(env,id);
+  return Response.json(await detail(env,id));
+ }
  if(action==='payments'&&!fileId&&req.method==='POST'){
   if(!payrollOperator(u,env))fail(403,'Pembayaran dicatat oleh Finance.');if(row.status!=='approved')fail(409,'Pengajuan harus disetujui terlebih dahulu.');
   const data=await input(req),pid=text(data.id,36,true);if(!/^[a-f0-9-]{36}$/.test(pid))fail(400,'ID pembayaran tidak valid.');
@@ -129,12 +157,20 @@ export async function payrollRoute(req,env,u){
   }else{
    if(action==='submit'){editable(u,env,row);payrollInput(serialize(row));}
    else {if(!financeOwner(u))fail(403,'Hanya Direktur yang dapat menyetujui atau mengembalikan.');if(row.status!=='submitted')fail(409,'Hanya pengajuan yang sudah diajukan dapat ditinjau.');}
+   let evidence=null;
+   if(action==='approve'){
+    if(data.review_confirmed!==true||typeof data.review_token!=='string')fail(409,'Buka Review formulir dan hasil cetak, lalu konfirmasikan pemeriksaan sebelum menyetujui.');
+    evidence=await q(env,'SELECT * FROM yg_payroll_reviews WHERE token=? AND request_id=? AND actor_email=? AND version=?',data.review_token,id,u.email,row.version).first();
+    if(!evidence?.print_opened_at)fail(409,'Buka hasil cetak dari halaman review terlebih dahulu. Jika formulir berubah, review ulang versi terbaru.');
+   }
    const note=text(data.note||'',4000,action==='return'),status={submit:'submitted',approve:'approved',return:'returned'}[action];kind=status;
    const files=(await q(env,'SELECT id,filename,size FROM yg_payroll_files WHERE request_id=? ORDER BY id',id).all()).results;
-   snapshot={...serialize(row),status,review_note:note,files,self_approved:action==='approve'&&row.creator===u.id,submitted_by:action==='submit'?u.email:null};
+   snapshot={...serialize(row),status,review_note:note,files,review_evidence:evidence,self_approved:action==='approve'&&row.creator===u.id,submitted_by:action==='submit'?u.email:null};
    statement=q(env,'UPDATE yg_payroll_requests SET status=?,review_note=?,submitted_at=?,reviewed_at=?,reviewer_email=?,version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',status,note,action==='submit'?at:row.submitted_at,action==='submit'?null:at,action==='submit'?null:u.email,event,at,id,row.version);
   }
-  await mutate(env,[statement,eventStatement(env,id,event,u,kind,snapshot)]);return Response.json(await detail(env,id));
+  await mutate(env,[statement,eventStatement(env,id,event,u,kind,snapshot),...(action==='approve'?[payrollNotificationStatement(env,row,event,at)]:[])]);
+  if(action==='approve'&&ctx)ctx.waitUntil(sendPayrollNotifications(env,id));
+  return Response.json(await detail(env,id));
  }
  fail(405,'Metode tidak didukung.');
 }
