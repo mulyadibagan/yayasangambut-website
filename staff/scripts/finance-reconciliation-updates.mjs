@@ -83,18 +83,22 @@ export async function applyPrivateReconciliationUpdates(root,config){
   if(!e||e.reference!==link.reference||e.date!==link.date||!link.record?.id||!['UM','PJUM','GAJI','DONASI'].includes(link.record.type)||link.record.bankStatus!=='Cocok'||cents(link.record.bankAmount-base)!==cents(link.record.type==='UM'||link.record.type==='GAJI'?e.debit:e.credit))fail();
  }
  const recordWrites={};
+ const linkOnlyIds=[];
  for(const year of [2025,2026]){
   const file=`app/gmail-${year}-records.ts`;
   let records=await read(file);
   const marker='\n// Private verified record links.\n';
   if(records.includes(marker))records=records.slice(0,records.indexOf(marker));
   const links=config.recordLinks.filter(x=>(x.year||2026)===year).map(x=>x.record);
+  if(year===2026)for(const record of links)if(!records.includes(JSON.stringify(record.id)))linkOnlyIds.push(record.id);
   records+=marker+'for(const record of '+JSON.stringify(links)+` as ${year===2025?'Finance2025Record':'GmailFinanceRecord'}[]){const old=gmail${year}Records.find(r=>r.id===record.id);if(old)Object.assign(old,record);else gmail${year}Records.push(record);}`+'\n';
   recordWrites[file]=records;
  }
  let api=await read('app/api/salary-savings/route.ts');
  api=replaceOnce(api,'const connected=(dashboard:SalarySavingsDashboard)=>','bankConfirmedRows.push(...(snapshot as SalarySavingsDashboard).rows.filter(row=>'+JSON.stringify(config.staffAllocations.flatMap(u=>u.rows.map(r=>r.savingId)))+'.includes(row.savingId)));\nconst connected=(dashboard:SalarySavingsDashboard)=>');
  let requests=await read('app/api/requests/route.ts');
+ // Metadata for live records must not create requests in an older database snapshot.
+ requests=replaceOnce(requests,'const seedAndRepairStatements = [\n    ...systemRecords.map((record) =>','const seedAndRepairStatements = [\n    ...systemRecords.filter(record=>!'+JSON.stringify(linkOnlyIds)+'.includes(record.id)).map((record) =>');
  requests=replaceOnce(requests,'ORDER BY created_at DESC LIMIT 100`','ORDER BY created_at DESC`');
  let dashboard=await read('app/finance-archive-dashboard.tsx');
  dashboard=replaceOnce(dashboard,'window.setTimeout(() => controller.abort(), 5_000)','window.setTimeout(() => controller.abort(), 30_000)');
