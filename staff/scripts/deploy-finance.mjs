@@ -6,6 +6,7 @@ import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
 import {applyPrivateBankUpdates} from './finance-bank-updates.mjs';
 import {applyPrivateSourceUpdates} from './finance-private-source-updates.mjs';
+import {applyPrivateReconciliationUpdates} from './finance-reconciliation-updates.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
 if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
@@ -57,6 +58,11 @@ const sourceUpdates=await query('SELECT setting_value FROM finance_settings WHER
 if(sourceUpdates[0].results.length){
  let patches;try{patches=JSON.parse(sourceUpdates[0].results[0].setting_value);}catch{throw Error('Invalid private Finance source configuration.');}
  await applyPrivateSourceUpdates(root,patches);
+}
+const reconciliationUpdates=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['finance_reconciliation_v1']);
+if(reconciliationUpdates[0].results.length){
+ let config;try{config=JSON.parse(reconciliationUpdates[0].results[0].setting_value);}catch{throw Error('Invalid private reconciliation configuration.');}
+ await applyPrivateReconciliationUpdates(root,config);
 }
 run('npm',['run','build']);
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
