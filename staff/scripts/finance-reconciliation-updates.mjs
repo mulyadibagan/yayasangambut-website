@@ -83,18 +83,22 @@ export async function applyPrivateReconciliationUpdates(root,config){
   if(!e||e.reference!==link.reference||e.date!==link.date||!link.record?.id||!['UM','PJUM','GAJI','DONASI'].includes(link.record.type)||link.record.bankStatus!=='Cocok'||cents(link.record.bankAmount-base)!==cents(link.record.type==='UM'||link.record.type==='GAJI'?e.debit:e.credit))fail();
  }
  const recordWrites={};
+ const linkOnlyIds=[];
  for(const year of [2025,2026]){
   const file=`app/gmail-${year}-records.ts`;
   let records=await read(file);
   const marker='\n// Private verified record links.\n';
   if(records.includes(marker))records=records.slice(0,records.indexOf(marker));
   const links=config.recordLinks.filter(x=>(x.year||2026)===year).map(x=>x.record);
+  if(year===2026)for(const record of links)if(!records.includes(JSON.stringify(record.id)))linkOnlyIds.push(record.id);
   records+=marker+'for(const record of '+JSON.stringify(links)+` as ${year===2025?'Finance2025Record':'GmailFinanceRecord'}[]){const old=gmail${year}Records.find(r=>r.id===record.id);if(old)Object.assign(old,record);else gmail${year}Records.push(record);}`+'\n';
   recordWrites[file]=records;
  }
  let api=await read('app/api/salary-savings/route.ts');
  api=replaceOnce(api,'const connected=(dashboard:SalarySavingsDashboard)=>','bankConfirmedRows.push(...(snapshot as SalarySavingsDashboard).rows.filter(row=>'+JSON.stringify(config.staffAllocations.flatMap(u=>u.rows.map(r=>r.savingId)))+'.includes(row.savingId)));\nconst connected=(dashboard:SalarySavingsDashboard)=>');
  let requests=await read('app/api/requests/route.ts');
+ // Metadata for live records must not create requests in an older database snapshot.
+ requests=replaceOnce(requests,'const seedAndRepairStatements = [\n    ...systemRecords.map((record) =>','const seedAndRepairStatements = [\n    ...systemRecords.filter(record=>!'+JSON.stringify(linkOnlyIds)+'.includes(record.id)).map((record) =>');
  requests=replaceOnce(requests,'ORDER BY created_at DESC LIMIT 100`','ORDER BY created_at DESC`');
  let dashboard=await read('app/finance-archive-dashboard.tsx');
  dashboard=replaceOnce(dashboard,'window.setTimeout(() => controller.abort(), 5_000)','window.setTimeout(() => controller.abort(), 30_000)');
@@ -104,6 +108,13 @@ export async function applyPrivateReconciliationUpdates(root,config){
  payroll=replaceOnce(payroll,"if(!buckets.every(bucket=>['STAFF','STAFF_PENDING'].includes(bucket)))return false;","if(!buckets.every(bucket=>['STAFF','STAFF_PENDING','YG'].includes(bucket)) || (buckets.includes('YG') && !salaryRecordForMutation(mutation,records)))return false;");
  const writes={'app/closing-august-2026.json':JSON.stringify(result.closing,null,2)+'\n','app/salary-savings-snapshot.json':JSON.stringify(result.salary,null,2)+'\n',...recordWrites,'app/api/salary-savings/route.ts':api,'app/api/requests/route.ts':requests,'app/finance-archive-dashboard.tsx':dashboard,'app/um-monitor-panel.tsx':monitor};
  writes['app/payroll-bank-links.ts']=payroll;
+ let summary=await read('app/closing-august-panel.tsx');
+ summary=replaceOnce(summary,'Saldo positif · alokasi September belum lengkap','Saldo positif · {linked.pendingStaffCash ? "alokasi belum lengkap" : "alokasi sudah direkonsiliasi"}');
+ summary=replaceOnce(summary,'· umum + gaji + alokasi belum lengkap','· umum + gaji{linked.pendingStaffCash ? " + alokasi belum lengkap" : ""}');
+ summary=summary.replace(/ygAdvance:[\d_]+/, 'ygAdvance:a.staff.reduce((sum,s)=>sum+Math.max(0,-s.position),0)');
+ summary=summary.replace(/Talangan baru bersih 2026 [^<]+?Total piutang aktif/, 'Talangan baru bersih mengikuti pembayaran dan pemulihan hak staf yang sudah dialokasikan, termasuk gaji dan donasi September. Total piutang aktif');
+ writes['app/closing-august-panel.tsx']=summary;
+ writes['app/fund-balance-details.tsx']=replaceOnce(await read('app/fund-balance-details.tsx'),'Total saldo positif sebelum alokasi yang belum lengkap','Total saldo positif staf');
  for(const [file,value] of Object.entries(writes))await writeFile(resolve(root,file),value);
  console.log('Private reconciliation verified; bank entries preserved and staff reserves reconcile.');
 }
