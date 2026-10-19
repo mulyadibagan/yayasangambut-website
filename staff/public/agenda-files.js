@@ -1,13 +1,17 @@
 export function agendaFilesUI({form,user,api,esc}){
- const section=document.createElement('section');section.setAttribute('aria-label','Lampiran agenda');
+ const section=document.createElement('section');section.setAttribute('aria-label','Lampiran agenda');section.className='agenda-attachments';
  section.innerHTML='<h3>Lampiran undangan / TOR</h3><p class="muted">PDF, JPEG, PNG, atau WebP, maksimal 5 MB per berkas.</p><p data-drive-status class="muted"></p><p data-drive-consent class="muted" hidden>Google akan meminta izin pengelolaan Drive. Aplikasi menggunakan folder Lampiran Agenda YG pada Drive yang ditetapkan. Akses dokumen mengikuti keanggotaan Drive tersebut.</p><button data-drive-connect type="button" class="secondary" hidden>Hubungkan Google Drive</button> <a data-drive-folder target="_blank" rel="noopener noreferrer" hidden>Buka folder arsip ↗</a><div data-files-list></div><button data-files-migrate type="button" class="secondary" hidden>Salin lampiran lama ke Google Drive</button><label data-files-upload>Tambah lampiran<input type="file" accept="application/pdf,image/jpeg,image/png,image/webp,.pdf,.jpg,.jpeg,.png,.webp" multiple></label><p data-files-status role="status"></p>';
+ const heading=section.querySelector('h3');heading.textContent='Lampiran kegiatan';
+ const settings=document.createElement('details');settings.className='attachment-settings';settings.innerHTML='<summary>Pengaturan Google Drive</summary>';section.querySelector('[data-drive-consent]').before(settings);settings.append(section.querySelector('[data-drive-consent]'),section.querySelector('[data-drive-connect]'));
+ const uploadLabel=section.querySelector('[data-files-upload]');uploadLabel.firstChild.textContent='＋ Tambah lampiran';uploadLabel.className='attachment-upload';uploadLabel.querySelector('input').setAttribute('aria-label','Tambah lampiran undangan atau TOR');
  form.elements.results.closest('label').before(section);
  const $=s=>section.querySelector(s),list=$('[data-files-list]'),input=$('input'),upload=$('[data-files-upload]'),status=$('[data-files-status]'),connect=$('[data-drive-connect]'),migrate=$('[data-files-migrate]');
  let agenda=null,generation=0,busy=false,drive=null,files=[];
  const canManage=()=>agenda&&!agenda.deleted&&(user.taskDirector||agenda.creator===user.id);
  const controls=()=>{input.disabled=busy||!!drive?.enabled&&!drive.connected;connect.disabled=busy;migrate.disabled=busy;};
  function connection(d){drive=d;const enabled=!!d?.enabled;connect.hidden=!enabled||!user.taskDirector;connect.textContent=d?.connected?'Hubungkan ulang Google Drive':'Hubungkan Google Drive';$('[data-drive-consent]').hidden=!enabled||!user.taskDirector;
-  $('[data-drive-status]').textContent=enabled?(d.connected?'Penyimpanan: Google Drive YG. Pratinjau dibuka di Drive; gunakan akun YG yang memiliki akses.':'Google Drive belum terhubung. Direktur perlu menghubungkan arsip sebelum unggahan baru. Lampiran lama tetap dapat diunduh.'):'Penyimpanan privat website.';
+  settings.hidden=!enabled||!user.taskDirector;settings.open=!d?.connected;section.dataset.connected=String(!!d?.connected);
+  $('[data-drive-status]').textContent=enabled?(d.connected?'● Google Drive terhubung':'Google Drive belum terhubung. Direktur perlu menghubungkan arsip sebelum unggahan baru.'):'Penyimpanan privat website.';
   const link=$('[data-drive-folder]');link.hidden=!d?.connected;if(d?.folderUrl&&/^https:\/\/drive\.google\.com\/drive\/folders\/[A-Za-z0-9_-]+$/.test(d.folderUrl))link.href=d.folderUrl;else link.hidden=true;controls();
  }
  async function refresh(id,token){
