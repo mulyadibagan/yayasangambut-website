@@ -27,8 +27,12 @@ export function advanceBreakdown(ledger,allocations=[]){
  // Reconstruct only the verified reclassifications; existing salary journal
  // recovery transfers above must not be replayed from every salary row.
  const positions=new Map(ledger.staff.map(s=>[s.name,cents(s.position)]));
+ const staffEntries=new Set();
+ for(const update of allocations){if(staffEntries.has(update.index))throw Error('Duplicate staff recovery entry');staffEntries.add(update.index);}
  for(const update of [...allocations].reverse())for(const r of [...update.rows].reverse())positions.set(r.staff,positions.get(r.staff)-cents(r.claimAmount)+cents(r.paidAmount));
  for(const update of allocations){
+  const entry=ledger.entries.find(e=>e.index===update.index);
+  if(!entry||entry.reference!==update.reference||entry.date!==update.date||cents(entry.credit)!==cents(update.credit)||cents(entry.debit)!==cents(update.debit))throw Error('Staff recovery needs a verified bank entry');
   let attributed=0;
   for(const r of update.rows){
    const before=positions.get(r.staff),after=before+cents(r.claimAmount)-cents(r.paidAmount);
@@ -36,8 +40,9 @@ export function advanceBreakdown(ledger,allocations=[]){
    positions.set(r.staff,after);
    if(recovered){const row=staff.find(s=>s.id===r.staff);row.recovered+=recovered;row.evidence.push(`${update.date}: ${update.note}`);attributed+=recovered;}
   }
-  const expected=update.allocations.filter(a=>a.bucket==='YG'&&a.amount>0).reduce((sum,a)=>sum+cents(a.amount),0);
-  if(attributed!==expected)throw Error('Advance recovery does not match verified general allocation');
+  const expected=entry.allocations.filter(a=>a.bucket==='YG').reduce((sum,a)=>sum+cents(a.amount),0);
+  // A multi-staff payout can issue new advances; only credit receipts recover.
+  if(update.credit>0&&attributed!==expected)throw Error('Advance recovery does not match verified general allocation');
  }
  const rows=[...projects,...staff].map(r=>({...r,used:(r.outstanding+r.recovered)/100,recovered:r.recovered/100,outstanding:r.outstanding/100}));
  const totals=rows.reduce((t,r)=>({used:t.used+cents(r.used),recovered:t.recovered+cents(r.recovered),outstanding:t.outstanding+cents(r.outstanding)}),{used:0,recovered:0,outstanding:0});

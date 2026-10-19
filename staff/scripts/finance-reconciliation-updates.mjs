@@ -16,38 +16,43 @@ export function reconcileStaffAllocations(closing,salary,updates){
   if(seen.has(u.index))fail();seen.add(u.index);
   const e=c.entries.find(e=>e.index===u.index);
   if(!e||e.reference!==u.reference||e.date!==u.date||cents(e.debit)!==cents(u.debit)||cents(e.credit)!==cents(u.credit)||!Array.isArray(u.rows)||!u.rows.length)fail();
-  if(u.allocations.some(a=>!['STAFF','YG'].includes(a.bucket)||!Number.isFinite(a.amount))||sum(u.allocations,'amount')!==e.credit-e.debit)fail();
+  if(u.allocations!==undefined&&(!Array.isArray(u.allocations)||new Set(u.allocations.map(a=>a.bucket)).size!==u.allocations.length||u.allocations.some(a=>!['STAFF','YG'].includes(a.bucket)||!Number.isFinite(a.amount))||cents(sum(u.allocations,'amount'))!==cents(e.credit)-cents(e.debit)))fail();
   if(sum(u.rows,'paidAmount')!==e.debit||sum(u.rows,'claimAmount')!==e.credit)fail();
   const ids=new Set();
   for(const r of u.rows){
    if(!r.savingId||ids.has(r.savingId)||!c.staff.some(x=>x.name===r.staff)||r.currency!=='IDR'||r.status!=='AVAILABLE'||!r.sourceDescription||!r.sourceUrl||![r.claimAmount,r.paidAmount,r.usageAmount,r.carryForward].every(n=>Number.isFinite(n)&&n>=0)||r.usageAmount||r.carryForward)fail();
    ids.add(r.savingId);
-   if(!['PAYMENT_CONFIRMED','DONATION_CONFIRMED'].includes(r.sourceType))fail();
+   if(!['PAYMENT_CONFIRMED','DONATION_CONFIRMED','SALARY_CONFIRMED'].includes(r.sourceType))fail();
   }
   const existing=u.rows.map(r=>s.rows.find(x=>x.savingId===r.savingId));
-  if(same(e.allocations,u.allocations)){
+  if((u.allocations===undefined&&!e.allocations.some(a=>a.bucket==='STAFF_PENDING'))||same(e.allocations,u.allocations)){
    if(existing.some((r,i)=>!sameRow(r,u.rows[i])))fail();
    continue;
   }
   if(!same(e.allocations,[{bucket:'STAFF_PENDING',amount:e.credit-e.debit}])||existing.some(Boolean))fail();
   for(const r of u.rows){
-   if(s.rows.some(x=>x.staff===r.staff&&x.expenseDate===r.expenseDate&&x.sourceType===r.sourceType&&cents(x.claimAmount)===cents(r.claimAmount)&&cents(x.paidAmount)===cents(r.paidAmount)))fail();
+   if(s.rows.some(x=>x.staff===r.staff&&x.expenseDate===r.expenseDate&&cents(x.claimAmount)===cents(r.claimAmount)&&cents(x.paidAmount)===cents(r.paidAmount)))fail();
   }
   const beforeReserve=sum(c.staff,'cash');
   for(const r of u.rows){
    const staff=c.staff.find(x=>x.name===r.staff);
-   staff.claim+=r.claimAmount;staff.paid+=r.paidAmount;
-   staff.position=staff.carry+staff.claim-staff.paid-staff.usage;
+   staff.claim=(cents(staff.claim)+cents(r.claimAmount))/100;staff.paid=(cents(staff.paid)+cents(r.paidAmount))/100;
+   staff.position=(cents(staff.carry)+cents(staff.claim)-cents(staff.paid)-cents(staff.usage))/100;
    staff.net=staff.position;staff.cash=Math.max(0,staff.position);
    staff.newAdvance=Math.max(0,-staff.position-(staff.oldAdvance||0));
    s.rows.push(r);
   }
-  const reserveDelta=sum(c.staff,'cash')-beforeReserve;
-  if(cents(reserveDelta)!==cents(sum(u.allocations.filter(a=>a.bucket==='STAFF'),'amount')))fail();
-  c.staffCash+=reserveDelta;
-  c.ygCash+=sum(u.allocations.filter(a=>a.bucket==='YG'),'amount');
-  c.pendingStaffCash-=e.credit-e.debit;
-  e.allocations=u.allocations;e.allocationNote=u.note;
+  const reserveDelta=cents(sum(c.staff,'cash'))-cents(beforeReserve);
+  // The bank receipt already exists. Restore the negative staff position first;
+  // only the excess becomes staff cash. Never append a second bank/transfer row.
+  const generalDelta=cents(e.credit)-cents(e.debit)-reserveDelta;
+  const allocations=u.allocations??[{bucket:'STAFF',amount:reserveDelta/100},{bucket:'YG',amount:generalDelta/100}];
+  if(reserveDelta!==cents(sum(allocations.filter(a=>a.bucket==='STAFF'),'amount'))||generalDelta!==cents(sum(allocations.filter(a=>a.bucket==='YG'),'amount')))fail();
+  c.staffCash=(cents(c.staffCash)+reserveDelta)/100;
+  c.ygCash=(cents(c.ygCash)+generalDelta)/100;
+  c.pendingStaffCash=(cents(c.pendingStaffCash)-cents(e.credit)+cents(e.debit))/100;
+  e.bankAllocations??=structuredClone(e.allocations);
+  e.allocations=allocations;e.allocationNote=u.note;
  }
  c.calculated=(cents(c.staffCash)+cents(c.ygCash)+cents(c.projectCash)+cents(c.pendingStaffCash))/100;
  c.difference=(cents(c.bankClosing)-cents(c.calculated))/100;
