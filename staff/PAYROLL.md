@@ -19,6 +19,6 @@ Migrasi 0022 menambahkan metadata formulir, kategori berkas, dan register `yg_pa
 
 Berkas pendukung/bukti disimpan privat di R2 dengan awalan `payroll-private/`; akses hanya melalui sesi Finance/Direktur. Maksimal 30 berkas per pengajuan, masing-masing 5 MB, PDF/JPEG/PNG. Penyimpanan ini terpisah dari Drive agenda.
 
-Profil referensi disimpan dengan AES-256-GCM pada `imports/payroll-profiles.enc`, dengan izin pengguna. Kunci `PAYROLL_PROFILE_KEY` berada di GitHub Secrets dan hanya digunakan pada runner deployment yang dilindungi. Hasil dekripsi masuk modul server Worker Finance privat, bukan aset publik. Nominal kebijakan tetap berasal dari sistem.
+Profil referensi disimpan dengan AES-256-GCM pada `imports/payroll-profiles-v2.enc`, dengan izin pengguna. Kunci `PAYROLL_PROFILE_KEY_V2` berada di GitHub Secrets dan hanya digunakan pada runner deployment yang dilindungi. Hasil dekripsi masuk modul server Worker Finance privat, bukan aset publik. Nominal kebijakan tetap berasal dari sistem.
 
 Deployment membandingkan checksum tabel historis keuangan dan agenda sebelum/sesudah migrasi. Pengujian memakai data sintetis: hak akses, revisi/persetujuan, cetak, pembayaran sebagian/lunas, bukti wajib, batas nominal, duplikasi, retry, serta pencocokan ulang saat sumber bank diperbarui. Tidak membuat pengajuan, persetujuan atau transfer uji di produksi.

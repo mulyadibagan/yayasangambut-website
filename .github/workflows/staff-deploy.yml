@@ -46,7 +46,7 @@ jobs:
       - name: Build and migrate private YG finance
         env:
           PRIVATE_FINANCE_ARCHIVE_KEY: ${{ secrets.PRIVATE_FINANCE_ARCHIVE_KEY }}
-          PAYROLL_PROFILE_KEY: ${{ secrets.PAYROLL_PROFILE_KEY }}
+          PAYROLL_PROFILE_KEY_V2: ${{ secrets.PAYROLL_PROFILE_KEY_V2 }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STAFF_D1_DATABASE_ID: ${{ vars.STAFF_D1_DATABASE_ID }}

@@ -26,7 +26,7 @@ export function extractSalaryPolicy(source){
  return value;
 }
 export async function applyPayrollBridge(root,referenceProfiles){
- const profiles=referenceProfiles||decryptProfiles(await readFile(new URL('../imports/payroll-profiles.enc',import.meta.url)),process.env.PAYROLL_PROFILE_KEY);
+ const profiles=referenceProfiles||decryptProfiles(await readFile(new URL('../imports/payroll-profiles-v2.enc',import.meta.url)),process.env.PAYROLL_PROFILE_KEY_V2);
  await writeFile(resolve(root,'app/payroll-profiles.json'),JSON.stringify(profiles),{mode:0o600});
  const salary=await readFile(resolve(root,'app/salary-balance-enhancer.tsx'),'utf8');
  await writeFile(resolve(root,'app/payroll-policy.json'),JSON.stringify(extractSalaryPolicy(salary)));
