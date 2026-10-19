@@ -9,7 +9,7 @@ const origin='https://staff.yayasangambut.org',path='/finance/payroll/api';
 const sample={period:'2026-10',notes:'Contoh pengujian, bukan gaji nyata.',items:[{name:'Penerima uji',program:'Program uji',bank:'Bank uji',account:'001234',base:5000000,allowance:500000,deduction:100000}]};
 async function setup(){
  const db=new DatabaseSync(':memory:');
- for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',PAYROLL_FINANCE_EMAIL:'rienaprasiddha@yayasangambut.org'};
  for(const [id,email,role] of [['finance',env.PAYROLL_FINANCE_EMAIL,'staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-19','2026-10-19');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+60000);}
@@ -72,4 +72,47 @@ test('private attachments bump version, require Finance and freeze after submiss
 test('server computes totals, validates rupiah integers and rejects duplicates and invalid periods',()=>{
  assert.equal(payrollInput({...sample,total:1}).total,5400000);
  for(const body of [{...sample,period:'2026-13'},{...sample,items:[]},{...sample,items:[sample.items[0],sample.items[0]]},...[-1,1.5,Infinity,'5000',10000000001].map(base=>({...sample,items:[{...sample.items[0],base}]})),{...sample,items:[{...sample.items[0],deduction:9000000}]}])assert.throws(()=>payrollInput(body));
+});
+
+const sourceFixture=()=>({asOf:'2026-10-01',mode:'snapshot',policy:{'Penerima uji':{active:true,monthlySalary:5400000},'Tidak aktif':{active:false,monthlySalary:100}},profiles:{profiles:{'Penerima uji':{bank:'Bank contoh',account:'009900',account_name:'Penerima uji',description:'Gaji penerima uji'}},applicant:'Pengaju contoh',title:'Bendahara'},rows:[{staff:'Penerima uji',year:2026,expenseDate:'2026-09-01',carryForward:0,claimAmount:9000000,paidAmount:0,usageAmount:0,savingId:'allocation-test',project:'Program uji'}],entries:[],bank:{account:'BANK-SOURCE-TEST',closing:20000000},generalSaving:11000000});
+function bindSource(env,source=sourceFixture()){env.FINANCE={async fetch(req){assert.equal(new URL(req.url).pathname,'/finance/api/payroll-source');return Response.json(source);}};return source;}
+async function approve(env){let a=await create(env);a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});return call(env,'/'+a.id+'/approve','director','POST',{version:a.version});}
+async function proof(env,a){const r=await worker.fetch(new Request(origin+path+'/'+a.id+'/files',{method:'POST',headers:{Cookie:'__Host-yg-session=finance',Origin:origin,'X-Filename':'Transfer.pdf','X-Payroll-Version':String(a.version),'X-File-Purpose':'payment'},body:'%PDF-1.7\nsynthetic transfer proof'}),env);assert.equal(r.status,201,await r.clone().text());return r.json();}
+const payment=(a,amount=2000000)=>({id:crypto.randomUUID(),version:a.version,paid_date:'2026-10-02',source_account:'BANK-SOURCE-TEST',reference:'TEST-TRANSFER-001',notes:'Test only',allocations:[{staff_id:'staff:penerima-uji',amount}],proof_ids:a.files.filter(f=>f.purpose==='payment').map(f=>f.id)});
+
+test('auto-fill uses effective monthly policy and private profile, keeps allocation snapshot and prints reference layout',async()=>{
+ const {env}=await setup();bindSource(env);
+ const defaults=await call(env,'/defaults?period=2026-10','director');assert.equal(defaults.items.length,1);assert.equal(defaults.items[0].base,5400000);assert.equal(defaults.items[0].account,'009900');assert.equal(defaults.items[0].allocation_snapshot.position,9000000);assert.equal(defaults.form_meta.applicant,'Pengaju contoh');
+ const data={...sample,items:defaults.items,form_meta:defaults.form_meta};let a=await call(env,'','finance','POST',data,201);assert.equal(a.items[0].allocation_snapshot.source_ids[0],'allocation-test');assert.ok(a.form_meta.number);
+ await call(env,'/'+a.id,'finance','PUT',{...data,version:a.version,items:[{...data.items[0],base:1}]},400);
+ const printed=await worker.fetch(new Request(origin+'/finance/payroll/print/'+a.id,{headers:{Cookie:'__Host-yg-session=director'}}),env);assert.equal(printed.status,200);const html=await printed.text();assert.match(html,/Formulir Permintaan Dana/);assert.match(html,/Kode Anggaran/);assert.match(html,/Menunggu persetujuan/);assert.match(html,/Lima juta empat ratus ribu/);assert.equal(printed.headers.get('cache-control'),'no-store');
+ for(const suffix of ['/defaults?period=2026-10','/report','/bank'])await call(env,suffix,'other','GET',null,403);
+});
+
+test('payments require approval, Finance, private proof, positive approved allocations; partial and full payments stay audited',async()=>{
+ const {env,db}=await setup();bindSource(env);let a=await create(env);
+ await call(env,'/'+a.id+'/payments','finance','POST',payment(a),409);
+ a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});a=await call(env,'/'+a.id+'/approve','director','POST',{version:a.version});
+ await call(env,'/'+a.id+'/payments','director','POST',payment(a),403);
+ await call(env,'/'+a.id+'/payments','finance','POST',payment(a),400);
+ a=await proof(env,a);let p=payment(a);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...p,allocations:[{staff_id:'staff:penerima-uji',amount:5400001}]},400);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...p,proof_ids:['foreign-file']},400);
+ a=await call(env,'/'+a.id+'/payments','finance','POST',p,201);assert.equal(a.paid,2000000);assert.equal(a.remaining,3400000);assert.equal(a.payment_status,'partial');
+ let retry=await call(env,'/'+a.id+'/payments','finance','POST',p);assert.equal(retry.payments.length,1);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...p,reference:'CHANGED'},409);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...payment(a),reference:p.reference},409);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...payment(a),version:a.version-1,reference:'SECOND'},409);
+ a=await call(env,'/'+a.id+'/payments','finance','POST',{...payment(a,3400000),reference:'SECOND'},201);assert.equal(a.remaining,0);assert.equal(a.payment_status,'paid');assert.equal(a.events.filter(e=>e.action==='paid').length,2);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...payment(a,1),reference:'THIRD'},400);
+ const report=await call(env,'/report','director');assert.equal(report.totalPaid,5400000);assert.equal(report.bookBalance,14600000);assert.equal(report.staff[0].position,3600000);
+ assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);assert.equal(db.prepare('SELECT title FROM team_agendas').get().title,'Existing event');
+});
+
+test('one canonical bank entry cannot fund multiple payroll payments and matching payment is not deducted twice',async()=>{
+ const {env}=await setup(),source=bindSource(env);source.entries=[{index:1,date:'2026-10-01',reference:'BANK-REF',debit:2000000,credit:0}];source.rows.push({staff:'Penerima uji',year:2026,expenseDate:'2026-10-01',paidAmount:2000000});
+ let a=await proof(env,await approve(env));let p={...payment(a),paid_date:'2026-10-01',reference:'BANK-REF',bank_entry_id:'bank:2026:1'};
+ a=await call(env,'/'+a.id+'/payments','finance','POST',p,201);
+ const report=await call(env,'/report');assert.equal(report.bankMatched,2000000);assert.equal(report.bankAdditional,0);assert.equal(report.bookBalance,20000000);assert.equal(report.staff[0].position,7000000);
+ await call(env,'/'+a.id+'/payments','finance','POST',{...p,id:crypto.randomUUID(),version:a.version},409);
 });

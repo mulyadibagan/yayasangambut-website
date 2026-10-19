@@ -1,23 +1,24 @@
-# Pengajuan gaji bulanan YG Finance
+# Pengajuan dan pembayaran gaji YG Finance
 
-Halaman: `/finance/payroll`, tersedia dari menu Keuangan YG dan tautan Pengajuan gaji bulanan di YG Finance.
+Halaman `/finance/payroll` tersedia dari menu Keuangan YG. Finance yang ditunjuk (`PAYROLL_FINANCE_EMAIL`) membuat pengajuan dan mencatat pembayaran. Direktur membuka pratinjau form, memeriksa, menyetujui atau mengembalikan pengajuan. Akses payroll tidak membuka API keuangan lama kepada staf Finance.
 
-Staf Finance yang ditunjuk adalah `rienaprasiddha@yayasangambut.org`, dikonfigurasi melalui `PAYROLL_FINANCE_EMAIL`. Akun harus masuk melalui Google Workspace YG dan tidak dinonaktifkan. Akses ini khusus pengajuan gaji; tidak membuka modul atau API keuangan lama. Persetujuan tetap khusus akun administrator Mulyadi sebagaimana aturan Finance yang sudah ada.
+## Alur penggunaan
 
-## Alur
+1. Finance memilih **Pengajuan baru**. Daftar staf aktif dan nominal bulanan berasal dari kebijakan gaji efektif sistem, setelah pembaruan privat diterapkan. Posisi saving ditampilkan sebagai konteks alokasi, bukan nominal gaji yang diminta.
+2. Profil penerima/rekening dari Excel referensi mengisi informasi transfer. Data terakhir yang disimpan Finance mengungguli profil awal. Staf yang tidak memiliki profil harus dilengkapi Finance. Nominal historis Excel dan gambar tanda tangan tidak diimpor.
+3. Periksa periode, tanggal, pengaju, keperluan, kode anggaran dan rekening. Nomor formulir dibuat otomatis saat menyimpan, atau dapat diisi sesuai penomoran organisasi. Penyesuaian nominal dari kebijakan memerlukan alasan. Simpan draf; lampirkan dokumen pendukung bila perlu.
+4. Ajukan kepada Direktur. Rincian terkunci sampai dikembalikan. Direktur menyetujui atau mengembalikan dengan catatan. Tidak ada email otomatis. Persetujuan belum mengurangi kas.
+5. **Cetak** membuka Formulir Permintaan Dana dengan rincian, total, terbilang dan jejak persetujuan akun. Ctrl+P untuk cetak/PDF. Contoh lima penerima diuji satu halaman A4; catatan panjang atau realisasi pembayaran dapat menambah halaman.
+6. Setelah transfer dilakukan melalui bank, Finance membuka **Realisasi pembayaran**. Isi tanggal dan referensi transfer, nominal per penerima, unggah/pilih bukti, lalu **Simpan pembayaran**. Aplikasi hanya mencatat transfer yang sudah dilakukan. Pembayaran dapat sebagian; tidak dapat melebihi nominal yang disetujui per penerima.
+7. Bila transfer sudah ada dalam register bank, **Muat mutasi bank** dan pilih mutasi yang tepat. Tanggal, rekening, referensi dan jumlah harus sesuai. Pembayaran historis yang tidak dapat dicocokkan ditolak agar tidak dihitung ganda.
+8. **Laporan pembayaran** (`/finance/payroll/report`) menghubungkan formulir, realisasi dan bukti transfer. Panel yang sama tersedia di ringkasan/rincian keuangan. Saldo mutasi tetap bertanggal sumber; saldo menurut catatan memasukkan pembayaran baru yang belum masuk sumber mutasi. Saat sumber diperbarui, kecocokan bank dan pembayaran per staf diperiksa untuk menghindari pengurangan ulang. Ketidakcocokan ditampilkan untuk rekonsiliasi, dan saldo yang belum pasti tidak ditampilkan sebagai angka final.
 
-1. Finance memilih Pengajuan baru, periode, penerima, sumber dana, gaji pokok, tambahan dan potongan. Bank/rekening opsional. Semua nominal adalah rupiah bulat; gaji bersih dihitung ulang di server.
-2. Simpan draf, lalu tambahkan dokumen pendukung jika diperlukan (PDF/JPEG/PNG, maksimal 5 MB, maksimal 10 berkas). Berkas disimpan secara privat, terpisah dari arsip agenda, dan hanya dibaca melalui sesi Finance/Direktur yang sah.
-3. Ajukan ke Direktur. Rincian serta lampiran terkunci. Tidak ada pengiriman email otomatis; pengajuan muncul pada halaman tinjauan Direktur.
-4. Direktur menyetujui atau mengembalikan dengan catatan wajib. Finance dapat memperbaiki pengajuan yang dikembalikan lalu mengirim ulang.
-5. Pengajuan disetujui bersifat terkunci. Persetujuan belum merupakan pencatatan pembayaran; tidak menambah transaksi, mengubah saldo, atau mengubah laporan gaji historis. Pembayaran tetap menggunakan proses keuangan yang sudah ada.
+## Integritas dan penyimpanan
 
-Satu bulan hanya boleh memiliki satu pengajuan berstatus diajukan/disetujui. Beberapa draf dapat disiapkan, tetapi pengiriman ganda ditolak oleh indeks unik database. Perubahan memakai pemeriksaan versi; tab lama wajib dimuat ulang. Riwayat mencatat akun, waktu, aksi, versi dan salinan data saat perubahan/persetujuan. Tampilan menyediakan cetak.
+Migrasi 0022 menambahkan metadata formulir, kategori berkas, dan register `yg_payroll_payments`. Tabel `finance_*`, sumber alokasi dan agenda tidak ditulis oleh API payroll. Mutasi rekening, referensi dan ID pembayaran memiliki perlindungan duplikasi. Versi dan transaksi database menjaga persetujuan/pembayaran dari perubahan bersamaan. Riwayat menyimpan salinan rincian, akun dan waktu.
 
-## Pemisahan data dan validasi
+Berkas pendukung/bukti disimpan privat di R2 dengan awalan `payroll-private/`; akses hanya melalui sesi Finance/Direktur. Maksimal 30 berkas per pengajuan, masing-masing 5 MB, PDF/JPEG/PNG. Penyimpanan ini terpisah dari Drive agenda.
 
-Migrasi `0021_payroll_requests.sql` hanya membuat tabel `yg_payroll_requests`, `yg_payroll_events`, dan `yg_payroll_files`; tidak menyentuh tabel historis `finance_*` atau agenda. Objek lampiran memakai awalan `payroll-private/`. API tidak menulis ke buku besar lama.
+Profil referensi disimpan dengan AES-256-GCM pada `imports/payroll-profiles.enc`, dengan izin pengguna. Kunci `PAYROLL_PROFILE_KEY` berada di GitHub Secrets dan hanya digunakan pada runner deployment yang dilindungi. Hasil dekripsi masuk modul server Worker Finance privat, bukan aset publik. Nominal kebijakan tetap berasal dari sistem.
 
-Deployment membandingkan checksum isi semua tabel `finance_*` serta agenda sebelum/sesudah migrasi. Jika berbeda, deployment berhenti; perubahan bersamaan oleh pengguna juga dapat memicu pemeriksaan ini. Isi keuangan tidak dicetak ke log.
-
-Validasi lokal mencakup sesi/hak akses, CSRF, nominal dan jumlah bersih, pengajuan ganda, versi kedaluwarsa, penguncian data, akses lampiran privat, revisi/persetujuan, dan keutuhan data lama. Browser diuji dengan data contoh terpisah, bukan pengajuan produksi. Penerimaan langsung oleh akun Riena dan Mulyadi dilakukan setelah login masing-masing.
+Deployment membandingkan checksum tabel historis keuangan dan agenda sebelum/sesudah migrasi. Pengujian memakai data sintetis: hak akses, revisi/persetujuan, cetak, pembayaran sebagian/lunas, bukti wajib, batas nominal, duplikasi, retry, serta pencocokan ulang saat sumber bank diperbarui. Tidak membuat pengajuan, persetujuan atau transfer uji di produksi.
