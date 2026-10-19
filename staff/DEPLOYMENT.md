@@ -62,6 +62,14 @@ Untuk alokasi baru, hilangkan properti `allocations`: rekonsiliasi menghitung pe
 
 Deploy Finance membaca konfigurasi privat tersebut dan memperbarui saving staf, saving umum, dan rincian talangan dari satu jurnal. Tidak ada transaksi bank atau transfer kedua. Identitas alokasi awal dipertahankan agar pemrosesan ulang mutasi sesudah rekonsiliasi tidak menggandakan saldo. Ini bukan koneksi otomatis ke bank; hanya mutasi yang sudah diposting dan diverifikasi yang diperhitungkan. Jangan memasukkan data keuangan atau kredensial privat ke repository publik.
 
+## Pengembalian sisa UM pada Finance privat
+
+Posting pengembalian terverifikasi satu kali melalui `bank_statement_updates_v1` ke bucket proyek asal. Alokasi proyek otomatis memulihkan talangan proyek sebelum menghasilkan dana proyek tersedia. Jangan membuat transfer YG kedua atau menjadikan saldo PJUM sebagai penerimaan bank baru.
+
+Tambahkan `umReturns` pada `finance_reconciliation_v1`: setiap tautan berisi `index`, `reference`, `date` sesuai mutasi, `project` (bucket proyek), `umId`, `pjumId`, `amount`, dan `evidenceUrl` Drive/Docs. UM dan PJUM harus sudah tercatat, PJUM terhubung ke UM tersebut, dan proyek keduanya cocok dengan alokasi bank. Untuk pengembalian bertahap, simpan seluruh tautan sebelumnya bersama tautan baru: jumlah dihitung dari daftar lengkap, bukan ditambahkan ke angka bank tersimpan. Satu mutasi yang dibagi untuk beberapa PJUM harus teralokasi penuh tanpa melebihi nilai kredit atau sisa laporan.
+
+Deployment memvalidasi tautan dan memperbarui metadata pengembalian, register, monitor UM/PJUM, serta rincian talangan dari mutasi yang sama. Pengembalian belum cocok bank tidak melunasi sisa UM. Pelunasan nominal tidak otomatis menyetujui PJUM atau memverifikasi pengiriman laporan/buktinya. Data dan tautan privat tetap hanya di konfigurasi privat.
+
 ## Pratinjau website
 
 Tombol Pratinjau website membuka tab privat menggunakan header, footer, dan CSS hasil build website publik. Isi formulir dikirim ke endpoint staf yang memerlukan sesi, disanitasi, lalu dirender tanpa menyimpan atau menerbitkan artikel. Draf tidak dimasukkan ke URL, penyimpanan browser, atau Analytics. Foto tetap mengikuti izin media staf.
