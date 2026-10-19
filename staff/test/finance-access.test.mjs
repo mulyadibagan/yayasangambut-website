@@ -70,3 +70,17 @@ test('Riena reaches Finance pages and APIs with her own trusted identity',async(
  const spoof=request('/finance');spoof.headers.set('oai-authenticated-user-email',user.email);
  assert.equal((await worker.fetch(spoof,env({id:'other',email:'other@yayasangambut.org',role:'admin'}))).status,403);
 });
+
+test('Finance browser navigation redirects missing and expired sessions to sign-in',async()=>{
+ for(const path of ['/finance','/finance/closing-2026','/finance/payroll','/finance/payroll/report']){
+  for(const cookie of ['', '__Host-yg-session=expired']){
+   const r=await worker.fetch(new Request(origin+path,{headers:{Accept:'text/html',Cookie:cookie}}),env(null));
+   assert.equal(r.status,302);assert.equal(r.headers.get('location'),origin+'/');assert.equal(r.headers.get('cache-control'),'no-store');
+  }
+ }
+ for(const path of ['/finance/api/requests','/finance/payroll/api/report','/api/finance']){
+  const r=await worker.fetch(new Request(origin+path,{headers:{Accept:'text/html'}}),env(null));assert.equal(r.status,401);
+ }
+ const write=await worker.fetch(new Request(origin+'/finance/payroll',{method:'POST',headers:{Accept:'text/html',Origin:origin}}),env(null));assert.equal(write.status,401);
+ const denied=await worker.fetch(new Request(origin+'/finance',{headers:{Accept:'text/html',Cookie:'__Host-yg-session=other'}}),env({id:'other',email:'other@yayasangambut.org',role:'staff'}));assert.equal(denied.status,403);
+});
