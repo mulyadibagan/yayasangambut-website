@@ -84,9 +84,29 @@ async function scheduled(_event,env,ctx){
   catch(error){await env.DB.prepare("UPDATE yg_finance_upload_events SET result='failed',detail=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(String(error.message),migrationId).run();throw error;}
  })());
 }
-export default {fetch:(req,env,ctx)=>app.fetch(req,env,ctx),scheduled};
+async function financeFetch(req,env,ctx){
+ const url=new URL(req.url);
+ if(url.pathname!=='/finance/api/email-intake'||url.searchParams.get('scan')!=='1')return app.fetch(req,env,ctx);
+ // Email scans can outlive the post-response waitUntil window. Keep this
+ // authenticated request open until the scan has persisted its final status.
+ const pending=[];
+ const scanContext=new Proxy(ctx,{get(target,key){
+  if(key==='waitUntil')return task=>{pending.push(Promise.resolve(task).then(()=>true,()=>false));};
+  const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;
+ }});
+ const response=await app.fetch(req,env,scanContext);
+ let failed=false;
+ for(let offset=0;offset<pending.length;){
+  const batch=pending.slice(offset);offset=pending.length;
+  if((await Promise.all(batch)).some(ok=>!ok))failed=true;
+ }
+ if(failed){console.error('Finance email scan failed before completion.');return Response.json({error:'Finance email scan failed.'},{status:502});}
+ return response;
+}
+export default {fetch:financeFetch,scheduled};
 `;
 await writeFile(root+'/dist/server/finance-bootstrap.js',bootstrap);
+run('node',['--check','dist/server/finance-bootstrap.js']);
 const built=JSON.parse(await readFile(root+'/dist/server/wrangler.json','utf8'));
 Object.assign(built,{name:'yg-finance',main:'finance-bootstrap.js',account_id:account,workers_dev:false,preview_urls:false,routes:[],d1_databases:[{binding:'DB',database_name:'yg-staff',database_id:database}],r2_buckets:[{binding:'BUCKET',bucket_name:'yg-staff-media'}]});
 if(built.assets){built.assets.run_worker_first=true;built.assets.binding='ASSETS';}
