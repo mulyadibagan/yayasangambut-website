@@ -59,3 +59,14 @@ test('email sync keeps owner and origin checks and forwards only the existing in
  assert.equal(calls[1].method,'GET');assert.equal(calls[1].headers.get('cookie'),null);
  assert.equal(calls[1].headers.get('oai-authenticated-user-email'),owner.email);
 });
+
+test('Riena reaches Finance pages and APIs with her own trusted identity',async()=>{
+ const user={id:'finance',email:'rienaprasiddha@yayasangambut.org',role:'staff'};
+ const e=env(user);e.FINANCE={async fetch(req){assert.equal(req.headers.get('oai-authenticated-user-email'),user.email);assert.equal(req.headers.get('cookie'),null);return new Response('ok');}};
+ for(const path of ['/finance','/finance/closing-2026','/finance/api/requests','/finance/assets/app.js']){
+  assert.equal((await worker.fetch(request(path),e)).status,200);
+  assert.equal((await worker.fetch(request(path),env({...user,disabled:1}))).status,403);
+ }
+ const spoof=request('/finance');spoof.headers.set('oai-authenticated-user-email',user.email);
+ assert.equal((await worker.fetch(spoof,env({id:'other',email:'other@yayasangambut.org',role:'admin'}))).status,403);
+});
