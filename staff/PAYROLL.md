@@ -38,8 +38,7 @@ Migration 0023 hanya menambahkan tabel review dan outbox; tidak mengubah riwayat
 
 Outbox dibuat atomik bersama persetujuan baru, tanpa backfill pengajuan lama.
 Worker mencoba pengiriman setelah respons persetujuan dan cron setiap 5 menit.
-Tujuan tetap: Hisam, Serena, Riena. Email hanya berisi nomor formulir, periode,
-total, akun Direktur, waktu persetujuan dan tautan privat (tidak membuka akses baru).
+Tujuan tetap: Hisam, Serena, Riena. Email memuat ringkasan dan lampiran PDF formulir lengkap yang disetujui, termasuk rekening penerima, sesuai izin pengguna. PDF tidak menyertakan rincian pemeriksaan internal. Salinan tetap disimpan privat dengan SHA-256, identik dengan lampiran Gmail, dan tidak berubah setelah pencatatan pembayaran.
 Integrasi memakai webhook Apps Script yang sudah ada di finance_settings.
 Handler tambahan ada di integrations/PayrollNotifications.gs, dipanggil di doPost
 setelah requireWebhookSecret_ untuk action sendPayrollApproval.
@@ -47,3 +46,8 @@ Apps Script memakai lock, sidik isi dan penanda Gmail untuk mencegah kirim ganda
 Jika status tidak pasti, hanya cari pesan yang sudah terkirim; jangan kirim ulang
 secara buta. Status sent memerlukan message ID dan verifikasi tiga penerima.
 Gagal email tidak membatalkan persetujuan dan tidak membuat pembayaran.
+
+## PDF persetujuan dan pembatalan
+Migrasi 0024 menambahkan arsip dokumen dan kolom pembatalan; tidak menghapus pengajuan lama. PDF harus tersimpan sebelum persetujuan dicatat. Pengiriman memverifikasi hash PDF dan lampiran Gmail. Apps Script wajib mengiklankan payrollPdfAttachments.
+
+Direktur dan Finance dapat membatalkan pengajuan yang belum memiliki pembayaran, dengan alasan dan versi yang sesuai. Riwayat, rincian dan audit dipertahankan; bulan yang sama dapat diajukan kembali. Email tertunda dihentikan; email terkirim tidak dapat ditarik. Pembatalan ditolak selama pengiriman email aktif untuk menghindari benturan. Pengajuan batal tidak dapat diubah, dibayar atau dikirim ulang.

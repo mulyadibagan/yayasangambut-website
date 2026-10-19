@@ -61,7 +61,7 @@ export async function payrollReport(env,u,source){
 export async function payrollDefaults(env,u,period){
  if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period||''))fail(400,'Periode gaji tidak valid.');
  const source=await payrollSource(env,u),report=await payrollReport(env,u,source);
- const previous=(await q(env,'SELECT items FROM yg_payroll_requests ORDER BY created_at DESC LIMIT 100').all()).results,known=new Map();
+ const previous=(await q(env,'SELECT items FROM yg_payroll_requests WHERE cancelled_at IS NULL ORDER BY created_at DESC LIMIT 100').all()).results,known=new Map();
  for(const r of previous)for(const item of JSON.parse(r.items)){const id=item.staff_id||staffKey(item.name);if(!known.has(id))known.set(id,item);}
  const items=report.staff.filter(s=>s.active&&Number.isSafeInteger(s.monthlySalary)&&s.monthlySalary>0).map(s=>{
   const profile=source.profiles?.profiles?.[canonicalStaffName(s.name)]||{},old={...profile,...(known.get(s.id)||{})};return {staff_id:s.id,name:s.name,program:'Saving gaji',budget_code:old.budget_code||'',description:staffDescription(old.description,s.name),bank:old.bank||profile.bank||'',account:old.account||profile.account||'',account_name:old.account_name||profile.account_name||s.name,remarks:old.remarks||'',base:s.monthlySalary,allowance:0,deduction:0,net:s.monthlySalary,allocation_snapshot:{asOf:source.asOf,position:s.position,monthlySalary:s.monthlySalary,source_ids:s.sources.map(x=>x.id)}};

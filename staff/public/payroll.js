@@ -4,7 +4,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 
 const money=n=>n===null?'Perlu rekonsiliasi':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
 
-const labels={draft:'Draf',submitted:'Diajukan',returned:'Dikembalikan',approved:'Disetujui'};
+const labels={draft:'Draf',submitted:'Diajukan',returned:'Dikembalikan',approved:'Disetujui',cancelled:'Dibatalkan'};
 
 const month=p=>new Date(p+'-01T12:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'});
 
@@ -73,11 +73,14 @@ function render(r){
 
  const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review;$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=!r&&!preview;$('#print').textContent=r?'Cetak':'Pratinjau cetak';
 
- const notification=r?.notification;$('#email-status').hidden=!notification;$('#retry-email').hidden=!notification||notification.status==='sent';
- $('#email-result').textContent=notification?notification.status==='sent'?'Terkirim dan terverifikasi · '+date(notification.sent_at):notification.status==='failed'?'Belum terkonfirmasi setelah beberapa percobaan. '+notification.error:notification.status==='sending'?'Sedang mengirim email.':'Email dalam antrean pemeriksaan otomatis. '+(notification.error||''):'';
- const actions={created:'Draf dibuat',updated:'Draf diperbarui',attached:'Dokumen dilampirkan',submitted:'Diajukan kepada Direktur',returned:'Dikembalikan untuk diperbaiki',approved:'Disetujui Direktur',paid:'Pembayaran dicatat'};
+ $('#cancel-request').hidden=!r||r.status==='cancelled'||r.paid>0;
+ $('#cancellation-notice').hidden=r?.status!=='cancelled';$('#cancellation-notice').textContent=r?.cancelled_at?'Dibatalkan oleh '+r.cancelled_by+' · '+date(r.cancelled_at)+'. Alasan: '+r.cancellation_reason+'. Riwayat tetap tersimpan.':'';
+ $('#approved-pdf').hidden=!r?.document||r.status==='cancelled';$('#approved-pdf').href=r?'/finance/payroll/pdf/'+r.id:'#';
+ const notification=r?.notification;$('#email-status').hidden=!notification;$('#retry-email').hidden=!notification||['sent','cancelled'].includes(notification.status);
+ $('#email-result').textContent=notification?notification.status==='cancelled'?'Dihentikan karena pengajuan dibatalkan.':notification.status==='sent'?'Terkirim dan terverifikasi · '+date(notification.sent_at):notification.status==='failed'?'Belum terkonfirmasi setelah beberapa percobaan. '+notification.error:notification.status==='sending'?'Sedang mengirim email.':'Email dalam antrean pemeriksaan otomatis. '+(notification.error||''):'';
+ const actions={cancelled:'Pengajuan dibatalkan',created:'Draf dibuat',updated:'Draf diperbarui',attached:'Dokumen dilampirkan',submitted:'Diajukan kepada Direktur',returned:'Dikembalikan untuk diperbaiki',approved:'Disetujui Direktur',paid:'Pembayaran dicatat'};
 
- $('#events').innerHTML=(r?.events||[]).map(e=>'<div class="event"><strong>'+actions[e.action]+(e.snapshot.self_approved?' (pengajuan sendiri)':'')+'</strong><br><small>'+esc(e.actor_email)+' · '+date(e.created_at)+' · Versi '+e.version+'</small>'+(e.snapshot.review_note?'<p>'+esc(e.snapshot.review_note)+'</p>':'')+'</div>').join('');$('#history').hidden=!r;renderPayments();list();lock(busy);
+ $('#events').innerHTML=(r?.events||[]).map(e=>'<div class="event"><strong>'+actions[e.action]+(e.snapshot.self_approved?' (pengajuan sendiri)':'')+'</strong><br><small>'+esc(e.actor_email)+' · '+date(e.created_at)+' · Versi '+e.version+'</small>'+(e.snapshot.reason?'<p>'+esc(e.snapshot.reason)+'</p>':'')+(e.snapshot.review_note?'<p>'+esc(e.snapshot.review_note)+'</p>':'')+'</div>').join('');$('#history').hidden=!r;renderPayments();list();lock(busy);
 
 }
 
@@ -106,6 +109,12 @@ $('#refresh').onclick=()=>{if((dirty||paymentDirty)&&!confirm('Muat ulang dan ti
 
 $('#submit').onclick=()=>run(async()=>{if(dirty){notice('Simpan perubahan draf sebelum mengajukan.',true);return;}if(!confirm('Ajukan gaji '+month(current.period)+' sebesar '+money(current.total)+' kepada Direktur? Rincian akan dikunci sampai dikembalikan.'))return;render(await api('/'+current.id+'/submit','POST',{version:current.version}));await loadList();notice('Pengajuan sudah masuk ke daftar tinjauan Direktur.');});
 
+$('#cancel-request').onclick=()=>{
+ if(!current||current.paid>0)return;
+ const reason=prompt('Alasan pembatalan pengajuan (misalnya: uji coba):');if(!reason?.trim())return;
+ if(!confirm('Batalkan pengajuan '+month(current.period)+'? Riwayat tetap tersimpan, pembayaran tidak dapat dicatat, dan email yang sudah terkirim tidak dapat ditarik kembali.'))return;
+ run(async()=>{render(await api('/'+current.id+'/cancel','POST',{version:current.version,reason:reason.trim()}));await loadList();notice('Pengajuan dibatalkan. Anda dapat membuat pengajuan baru untuk bulan yang sama.');});
+};
 $('#approve').onclick=()=>location.assign('/finance/payroll/review/'+current.id);
 $('#retry-email').onclick=()=>run(async()=>{render(await api('/'+current.id+'/notify','POST',{}));notice('Status pengiriman email telah diperiksa.');});
 for(const action of ['return'])$('#'+action).onclick=()=>run(async()=>{const note=$('#director-note').value.trim();if(action==='return'&&!note)return notice('Isi catatan perbaikan terlebih dahulu.',true);if(!confirm(action==='approve'?(current.creator_email===user.email?'Setujui pengajuan yang Anda buat sendiri? Tindakan ini akan ditandai di riwayat. ':'Setujui pengajuan? ')+'Gaji '+month(current.period)+' sebesar '+money(current.total):'Kembalikan pengajuan ini kepada Finance?'))return;render(await api('/'+current.id+'/'+action,'POST',{version:current.version,note}));await loadList();notice(action==='approve'?'Pengajuan disetujui. Belum ada pencatatan pembayaran otomatis.':'Pengajuan dikembalikan beserta catatan perbaikan.');});

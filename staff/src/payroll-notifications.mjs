@@ -1,3 +1,4 @@
+import {pdfHash} from './payroll-pdf.mjs';
 export const payrollRecipients=Object.freeze(['hisamsetiawan@yayasangambut.org','serena@gec.org.my','rienaprasiddha@yayasangambut.org']);
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 export async function payrollEmailService(env){
@@ -7,12 +8,12 @@ export async function payrollEmailService(env){
   const url=new URL(config.webhook_url);
   if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/(?:a\/macros\/yayasangambut\.org\/s|macros\/s)\/[^/]+\/exec$/.test(url.pathname)||!config.webhook_secret)return {configured:false,ready:false};
   const response=await fetch(url.href,{signal:AbortSignal.timeout(15000)}),data=await response.json();
-  return {configured:true,ready:response.ok&&data.payrollNotifications===true,deploymentId:url.pathname.split('/').at(-2)};
+  return {configured:true,ready:response.ok&&data.payrollPdfAttachments===true,deploymentId:url.pathname.split('/').at(-2)};
  }catch{return {configured:false,ready:false};}
 }
-export function payrollNotificationStatement(env,row,event,at){
+export function payrollNotificationStatement(env,row,event,at,document){
  const meta=JSON.parse(row.form_meta||'{}'),id='payroll:'+event;
- const payload={action:'sendPayrollApproval',notificationKey:id,requestId:row.id,period:row.period,number:meta.number||row.id,total:row.total,approvedAt:at,approvedBy:'mulyadi@yayasangambut.org',recipients:payrollRecipients};
+ const payload={action:'sendPayrollApproval',notificationKey:id,requestId:row.id,period:row.period,number:meta.number||row.id,total:row.total,approvedAt:at,approvedBy:'mulyadi@yayasangambut.org',recipients:payrollRecipients,document};
  return q(env,"INSERT INTO yg_payroll_notifications(id,request_id,approval_event,payload,next_attempt_at,created_at) SELECT ?,id,?,?,?,? FROM yg_payroll_requests WHERE id=? AND last_event=? AND status='approved'",id,event,JSON.stringify(payload),at,at,row.id,event);
 }
 export async function payrollNotificationStatus(env,id){
@@ -22,10 +23,10 @@ export async function payrollNotificationStatus(env,id){
 // is recovered from Gmail, never blindly re-sent after an interrupted request.
 export async function sendPayrollNotifications(env,requestId=null,fetcher=fetch){
  const at=new Date().toISOString();
- const rows=(await q(env,"SELECT * FROM yg_payroll_notifications WHERE status!='sent' AND attempts<5 AND (lease_until IS NULL OR lease_until<?) AND next_attempt_at<=?"+(requestId?' AND request_id=?':'')+' ORDER BY created_at LIMIT 5',at,at,...(requestId?[requestId]:[])).all()).results;
+ const rows=(await q(env,"SELECT * FROM yg_payroll_notifications WHERE status NOT IN ('sent','cancelled') AND EXISTS(SELECT 1 FROM yg_payroll_requests r WHERE r.id=yg_payroll_notifications.request_id AND r.cancelled_at IS NULL AND r.status='approved') AND attempts<5 AND (lease_until IS NULL OR lease_until<?) AND next_attempt_at<=?"+(requestId?' AND request_id=?':'')+' ORDER BY created_at LIMIT 5',at,at,...(requestId?[requestId]:[])).all()).results;
  for(const row of rows){
   const lease=new Date(Date.now()+90000).toISOString();
-  const claim=await q(env,"UPDATE yg_payroll_notifications SET status='sending',attempts=attempts+1,lease_until=? WHERE id=? AND status!='sent' AND attempts=? AND (lease_until IS NULL OR lease_until<?)",lease,row.id,row.attempts,at).run();
+  const claim=await q(env,"UPDATE yg_payroll_notifications SET status='sending',attempts=attempts+1,lease_until=? WHERE id=? AND status NOT IN ('sent','cancelled') AND EXISTS(SELECT 1 FROM yg_payroll_requests r WHERE r.id=yg_payroll_notifications.request_id AND r.cancelled_at IS NULL AND r.status='approved') AND attempts=? AND (lease_until IS NULL OR lease_until<?)",lease,row.id,row.attempts,at).run();
   if(!claim.meta.changes)continue;
   let result=null,error='Pengiriman belum terkonfirmasi. Sistem akan memeriksa kembali dengan penanda yang sama.';
   try{
@@ -33,9 +34,15 @@ export async function sendPayrollNotifications(env,requestId=null,fetcher=fetch)
    const config=Object.fromEntries(settings.map(s=>[s.setting_key,s.setting_value]));
    const url=new URL(config.webhook_url);
    if(url.protocol!=='https:'||url.hostname!=='script.google.com'||!/^\/(?:a\/macros\/yayasangambut\.org\/s|macros\/s)\/[^/]+\/exec$/.test(url.pathname)||!config.webhook_secret)throw Error('configuration');
-   const response=await fetcher(url.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...JSON.parse(row.payload),webhookSecret:config.webhook_secret}),signal:AbortSignal.timeout(25000)});
+   const payload=JSON.parse(row.payload);
+   if(!payload.document?.object_key)throw Error('approved-pdf-required');
+   const object=await env.MEDIA.get(payload.document.object_key);if(!object)throw Error('pdf-missing');
+   const bytes=new Uint8Array(await object.arrayBuffer());if(await pdfHash(bytes)!==payload.document.sha256)throw Error('pdf-integrity');
+   let binary='';for(let start=0;start<bytes.length;start+=8192)binary+=String.fromCharCode(...bytes.subarray(start,start+8192));
+   const {document,...message}=payload;
+   const response=await fetcher(url.href,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...message,approvalPdfBase64:btoa(binary),approvalPdfSha256:document.sha256,approvalPdfFilename:document.filename,webhookSecret:config.webhook_secret}),signal:AbortSignal.timeout(25000)});
    const data=await response.json();
-   if(response.ok&&data.ok===true&&data.sent===true&&typeof data.messageId==='string'&&data.messageId&&Array.isArray(data.recipients)&&[...data.recipients].sort().join(',')===[...payrollRecipients].sort().join(','))result=data;
+   if(response.ok&&data.ok===true&&data.sent===true&&data.attachmentVerified===true&&data.attachmentSha256===document.sha256&&typeof data.messageId==='string'&&data.messageId&&Array.isArray(data.recipients)&&[...data.recipients].sort().join(',')===[...payrollRecipients].sort().join(','))result=data;
    else if(data.code==='unsupported')error='Layanan email perlu pembaruan. Persetujuan tetap tersimpan.';
    else if(data.code==='uncertain')error='Pengiriman perlu verifikasi di Gmail; sistem tidak mengirim ulang secara buta.';
   }catch{/* Never expose integration secrets or upstream error bodies. */}

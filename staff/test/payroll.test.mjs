@@ -1,3 +1,5 @@
+import {PDFDocument} from 'pdf-lib';
+import {pdfHash} from '../src/payroll-pdf.mjs';
 import {sendPayrollNotifications,payrollRecipients} from '../src/payroll-notifications.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,11 +12,11 @@ const origin='https://staff.yayasangambut.org',path='/finance/payroll/api';
 const sample={period:'2026-10',notes:'Contoh pengujian, bukan gaji nyata.',items:[{name:'Penerima uji',program:'Program uji',bank:'Bank uji',account:'001234',base:5000000,allowance:500000,deduction:100000}]};
 async function setup(){
  const db=new DatabaseSync(':memory:');
- for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql','0024_payroll_documents_cancellation.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',PAYROLL_FINANCE_EMAIL:'rienaprasiddha@yayasangambut.org'};
  for(const [id,email,role] of [['finance',env.PAYROLL_FINANCE_EMAIL,'staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-19','2026-10-19');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+60000);}
- const objects=new Map();env.MEDIA={async put(k,v){objects.set(k,v);},async get(k){return objects.has(k)?{body:objects.get(k)}:null;},async delete(k){objects.delete(k);}};
+ const objects=new Map();env.MEDIA={async put(k,v){objects.set(k,v);},async get(k){return objects.has(k)?{body:objects.get(k),async arrayBuffer(){return new Uint8Array(objects.get(k)).buffer;}}:null;},async delete(k){objects.delete(k);}};
  db.exec("CREATE TABLE finance_transactions(id TEXT,amount INTEGER);INSERT INTO finance_transactions VALUES('historical',123456);CREATE TABLE team_agendas(id TEXT,title TEXT);INSERT INTO team_agendas VALUES('existing','Existing event');");
  return {env,db,objects};
 }
@@ -177,7 +179,7 @@ test('email queue deduplicates confirmed delivery, validates recipients, and doe
  const {env,db}=await setup();const a=await approve(env);const before=db.prepare('SELECT * FROM yg_payroll_requests').get();
  db.exec("CREATE TABLE finance_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT);INSERT INTO finance_settings VALUES('webhook_url','https://script.google.com/macros/s/test/exec'),('webhook_secret','test-secret')");
  let sends=0;
- const send=async(url,options)=>{sends++;const payload=JSON.parse(options.body);assert.equal(payload.action,'sendPayrollApproval');assert.equal(payload.account,undefined);return Response.json({ok:true,sent:true,messageId:'test-gmail-id',recipients:payrollRecipients});};
+ const send=async(url,options)=>{sends++;const payload=JSON.parse(options.body);assert.equal(payload.action,'sendPayrollApproval');assert.equal(payload.account,undefined);return Response.json({ok:true,sent:true,messageId:'test-gmail-id',recipients:payrollRecipients,attachmentVerified:true,attachmentSha256:payload.approvalPdfSha256});};
  await Promise.all([sendPayrollNotifications(env,a.id,send),sendPayrollNotifications(env,a.id,send)]);
  assert.equal(sends,1);assert.equal(db.prepare('SELECT status FROM yg_payroll_notifications').get().status,'sent');
  await sendPayrollNotifications(env,a.id,send);assert.equal(sends,1);
@@ -191,4 +193,45 @@ test('uncertain email response stays pending and cannot falsely claim success',a
  assert.equal(db.prepare('SELECT status FROM yg_payroll_notifications').get().status,'pending');
  assert.equal(db.prepare('SELECT status FROM yg_payroll_requests').get().status,'approved');
  assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_payments').get().n,0);
+});
+
+test('approved PDF is immutable, private and identical to the email attachment after payment',async()=>{
+ const {env}=await setup();bindSource(env);let a=await approve(env);
+ const getPdf=who=>worker.fetch(new Request(origin+'/finance/payroll/pdf/'+a.id,{headers:{Cookie:'__Host-yg-session='+who}}),env);
+ assert.equal((await getPdf('other')).status,403);
+ const before=new Uint8Array(await (await getPdf('director')).arrayBuffer());
+ assert.equal(await pdfHash(before),a.document.sha256);assert.equal((await PDFDocument.load(before)).getPageCount(),1);
+ a=await proof(env,a);await call(env,'/'+a.id+'/payments','finance','POST',payment(a),201);
+ assert.deepEqual(new Uint8Array(await (await getPdf('finance')).arrayBuffer()),before);
+});
+test('Finance and Director can cancel unpaid test requests; month reusable, audit retained, no sends after cancellation',async()=>{
+ const {env,db}=await setup();let a=await approve(env);
+ await call(env,'/'+a.id+'/cancel','other','POST',{version:a.version,reason:'test'},403);
+ await call(env,'/'+a.id+'/cancel','finance','POST',{version:a.version,reason:''},400);
+ await call(env,'/'+a.id+'/cancel','finance','POST',{version:1,reason:'test'},409);
+ a=await call(env,'/'+a.id+'/cancel','finance','POST',{version:a.version,reason:'Uji coba'});
+ assert.equal(a.status,'cancelled');assert.equal(a.events.at(-1).actor_email,env.PAYROLL_FINANCE_EMAIL);assert.equal(a.notification.status,'cancelled');
+ await sendPayrollNotifications(env,a.id,async()=>{throw Error('Must not send');});
+ for(const action of ['submit','approve','payments','notify'])await call(env,'/'+a.id+'/'+action,'director','POST',{version:a.version},409);
+ const revoked=await worker.fetch(new Request(origin+'/finance/payroll/pdf/'+a.id,{headers:{Cookie:'__Host-yg-session=director'}}),env);assert.equal(revoked.status,409);
+ let replacement=await create(env);replacement=await call(env,'/'+replacement.id+'/submit','finance','POST',{version:replacement.version});
+ replacement=await call(env,'/'+replacement.id+'/cancel','director','POST',{version:replacement.version,reason:'Uji coba Direktur'});assert.equal(replacement.status,'cancelled');
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_requests').get().n,2);
+ assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
+});
+test('cancellation cannot erase a payment or race an active email delivery',async()=>{
+ const {env,db}=await setup();bindSource(env);let a=await approve(env);
+ db.prepare('UPDATE yg_payroll_notifications SET lease_until=?').run(new Date(Date.now()+90000).toISOString());
+ await call(env,'/'+a.id+'/cancel','director','POST',{version:a.version,reason:'test'},409);
+ db.prepare('UPDATE yg_payroll_notifications SET lease_until=NULL').run();
+ a=await proof(env,a);a=await call(env,'/'+a.id+'/payments','finance','POST',payment(a),201);
+ await call(env,'/'+a.id+'/cancel','director','POST',{version:a.version,reason:'test'},409);
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_payments').get().n,1);
+});
+test('PDF storage failure leaves request submitted and does not enqueue notification',async()=>{
+ const {env,db}=await setup();let a=await create(env);a=await call(env,'/'+a.id+'/submit','finance','POST',{version:a.version});
+ const token=await reviewToken(env,a);env.MEDIA.put=async()=>{throw Error('storage unavailable');};
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:token},503);
+ assert.equal(db.prepare('SELECT status FROM yg_payroll_requests').get().status,'submitted');
+ assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_notifications').get().n,0);
 });
