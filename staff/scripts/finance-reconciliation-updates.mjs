@@ -104,6 +104,13 @@ export async function applyPrivateReconciliationUpdates(root,config){
  payroll=replaceOnce(payroll,"if(!buckets.every(bucket=>['STAFF','STAFF_PENDING'].includes(bucket)))return false;","if(!buckets.every(bucket=>['STAFF','STAFF_PENDING','YG'].includes(bucket)) || (buckets.includes('YG') && !salaryRecordForMutation(mutation,records)))return false;");
  const writes={'app/closing-august-2026.json':JSON.stringify(result.closing,null,2)+'\n','app/salary-savings-snapshot.json':JSON.stringify(result.salary,null,2)+'\n',...recordWrites,'app/api/salary-savings/route.ts':api,'app/api/requests/route.ts':requests,'app/finance-archive-dashboard.tsx':dashboard,'app/um-monitor-panel.tsx':monitor};
  writes['app/payroll-bank-links.ts']=payroll;
+ let summary=await read('app/closing-august-panel.tsx');
+ summary=replaceOnce(summary,'Saldo positif · alokasi September belum lengkap','Saldo positif · {linked.pendingStaffCash ? "alokasi belum lengkap" : "alokasi sudah direkonsiliasi"}');
+ summary=replaceOnce(summary,'· umum + gaji + alokasi belum lengkap','· umum + gaji{linked.pendingStaffCash ? " + alokasi belum lengkap" : ""}');
+ summary=summary.replace(/ygAdvance:[\d_]+/, 'ygAdvance:a.staff.reduce((sum,s)=>sum+Math.max(0,-s.position),0)');
+ summary=summary.replace(/Talangan baru bersih 2026 [^<]+?Total piutang aktif/, 'Talangan baru bersih mengikuti pembayaran dan pemulihan hak staf yang sudah dialokasikan, termasuk gaji dan donasi September. Total piutang aktif');
+ writes['app/closing-august-panel.tsx']=summary;
+ writes['app/fund-balance-details.tsx']=replaceOnce(await read('app/fund-balance-details.tsx'),'Total saldo positif sebelum alokasi yang belum lengkap','Total saldo positif staf');
  for(const [file,value] of Object.entries(writes))await writeFile(resolve(root,file),value);
  console.log('Private reconciliation verified; bank entries preserved and staff reserves reconcile.');
 }
