@@ -1,3 +1,4 @@
+import {payrollGuide} from './payroll-guide.mjs';
 import {canonicalStaffName,displayStaffName} from './payroll-identity.mjs';
 import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
@@ -38,7 +39,7 @@ async function formMeta(env,u,input,data,id,old={}){
  for(const i of data.items){const policy=source.policy[canonicalStaffName(i.name)];if(!policy?.active||!Number.isSafeInteger(policy.monthlySalary))fail(400,'Penerima harus sesuai daftar staf aktif pada alokasi gaji. Muat ulang sumber alokasi.');meta.policy_snapshot[i.staff_id]={monthlySalary:policy.monthlySalary};const allocation=report.staff.find(s=>s.id===i.staff_id);i.allocation_snapshot={asOf:source.asOf,monthlySalary:policy.monthlySalary,position:allocation?.position??null,source_ids:allocation?.sources.map(s=>s.id)||[]};if(i.net!==policy.monthlySalary&&!meta.adjustment_note)fail(400,'Isi alasan penyesuaian jika nominal berbeda dari kebijakan gaji.');}
  return meta;
 }
-function editable(u,env,row){if(!payrollOperator(u,env)||row.creator!==u.id)fail(403,'Hanya staf Finance pembuat pengajuan yang dapat menyunting.');if(!['draft','returned'].includes(row.status))fail(409,'Pengajuan sudah dikirim dan tidak dapat diubah.');}
+function editable(u,env,row){if(!payrollOperator(u,env)&&!(financeOwner(u)&&row.creator===u.id))fail(403,'Draf hanya dapat disunting Finance atau Direktur pembuatnya.');if(!['draft','returned'].includes(row.status))fail(409,'Pengajuan sudah dikirim dan tidak dapat diubah.');}
 function version(row,v){if(!Number.isInteger(v)||row.version!==v)fail(409,'Pengajuan telah berubah. Muat ulang sebelum melanjutkan.');}
 function eventStatement(env,id,event,u,action,snapshot){return q(env,'INSERT INTO yg_payroll_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_payroll_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),id,event);}
 async function mutate(env,statements){try{const result=await env.DB.batch(statements);if(!result[0].meta.changes)fail(409,'Pengajuan telah berubah. Muat ulang sebelum melanjutkan.');}catch(e){if(String(e.message).includes('UNIQUE constraint failed: yg_payroll_requests.period'))fail(409,'Sudah ada pengajuan aktif atau disetujui untuk bulan ini.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Nomor formulir, referensi pembayaran, atau mutasi sudah digunakan.');throw e;}}
@@ -51,6 +52,7 @@ export async function payrollRoute(req,env,u){
   if(req.method!=='GET')fail(405,'Metode tidak didukung.');
   return new Response(payrollPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  }
+ if(path==='/finance/payroll/guide'&&req.method==='GET')return new Response(payrollGuide(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  const prefix='/finance/payroll/api';
  if(path==='/finance/payroll/report'&&req.method==='GET')return new Response(payrollReportPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix+'/defaults'&&req.method==='GET')return Response.json(await payrollDefaults(env,u,url.searchParams.get('period')));
@@ -66,7 +68,7 @@ export async function payrollRoute(req,env,u){
  const print=path.match(/^\/finance\/payroll\/print\/([a-f0-9-]{36})$/);if(print&&req.method==='GET')return new Response(payrollPrint(await detail(env,print[1])),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix&&req.method==='GET')return Response.json({user:{name:u.name,email:u.email,director:financeOwner(u),operator:payrollOperator(u,env)},requests:(await q(env,'SELECT id,period,status,total,creator_email,version,created_at,updated_at FROM yg_payroll_requests ORDER BY period DESC,created_at DESC LIMIT 500').all()).results});
  if(path===prefix&&req.method==='POST'){
-  if(!payrollOperator(u,env))fail(403,'Pengajuan dibuat oleh staf Finance.');
+  if(!payrollAccess(u,env))fail(403,'Pengajuan dibuat oleh Finance atau Direktur.');
   const raw=await input(req),data=payrollInput(raw),id=uuid(),event=uuid(),at=now(),meta=await formMeta(env,u,raw.form_meta,data,id);
   await mutate(env,[q(env,"INSERT INTO yg_payroll_requests(id,period,status,creator,creator_email,items,total,notes,last_event,created_at,updated_at,form_meta) VALUES(?,?,'draft',?,?,?,?,?,?,?,?,?)",id,data.period,u.id,u.email,JSON.stringify(data.items),data.total,data.notes,event,at,at,JSON.stringify(meta)),eventStatement(env,id,event,u,'created',{...data,form_meta:meta})]);
   return Response.json(await detail(env,id),{status:201});
@@ -126,10 +128,10 @@ export async function payrollRoute(req,env,u){
    statement=q(env,'UPDATE yg_payroll_requests SET period=?,items=?,total=?,notes=?,form_meta=?,version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',changed.period,JSON.stringify(changed.items),changed.total,changed.notes,JSON.stringify(meta),event,at,id,row.version);
   }else{
    if(action==='submit'){editable(u,env,row);payrollInput(serialize(row));}
-   else {if(!financeOwner(u))fail(403,'Hanya Direktur yang dapat menyetujui atau mengembalikan.');if(row.status!=='submitted')fail(409,'Hanya pengajuan yang sudah diajukan dapat ditinjau.');if(row.creator===u.id)fail(403,'Pembuat pengajuan tidak dapat menyetujui pengajuannya sendiri.');}
+   else {if(!financeOwner(u))fail(403,'Hanya Direktur yang dapat menyetujui atau mengembalikan.');if(row.status!=='submitted')fail(409,'Hanya pengajuan yang sudah diajukan dapat ditinjau.');}
    const note=text(data.note||'',4000,action==='return'),status={submit:'submitted',approve:'approved',return:'returned'}[action];kind=status;
    const files=(await q(env,'SELECT id,filename,size FROM yg_payroll_files WHERE request_id=? ORDER BY id',id).all()).results;
-   snapshot={...serialize(row),status,review_note:note,files};
+   snapshot={...serialize(row),status,review_note:note,files,self_approved:action==='approve'&&row.creator===u.id,submitted_by:action==='submit'?u.email:null};
    statement=q(env,'UPDATE yg_payroll_requests SET status=?,review_note=?,submitted_at=?,reviewed_at=?,reviewer_email=?,version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',status,note,action==='submit'?at:row.submitted_at,action==='submit'?null:at,action==='submit'?null:u.email,event,at,id,row.version);
   }
   await mutate(env,[statement,eventStatement(env,id,event,u,kind,snapshot)]);return Response.json(await detail(env,id));

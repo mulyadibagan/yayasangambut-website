@@ -1,6 +1,6 @@
 # Pengajuan dan pembayaran gaji YG Finance
 
-Halaman `/finance/payroll` tersedia dari menu Keuangan YG. Finance yang ditunjuk (`PAYROLL_FINANCE_EMAIL`) membuat pengajuan dan mencatat pembayaran. Direktur membuka pratinjau form, memeriksa, menyetujui atau mengembalikan pengajuan. Akses payroll tidak membuka API keuangan lama kepada staf Finance.
+Halaman `/finance/payroll` tersedia dari menu Keuangan YG. Finance yang ditunjuk (`PAYROLL_FINANCE_EMAIL`) membuat pengajuan dan mencatat pembayaran. Direktur dapat membuat pengajuan, membuka pratinjau form, memeriksa, menyetujui atau mengembalikan pengajuan. Riena juga memiliki akses dasbor Finance sesuai hak akses yang berlaku.
 
 ## Alur penggunaan
 
@@ -22,3 +22,8 @@ Berkas pendukung/bukti disimpan privat di R2 dengan awalan `payroll-private/`; a
 Profil referensi disimpan dengan AES-256-GCM pada `imports/payroll-profiles-v2.enc`, dengan izin pengguna. Kunci `PAYROLL_PROFILE_KEY_V2` berada di GitHub Secrets dan hanya digunakan pada runner deployment yang dilindungi. Hasil dekripsi masuk modul server Worker Finance privat, bukan aset publik. Nominal kebijakan tetap berasal dari sistem.
 
 Deployment membandingkan checksum tabel historis keuangan dan agenda sebelum/sesudah migrasi. Pengujian memakai data sintetis: hak akses, revisi/persetujuan, cetak, pembayaran sebagian/lunas, bukti wajib, batas nominal, duplikasi, retry, serta pencocokan ulang saat sumber bank diperbarui. Tidak membuat pengajuan, persetujuan atau transfer uji di produksi.
+
+
+## Panduan dan pengajuan oleh Direktur
+
+Panduan ringkas tersedia pada `/finance/payroll/guide` dari tautan **Panduan gaji**. Direktur dapat memilih **Pengajuan baru**, menyimpan draf, mengirim, dan menyetujui pengajuannya sendiri sesuai izin eksplisit pengguna. Konfirmasi menyebut pengajuan sendiri; snapshot audit approval mencatat `self_approved: true` bersama aktor/waktu/versi. Finance dapat memeriksa dan menyunting draf Direktur, tetapi tetap tidak dapat menyetujui. Direktur hanya menyunting draf miliknya sendiri. Semua rincian terkunci setelah diajukan. Pembayaran dan bukti transfer tetap khusus Finance. **Pratinjau form Finance** menyediakan mode baca saja tanpa membuat pengajuan.

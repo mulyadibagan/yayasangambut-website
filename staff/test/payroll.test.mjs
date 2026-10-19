@@ -26,7 +26,7 @@ test('designated Finance reaches the full dashboard but cannot approve payroll',
  await call(env,'','other','GET',null,403);
  const created=await create(env);
  await call(env,'/'+created.id+'/approve','finance','POST',{version:1},403);
- await call(env,'','director','POST',sample,403);
+ await call(env,'','director','POST',sample,201);
  env.FINANCE={async fetch(){return Response.json({sync:{},candidates:[]});}};
  for(const p of ['/finance','/finance/api/requests','/finance/email-sync','/finance/assets/app.js'])assert.equal((await worker.fetch(new Request(origin+p,{headers:{Cookie:'__Host-yg-session=finance'}}),env)).status,200);
  const evil=request('','finance','POST',sample);evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,env)).status,403);
@@ -121,4 +121,27 @@ test('one canonical bank entry cannot fund multiple payroll payments and matchin
 test('director print preview uses defaults without creating a request or approval',async()=>{
  const {env,db}=await setup();bindSource(env);const response=await worker.fetch(new Request(origin+'/finance/payroll/print-preview?period=2026-10',{headers:{Cookie:'__Host-yg-session=director'}}),env);
  assert.equal(response.status,200);const html=await response.text();assert.match(html,/PRATINJAU · BELUM DIAJUKAN/);assert.match(html,/5.400.000/);assert.match(html,/Belum disimpan, diajukan, atau disetujui/);assert.equal(db.prepare('SELECT COUNT(*) n FROM yg_payroll_requests').get().n,0);
+});
+
+
+test('Director can create and edit own draft; Finance can review it; other administrators remain excluded',async()=>{
+ const {env}=await setup();let a=await call(env,'','director','POST',sample,201);
+ assert.equal(a.creator_email,'mulyadi@yayasangambut.org');
+ a=await call(env,'/'+a.id,'director','PUT',{...sample,version:a.version,notes:'Prepared by Director'});
+ a=await call(env,'/'+a.id,'finance','PUT',{...sample,version:a.version,notes:'Reviewed by Finance'});
+ assert.equal(a.creator_email,'mulyadi@yayasangambut.org');assert.equal(a.events.at(-1).actor_email,env.PAYROLL_FINANCE_EMAIL);
+ await call(env,'/'+a.id,'other','PUT',{...sample,version:a.version},403);
+ const guide=await worker.fetch(new Request(origin+'/finance/payroll/guide',{headers:{Cookie:'__Host-yg-session=finance'}}),env);
+ assert.equal(guide.status,200);assert.match(await guide.text(),/Unggah bukti saja belum mencatat pembayaran/);
+ assert.equal((await worker.fetch(new Request(origin+'/finance/payroll/guide',{headers:{Cookie:'__Host-yg-session=other'}}),env)).status,403);
+});
+
+
+test('Director may submit and approve own payroll with explicit audit flag; Finance payment permissions unchanged',async()=>{
+ const {env,db}=await setup();bindSource(env);let a=await call(env,'','director','POST',sample,201);
+ a=await call(env,'/'+a.id+'/submit','director','POST',{version:a.version});assert.equal(a.status,'submitted');assert.equal(a.events.at(-1).snapshot.submitted_by,'mulyadi@yayasangambut.org');
+ a=await call(env,'/'+a.id+'/approve','director','POST',{version:a.version});assert.equal(a.status,'approved');assert.equal(a.events.at(-1).snapshot.self_approved,true);assert.equal(a.events.at(-1).actor_email,'mulyadi@yayasangambut.org');
+ await call(env,'/'+a.id+'/payments','director','POST',payment(a),403);
+ a=await proof(env,a);a=await call(env,'/'+a.id+'/payments','finance','POST',payment(a,5400000),201);assert.equal(a.payment_status,'paid');
+ assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
 });

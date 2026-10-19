@@ -10,11 +10,11 @@ const month=p=>new Date(p+'-01T12:00:00').toLocaleDateString('id-ID',{month:'lon
 
 const date=s=>new Date(s).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
 
-let user,current=null,requests=[],busy=false,dirty=false,paymentDirty=false,defaults=null,paymentToken=crypto.randomUUID(),bankData=null;
+let user,current=null,requests=[],busy=false,dirty=false,paymentDirty=false,previewMode=false,defaults=null,paymentToken=crypto.randomUUID(),bankData=null;
 
 const paymentForm=$('#payment-form'),localToday=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}),staffId=i=>i.staff_id||'staff:'+i.name.trim().toLowerCase().replace(/\s+/g,'-');
 
-const editable=()=>user?.operator&&(!current||['draft','returned'].includes(current.status)&&current.creator_email===user.email);
+const editable=()=>!previewMode&&(user?.operator||user?.director)&&(!current||['draft','returned'].includes(current.status)&&(user.operator||current.creator_email===user.email));
 
 async function api(path='',method='GET',data){const r=await fetch(base+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});const result=await r.json();if(!r.ok)throw Error(result.error||'Permintaan gagal.');return result;}
 
@@ -28,7 +28,7 @@ function badge(status){return '<span class="badge" data-status="'+status+'">'+la
 
 function list(){ $('#requests').innerHTML=requests.length?requests.map(r=>'<button type="button" class="request" data-id="'+r.id+'" aria-current="'+(current?.id===r.id)+'"><strong>'+month(r.period)+'</strong><small>'+money(r.total)+'</small>'+badge(r.status)+'</button>').join(''):'<p class="muted">Belum ada pengajuan gaji.</p>'; }
 
-async function loadList(){const data=await api();user=data.user;requests=data.requests;$('#account').textContent=user.name+' · '+(user.director?'Direktur':'Finance');$('#finance-home').hidden=!user.director;$('#new-request').hidden=!(user.operator||user.director);$('#new-request').textContent=user.operator?'＋ Pengajuan baru':'Lihat form pengajuan';$('#empty').textContent=requests.length?'Pilih pengajuan untuk melihat rincian.':'Menunggu pengajuan dari Finance. Anda dapat melihat form melalui tombol di atas.';list();}
+async function loadList(){const data=await api();user=data.user;requests=data.requests;$('#account').textContent=user.name+' · '+(user.director?'Direktur':'Finance');$('#finance-home').hidden=!user.director;$('#new-request').hidden=!(user.operator||user.director);$('#new-request').textContent='＋ Pengajuan baru';$('#preview-request').hidden=!(user.operator||user.director);$('#empty').textContent=requests.length?'Pilih pengajuan untuk melihat rincian.':'Menunggu pengajuan dari Finance. Anda dapat melihat form melalui tombol di atas.';list();}
 
 function row(item={name:'',program:'',bank:'',account:'',base:0,allowance:0,deduction:0}){
 
@@ -48,11 +48,11 @@ function calculate(){let total=0;values().forEach((r,i)=>{const el=$('#items').c
 
 function render(r){
 
- current=r;dirty=false;paymentDirty=false;$('#empty').hidden=true;form.hidden=false;const edit=editable(),preview=!r&&user.director&&!user.operator;
+ current=r;if(r)previewMode=false;dirty=false;paymentDirty=false;$('#empty').hidden=true;form.hidden=false;const edit=editable(),preview=!r&&previewMode;
 
  $('#detail-title').textContent=r?'Gaji '+month(r.period):'Pengajuan baru';$('#status').textContent=labels[r?.status||'draft'];$('#status').dataset.status=r?.status||'draft';$('#request-meta').textContent=r?'Dibuat oleh '+r.creator_email+' · '+date(r.created_at):'Draf dapat diperiksa dan dilengkapi sebelum diajukan.';
 
- if(preview){$('#detail-title').textContent='Form pengajuan gaji';$('#status').textContent='Pratinjau';$('#request-meta').textContent='Ini formulir yang digunakan Finance. Tampilan ini tidak membuat pengajuan atau mengubah data. Pengajuan dibuat oleh Riena, lalu ditinjau oleh Anda.';}
+ if(preview){$('#detail-title').textContent='Form pengajuan gaji';$('#status').textContent='Pratinjau';$('#request-meta').textContent='Ini formulir yang digunakan Finance. Tampilan ini tidak membuat pengajuan atau mengubah data. Gunakan Pengajuan baru untuk membuat draf. Pratinjau ini menampilkan form Finance.';}
 
  form.elements.period.value=r?.period||new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,7);form.elements.notes.value=r?.notes||'';form.elements.period.disabled=!edit;form.elements.notes.disabled=!edit;
 
@@ -71,15 +71,15 @@ function render(r){
 
  $('#files').innerHTML=r?.files?.some(f=>f.purpose!=='payment')?r.files.filter(f=>f.purpose!=='payment').map(f=>'<div class="file"><a href="'+base+'/'+r.id+'/files/'+f.id+'">'+esc(f.filename)+'</a><small>'+Math.ceil(f.size/1024)+' KB · '+esc(f.actor_email)+'</small></div>').join(''):'<p class="muted">Belum ada dokumen pendukung.</p>';
 
- const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review;$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=false;$('#print').textContent=r?'Cetak':'Pratinjau cetak';
+ const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review;$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=!r&&!preview;$('#print').textContent=r?'Cetak':'Pratinjau cetak';
 
  const actions={created:'Draf dibuat',updated:'Draf diperbarui',attached:'Dokumen dilampirkan',submitted:'Diajukan kepada Direktur',returned:'Dikembalikan untuk diperbaiki',approved:'Disetujui Direktur',paid:'Pembayaran dicatat'};
 
- $('#events').innerHTML=(r?.events||[]).map(e=>'<div class="event"><strong>'+actions[e.action]+'</strong><br><small>'+esc(e.actor_email)+' · '+date(e.created_at)+' · Versi '+e.version+'</small>'+(e.snapshot.review_note?'<p>'+esc(e.snapshot.review_note)+'</p>':'')+'</div>').join('');$('#history').hidden=!r;renderPayments();list();lock(busy);
+ $('#events').innerHTML=(r?.events||[]).map(e=>'<div class="event"><strong>'+actions[e.action]+(e.snapshot.self_approved?' (pengajuan sendiri)':'')+'</strong><br><small>'+esc(e.actor_email)+' · '+date(e.created_at)+' · Versi '+e.version+'</small>'+(e.snapshot.review_note?'<p>'+esc(e.snapshot.review_note)+'</p>':'')+'</div>').join('');$('#history').hidden=!r;renderPayments();list();lock(busy);
 
 }
 
-async function newForm(period=localToday().slice(0,7)){defaults={...await api('/defaults?period='+encodeURIComponent(period)),period};render(null);if(defaults.warnings?.length)notice(defaults.warnings.join(' '));}
+async function newForm(period=localToday().slice(0,7),preview=false){previewMode=preview;defaults={...await api('/defaults?period='+encodeURIComponent(period)),period};if(user.director&&!preview){defaults.form_meta.applicant='Mulyadi, S.P.';defaults.form_meta.title='Direktur';}render(null);if(defaults.warnings?.length)notice(defaults.warnings.join(' '));}
 
 async function save(){if(!editable())return false;const form_meta=Object.fromEntries(['number','applicant','title','purpose','place','adjustment_note'].map(k=>[k,form.elements[k].value]));form_meta.date=form.elements.request_date.value;const payload={period:form.elements.period.value,notes:form.elements.notes.value,form_meta,items:values(),...(current?{version:current.version}:{})};const result=await api(current?'/'+current.id:'',current?'PUT':'POST',payload);render(result);await loadList();return true;}
 
@@ -91,6 +91,7 @@ $('#add-row').onclick=()=>{if($('#items').children.length>=100)return notice('Ma
 
 $('#items').onclick=e=>{const b=e.target.closest('[data-remove]');if(!b||!editable())return;if($('#items').children.length===1)return notice('Minimal satu penerima gaji.',true);b.closest('.recipient').remove();dirty=true;calculate();};
 
+$('#preview-request').onclick=()=>{if((dirty||paymentDirty)&&!confirm('Tinggalkan perubahan yang belum disimpan?'))return;run(()=>newForm(localToday().slice(0,7),true));};
 $('#new-request').onclick=()=>{if((dirty||paymentDirty)&&!confirm('Tinggalkan perubahan yang belum disimpan?'))return;run(()=>newForm());};
 
 $('#fill-allocation').onclick=()=>{if(!confirm('Isi ulang rincian dari kebijakan gaji dan alokasi saat ini? Perubahan draf tetap perlu disimpan.'))return;run(async()=>{const data=await api('/defaults?period='+form.elements.period.value);$('#items').innerHTML='';data.items.forEach(row);form.elements.purpose.value=data.form_meta.purpose;$('#allocation-source').textContent='Diisi dari alokasi sistem per '+data.sourceAsOf;dirty=true;notice('Rincian diisi otomatis. Periksa lalu simpan draf.');});};
@@ -103,7 +104,7 @@ $('#refresh').onclick=()=>{if((dirty||paymentDirty)&&!confirm('Muat ulang dan ti
 
 $('#submit').onclick=()=>run(async()=>{if(dirty){notice('Simpan perubahan draf sebelum mengajukan.',true);return;}if(!confirm('Ajukan gaji '+month(current.period)+' sebesar '+money(current.total)+' kepada Direktur? Rincian akan dikunci sampai dikembalikan.'))return;render(await api('/'+current.id+'/submit','POST',{version:current.version}));await loadList();notice('Pengajuan sudah masuk ke daftar tinjauan Direktur.');});
 
-for(const action of ['approve','return'])$('#'+action).onclick=()=>run(async()=>{const note=$('#director-note').value.trim();if(action==='return'&&!note)return notice('Isi catatan perbaikan terlebih dahulu.',true);if(!confirm(action==='approve'?'Setujui gaji '+month(current.period)+' sebesar '+money(current.total)+'?':'Kembalikan pengajuan ini kepada Finance?'))return;render(await api('/'+current.id+'/'+action,'POST',{version:current.version,note}));await loadList();notice(action==='approve'?'Pengajuan disetujui. Belum ada pencatatan pembayaran otomatis.':'Pengajuan dikembalikan beserta catatan perbaikan.');});
+for(const action of ['approve','return'])$('#'+action).onclick=()=>run(async()=>{const note=$('#director-note').value.trim();if(action==='return'&&!note)return notice('Isi catatan perbaikan terlebih dahulu.',true);if(!confirm(action==='approve'?(current.creator_email===user.email?'Setujui pengajuan yang Anda buat sendiri? Tindakan ini akan ditandai di riwayat. ':'Setujui pengajuan? ')+'Gaji '+month(current.period)+' sebesar '+money(current.total):'Kembalikan pengajuan ini kepada Finance?'))return;render(await api('/'+current.id+'/'+action,'POST',{version:current.version,note}));await loadList();notice(action==='approve'?'Pengajuan disetujui. Belum ada pencatatan pembayaran otomatis.':'Pengajuan dikembalikan beserta catatan perbaikan.');});
 
 $('#file').onchange=()=>{const file=$('#file').files[0];if(!file)return;run(async()=>{try{if(dirty)throw Error('Simpan perubahan draf sebelum menambahkan dokumen.');if(file.size>5*1024*1024)throw Error('Ukuran maksimal 5 MB.');notice('Mengunggah dokumen…');const r=await fetch(base+'/'+current.id+'/files',{method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type,'X-Filename':encodeURIComponent(file.name),'X-Payroll-Version':String(current.version)},body:file});const result=await r.json();if(!r.ok)throw Error(result.error);render(result);notice('Dokumen pendukung tersimpan.');}finally{$('#file').value='';}});};
 
@@ -149,4 +150,4 @@ $('#payment-file').onchange=()=>{const file=$('#payment-file').files[0];if(!file
 
 paymentForm.onsubmit=e=>{e.preventDefault();const amount=paymentSum();if(amount<=0)return notice('Isi nominal pembayaran pada penerima yang ditransfer.',true);if(!confirm('Catat pembayaran '+money(amount)+' sesuai bukti transfer?'))return;const data={id:paymentToken,version:current.version,...Object.fromEntries(['paid_date','source_account','reference','notes','bank_entry_id'].map(k=>[k,paymentForm.elements[k].value])),allocations:[...$('#payment-allocations').querySelectorAll('input')].filter(i=>Number(i.value)>0).map(i=>({staff_id:i.dataset.paymentStaff,amount:Number(i.value)})),proof_ids:[...$('#payment-proofs').querySelectorAll('input:checked')].map(i=>i.value)};run(async()=>{render(await api('/'+current.id+'/payments','POST',data));notice('Pembayaran dan bukti transfer tercatat di laporan pembayaran gaji.');});};
 
-run(async()=>{await loadList();try{await loadBank();}catch(e){notice(e.message,true);}const requested=new URLSearchParams(location.search).get('id');if(requested&&requests.some(r=>r.id===requested))render(await api('/'+requested));else if(requests.length)render(await api('/'+requests[0].id));else if(user.operator||user.director)await newForm();});
+run(async()=>{await loadList();try{await loadBank();}catch(e){notice(e.message,true);}const requested=new URLSearchParams(location.search).get('id');if(requested&&requests.some(r=>r.id===requested))render(await api('/'+requested));else if(requests.length)render(await api('/'+requests[0].id));else if(user.operator||user.director)await newForm(localToday().slice(0,7),user.director);});
