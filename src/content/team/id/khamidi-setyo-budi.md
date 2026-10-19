@@ -1,7 +1,7 @@
 ---
 name: "Khamidi Setyo Budi"
-position: "Tim Multimedia"
-positionEn: "Multimedia Team"
+position: "Staf Multimedia"
+positionEn: "Multimedia Staff"
 group: "Management & Program Team"
 photo: "/team/khamidi-setyo-budi.webp"
 language: id
