@@ -13,6 +13,7 @@ import {bilingualFiles,commitFiles} from './bilingual-publish.mjs';
 import {renderPreview} from './preview.mjs';
 import {createRemoteJWKSet,jwtVerify,SignJWT,importPKCS8} from 'jose';
 import {HttpError,fail,isEditor,assertIdentity,assertEdit,now,token,sha,validatePost,articleMarkdown,imageType} from './core.mjs';
+import {financeReturnPath} from './finance-return.mjs';
 const googleKeys=createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json; charset=utf-8'}});
 const cookie=(name,value,age)=>`${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
@@ -73,7 +74,8 @@ async function authCallback(req,env,url){
   const raw=token();await query(env,'INSERT INTO sessions VALUES(?,?,?)',await sha(raw),u.id,Date.now()+8*3600000).run();
   await audit(env,u,'login',u.id);
   if(target){const issued=await issueCode(env,u,target);const headers=new Headers(issued.headers);headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});}
-  const headers=new Headers({Location:env.APP_ORIGIN+'/'});headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});
+  let returnPath='/';try{returnPath=financeReturnPath(decodeURIComponent(cookies(req)['__Host-yg-finance-return']||''));}catch{}
+  const headers=new Headers({Location:env.APP_ORIGIN+returnPath});headers.append('Set-Cookie',cookie('__Host-yg-finance-return','',0));headers.append('Set-Cookie',cookie('__Host-yg-session',raw,28800));headers.append('Set-Cookie',cookie('__Host-yg-oauth','',0));return new Response(null,{status:302,headers});
 }
 async function githubToken(env){
   if(!env.GITHUB_APP_ID || !env.GITHUB_APP_PRIVATE_KEY || !env.GITHUB_INSTALLATION_ID)fail(503,'Koneksi penerbitan belum diaktifkan.');
@@ -245,7 +247,7 @@ async function route(req,env){
     try { u=await session(req,env); }
     catch(e) {
       const pageRequest=req.method==='GET' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/finance/api/') && !url.pathname.startsWith('/finance/payroll/api') && (req.headers.get('Sec-Fetch-Mode')==='navigate'||req.headers.get('Accept')?.includes('text/html'));
-      if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/');
+      if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/',{'Set-Cookie':cookie('__Host-yg-finance-return',encodeURIComponent(financeReturnPath(url.pathname+url.search)),600)});
       throw e;
     }
     if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u);
