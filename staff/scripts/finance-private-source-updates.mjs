@@ -10,7 +10,15 @@ export function applyVerifiedSourceUpdate(source,patch){
  source=source.replace(/\r\n/g,'\n');
  if(!patch||!allowedFiles.has(patch.file)||!Array.isArray(patch.replacements)||!patch.replacements.length||patch.replacements.length>100||![patch.beforeSha256,patch.afterSha256].every(h=>/^[a-f0-9]{64}$/.test(h)))fail();
  if(hash(source)===patch.afterSha256)return source;
- if(hash(source)!==patch.beforeSha256)fail();
+ if(hash(source)!==patch.beforeSha256){
+  // Only content hashes are diagnostic; private source and replacement values stay hidden.
+  let candidate=source;
+  for(const {from,to} of patch.replacements){
+   if(typeof from!=='string'||!from||typeof to!=='string'||candidate.split(from).length!==2)fail();
+   candidate=candidate.replace(from,()=>to);
+  }
+  throw Error('Private Finance source update rejected: baseline drift. beforeSha256='+hash(source)+' candidateAfterSha256='+hash(candidate)+' exactMatches='+patch.replacements.length);
+ }
  for(const {from,to} of patch.replacements){
   if(typeof from!=='string'||!from||typeof to!=='string'||source.split(from).length!==2)fail();
   source=source.replace(from,()=>to);
