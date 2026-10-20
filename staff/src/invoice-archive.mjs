@@ -1,0 +1,26 @@
+import {fail} from './core.mjs';
+import {documentSignature,signatureEligible} from './document-signature.mjs';
+import {invoicePdf} from './invoice-pdf.mjs';
+import {pdfHash} from './payroll-pdf.mjs';
+async function logo(env){if(!env.ASSETS)return;const r=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!r.ok)fail(503,'Logo YG belum tersedia.');return new Uint8Array(await r.arrayBuffer());}
+export async function draftInvoicePdf(env,r){return invoicePdf(r,await logo(env));}
+export async function saveInvoiceArchive(env,r,key){
+ if(!signatureEligible(r))fail(409,'Invoice harus disetujui Direktur sebelum diarsipkan.');
+ if(!env.MEDIA)fail(503,'Arsip PDF final belum tersedia.');
+ const image=await logo(env),signature=await documentSignature(env,r),bytes=await invoicePdf(r,image,signature),hash=await pdfHash(bytes),metadata={signature:signature?'with':'without',sha256:hash};
+ if(signature){const unsigned=await invoicePdf(r,image),unsignedHash=await pdfHash(unsigned),unsignedKey=key+'.without-signature.pdf';metadata.unsigned_key=unsignedKey;metadata.unsigned_sha256=unsignedHash;
+  const saved=await env.MEDIA.put(unsignedKey,unsigned,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/pdf'},customMetadata:{sha256:unsignedHash,source_sha256:hash}});if(saved===null)fail(409,'Versi cetak sudah tersimpan.');
+ }
+ const saved=await env.MEDIA.put(key,bytes,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/pdf'},customMetadata:metadata});if(saved===null)fail(409,'PDF final sudah tersimpan.');return {hash};
+}
+export async function invoiceArchiveOptions(env,r){const object=await env.MEDIA.get(r.pdf_key);if(!object)fail(503,'Arsip PDF final belum dapat dibaca.');const m=object.customMetadata||{};return {withSignature:m.signature==='with',withoutSignature:m.signature==='without'||!!(m.unsigned_key&&m.unsigned_sha256)};}
+export async function readInvoiceArchive(env,r,mode='original'){
+ if(!['original','with','without'].includes(mode))fail(400,'Pilihan tanda tangan tidak valid.');
+ const original=await env.MEDIA.get(r.pdf_key);if(!original)fail(503,'Arsip PDF final belum dapat dibaca.');const bytes=new Uint8Array(await original.arrayBuffer());if(await pdfHash(bytes)!==r.pdf_hash)fail(503,'Pemeriksaan PDF gagal.');const m=original.customMetadata||{};
+ if(mode==='original')return bytes;
+ if(mode==='with'){if(m.signature!=='with')fail(409,'Arsip ini tidak memiliki versi dengan tanda tangan elektronik. Dokumen asli tetap utuh.');return bytes;}
+ if(m.signature==='without')return bytes;
+ if(!m.unsigned_key||!m.unsigned_sha256)fail(409,'Versi tanpa tanda tangan belum tersedia untuk arsip lama ini. Dokumen asli tetap utuh.');
+ const unsigned=await env.MEDIA.get(m.unsigned_key);if(!unsigned)fail(503,'Arsip tanpa tanda tangan belum dapat dibaca.');const data=new Uint8Array(await unsigned.arrayBuffer());if(await pdfHash(data)!==m.unsigned_sha256||unsigned.customMetadata?.source_sha256!==r.pdf_hash)fail(503,'Pemeriksaan versi cetak gagal.');return data;
+}
+export function invoicePrintChoices(r,options){const en=r.data.language==='en',root='/finance/invoices',pdf=root+'/pdf/'+r.id;return `<!doctype html><html lang="${en?'en':'id'}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${en?'Print options':'Pilihan cetak'} · ${r.number}</title><link rel="stylesheet" href="/payroll.css"><body class="payroll-page"><main style="max-width:760px;margin:40px auto;padding:24px"><a href="${root}?id=${r.id}">← YG Finance</a><h1>${en?'Print invoice':'Cetak invoice'} ${r.number}</h1><p>${en?'The invoice has been approved. Choose a PDF version to download and print. Both versions retain the approval and financial details.':'Invoice sudah disetujui. Pilih versi PDF untuk diunduh dan dicetak. Kedua versi mempertahankan persetujuan dan rincian keuangan.'}</p>${options.withSignature?'<p><a href="'+pdf+'?signature=with">'+(en?'PDF with electronic signature':'PDF dengan tanda tangan elektronik')+'</a></p>':''}${options.withoutSignature?'<p><a href="'+pdf+'?signature=without">'+(en?'PDF without signature image':'PDF tanpa gambar tanda tangan')+'</a></p>':''}<p><a href="${pdf}">${en?'Original archived PDF':'PDF arsip asli'}</a></p><p>${en?'Existing archived documents are preserved.':'Dokumen arsip yang sudah ada tetap utuh.'}</p></main></body></html>`;}

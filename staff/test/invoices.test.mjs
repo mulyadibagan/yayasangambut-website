@@ -26,6 +26,7 @@ test('invoice access is private, draft defaults are exact and no old finance/age
  const evil=request(base,'finance','POST',seed());evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,f.env)).status,403);
  assert.equal((await call(f,'/finance/invoices/pdf/'+r.id,'other')).status,403);const pdf=await call(f,'/finance/invoices/pdf/'+r.id);assert.equal(pdf.headers.get('Content-Type'),'application/pdf');const d=await PDFDocument.load(await pdf.arrayBuffer());assert.equal(d.getPageCount(),1);assert.ok(Math.abs(d.getPage(0).getWidth()-595.28)<.01);
  assert.deepEqual({...f.db.prepare('SELECT * FROM finance_transactions').get()},{id:'historical',amount:123456});assert.equal(f.db.prepare('SELECT COUNT(*) n FROM team_agendas').get().n,1);
+ assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=with')).status,409);assert.equal((await call(f,'/finance/invoices/print/'+r.id+'?signature=with')).status,409);assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=without')).status,200);
 });
 test('annual numbers are atomic, canonical, ordered, never reused, and retry is idempotent',async()=>{
  const f=await setup(),b=seed();let res=await call(f,base,'finance','POST',b),r=await res.json();assert.equal(res.status,201);assert.equal((await call(f,base,'finance','POST',b)).status,200);

@@ -1,5 +1,7 @@
 # Invoice keluar YG Finance
 
+Untuk persetujuan invoice baru, PDF arsip asli tetap disimpan. Jika tanda tangan aktif, versi tanpa gambar tanda tangan juga dibuat pada saat persetujuan, dengan hash sendiri dan tautan hash ke dokumen asli. Pratinjau invoice final menyediakan pilihan unduh/cetak dengan atau tanpa gambar tanda tangan. Pilihan cetak tidak mengubah persetujuan, nomor, atau transaksi. Draf selalu tanpa tanda tangan; permintaan memaksakan tanda tangan pada draf ditolak. Arsip lama tanpa metadata varian hanya menyediakan PDF asli dan tidak dirender ulang.
+
 Bahasa invoice dipilih sebelum final: `id` (Bahasa Indonesia, juga untuk record lama tanpa bahasa) atau `en` (English). Bahasa tersimpan pada snapshot draf, mengatur label cetak, tanggal, angka IDR, terbilang, instruksi pembayaran, dan penutup. Uraian dan catatan diisi sesuai bahasa pilihan; hanya uraian baku RAPP yang dapat beralih otomatis di formulir. Bahasa tidak membuat register atau urutan nomor terpisah. Invoice final tetap terkunci dan menggunakan PDF arsip aslinya.
 
 Invoice baru memakai alamat kop Pekanbaru dan kontak organisasi sebagai isian awal. Template cetak memakai kop putih dengan logo di kiri, alamat yang membungkus sesuai lebar, dan aksen garis oranye/hijau. Data invoice tersimpan tetap menjadi sumber kop masing-masing dokumen. Jalur cetak invoice final mengarah ke PDF arsip yang diverifikasi hash; template terbaru tidak merender ulang dokumen final.
