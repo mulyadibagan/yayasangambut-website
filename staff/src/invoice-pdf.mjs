@@ -1,3 +1,4 @@
+import {invoiceBankLines} from './invoice-bank.mjs';
 import {signatureEligible} from './document-signature.mjs';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {terbilang} from './payroll-print.mjs';
@@ -19,7 +20,7 @@ export async function invoicePdf(r,logoBytes,signatureBytes){
  const meta='INV NO: '+r.number;draw(meta,left+width-bold.widthOfTextAtSize(meta,10),y,10,bold);draw('TANGGAL: '+date,left+width-regular.widthOfTextAtSize('TANGGAL: '+date,9),y-19,9);
  paragraph('Kepada:',280,10,bold);paragraph(d.customer,280);if(d.customer_address)paragraph(d.customer_address,280);if(d.contract_ref)paragraph('Kontrak / PO: '+d.contract_ref,280,9);y-=18;
  boxRow('REMARKS','TOTAL (IDR)',true,'REF');
- const detail=d.description+'\n\nTermin '+d.percentage+'% dari kontrak Rp'+invoiceMoney(d.contract_amount)+'.'+'\n\n\nPembayaran kepada:\n'+(d.account_name||'Yayasan Gambut')+'\n'+([d.bank,d.account].filter(Boolean).join(' / ')||'Rekening tujuan belum dilengkapi.');
+ const detail=d.description+'\n\nTermin '+d.percentage+'% dari kontrak Rp'+invoiceMoney(d.contract_amount)+'.'+'\n\n\nPembayaran kepada:\n'+invoiceBankLines(d).join('\n');
  const detailLines=wrap(detail,width-204);let n=0;while(n<detailLines.length){if(y<95){start();boxRow('REMARKS (lanjutan)','TOTAL (IDR)',true,'REF');}const count=Math.max(1,Math.floor((y-65)/15)-1);boxRow(detailLines.slice(n,n+count).join('\n'),n===0?invoiceMoney(r.amount):'',false,n===0?'1':'');n+=count;}
  if(d.tax_mode==='added')boxRow('PPN ditambahkan',invoiceMoney(d.vat));if(d.tax_mode==='included')boxRow('PPN termasuk dalam nilai termin',invoiceMoney(d.vat));if(d.withholding)boxRow('Potongan pajak','-'+invoiceMoney(d.withholding));boxRow('TOTAL',invoiceMoney(r.total),true);y-=16;paragraph('Terbilang: '+terbilang(r.total).replace(/\s+/g,' ').trim()+' rupiah.',width,9,bold);
  if(d.tax_mode==='unknown'||d.tax_status==='unknown'){y-=4;paragraph('Status dan perlakuan pajak belum terkonfirmasi. Dokumen ini masih draf.',width,9);}

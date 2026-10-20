@@ -1,3 +1,4 @@
+import {invoiceBankDefaults,invoiceBankRoute} from './invoice-bank.mjs';
 import {documentSignature,signatureDataUrl} from './document-signature.mjs';
 import {fail,now,sha,imageType} from './core.mjs';
 import {financeDashboardAccess,financeOwner} from './finance-access.mjs';
@@ -19,9 +20,10 @@ export async function invoiceRoute(req,e,u,{payload,readLimited}){
  if(!financeDashboardAccess(u))fail(403,'Invoice hanya untuk Finance yang ditunjuk dan Direktur.');
  const url=new URL(req.url),path=url.pathname,method=req.method;
  if(method!=='GET'&&req.headers.get('Origin')!==e.APP_ORIGIN)fail(403,'Permintaan harus berasal dari website YG.');
+ if(path===root+'/bank-settings'||path===root+'/bank-settings/api')return invoiceBankRoute(req,e,u,payload);
  if(path===root&&method==='GET')return new Response(invoicePage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  const api=root+'/api';
- if(path===api&&method==='GET')return Response.json({director:financeOwner(u),seed:invoiceSeed,sequences:(await q(e,'SELECT * FROM yg_invoice_sequences ORDER BY year').all()).results,invoices:(await q(e,'SELECT id,number,status,amount,total,version,created_at,updated_at,data FROM yg_invoices ORDER BY year DESC,seq DESC LIMIT 500').all()).results.map(r=>{const d=JSON.parse(r.data);return {...r,data:undefined,customer:d.customer,date:d.date};})});
+ if(path===api&&method==='GET')return Response.json({director:financeOwner(u),seed:{...invoiceSeed,...await invoiceBankDefaults(e)},sequences:(await q(e,'SELECT * FROM yg_invoice_sequences ORDER BY year').all()).results,invoices:(await q(e,'SELECT id,number,status,amount,total,version,created_at,updated_at,data FROM yg_invoices ORDER BY year DESC,seq DESC LIMIT 500').all()).results.map(r=>{const d=JSON.parse(r.data);return {...r,data:undefined,customer:d.customer,date:d.date};})});
  if(path===api&&method==='POST'){
   const b=await payload(req),v=invoiceInput(b),n=invoiceNumber(b.number,v.year);if(n.code!==v.data.customer_code)fail(400,'Kode pelanggan tidak sesuai nomor invoice.');
   if(!/^[a-f0-9-]{36}$/.test(b.request_id||''))fail(400,'Identitas penyimpanan tidak valid.');const hash=await sha(JSON.stringify({number:n.number,...v})),old=await q(e,'SELECT id,creator,creation_hash FROM yg_invoices WHERE id=?',b.request_id).first();

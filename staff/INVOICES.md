@@ -1,5 +1,7 @@
 # Invoice keluar YG Finance
 
+Rekening standar invoice disimpan privat melalui `/finance/invoices/bank-settings` oleh Direktur, terpisah dari kode publik. Seed invoice baru membaca pengaturan tersebut; invoice yang sudah tersimpan tidak diubah otomatis. Nama rekening, bank, alamat bank, SWIFT, dan nomor rekening dicetak sebagai baris tersendiri pada instruksi pembayaran. Perubahan draf tetap melalui penyimpanan berversi dan riwayat yang sudah ada.
+
 Direktur dan Finance yang ditunjuk membuka `/finance/invoices` melalui menu Invoice di YG Finance. Simpan draf untuk mengalokasikan nomor, buka pratinjau cetak A4, gunakan Cetak / simpan PDF atau Unduh PDF A4. Data tagihan berada pada tabel `yg_invoice_*`; tidak membuat mutasi, penerimaan, piutang terposting, email, atau status pembayaran pada sumber keuangan historis.
 
 Nomor bersifat satu urutan tahunan lintas pelanggan. Sesuai permintaan nomor `10/YG-RAPP/26` dan referensi GEC `009/YG-GEC/26`, migrasi mencadangkan nomor 1–9 tahun 2026 sebagai rentang historis. Nomor baru dialokasikan atomik saat penyimpanan draf pertama; unik pada pasangan tahun/urutan dan nomor yang dinormalisasi. Pembatalan draf mempertahankan nomor dan audit. Pemakaian nomor historis harus dicocokkan kembali oleh Finance sebelum final. Tahun berikutnya dimulai dari 1. Tidak mengimpor atau mengubah invoice historis.
