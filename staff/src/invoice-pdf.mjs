@@ -1,9 +1,11 @@
+import {signatureEligible} from './document-signature.mjs';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {terbilang} from './payroll-print.mjs';
 export const invoiceMoney=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(n);
 const clean=s=>String(s??'').replace(/[–—−]/g,'-').replace(/\u00a0/g,' ').replace(/\r/g,'');
-export async function invoicePdf(r,logoBytes){
+export async function invoicePdf(r,logoBytes,signatureBytes){
  const doc=await PDFDocument.create(),regular=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),logo=logoBytes?await doc.embedPng(logoBytes):null;
+ const signature=signatureBytes&&signatureEligible(r)?await doc.embedPng(signatureBytes):null;
  doc.setTitle('Invoice '+r.number);doc.setAuthor('Yayasan Gambut');
  const d=r.data,left=42,width=511.28,green=rgb(.07,.3,.23),ink=rgb(.12,.15,.14),line=rgb(.55,.63,.58),pale=rgb(.94,.97,.95);let page,y;
  const draw=(s,x,top,size=10,font=regular,color=ink)=>page.drawText(clean(s),{x,y:top-size,size,font,color});
@@ -21,6 +23,6 @@ export async function invoicePdf(r,logoBytes){
  const detailLines=wrap(detail,width-204);let n=0;while(n<detailLines.length){if(y<95){start();boxRow('REMARKS (lanjutan)','TOTAL (IDR)',true,'REF');}const count=Math.max(1,Math.floor((y-65)/15)-1);boxRow(detailLines.slice(n,n+count).join('\n'),n===0?invoiceMoney(r.amount):'',false,n===0?'1':'');n+=count;}
  if(d.tax_mode==='added')boxRow('PPN ditambahkan',invoiceMoney(d.vat));if(d.tax_mode==='included')boxRow('PPN termasuk dalam nilai termin',invoiceMoney(d.vat));if(d.withholding)boxRow('Potongan pajak','-'+invoiceMoney(d.withholding));boxRow('TOTAL',invoiceMoney(r.total),true);y-=16;paragraph('Terbilang: '+terbilang(r.total).replace(/\s+/g,' ').trim()+' rupiah.',width,9,bold);
  if(d.tax_mode==='unknown'||d.tax_status==='unknown'){y-=4;paragraph('Status dan perlakuan pajak belum terkonfirmasi. Dokumen ini masih draf.',width,9);}
- y-=10;if(d.notes){y-=8;paragraph(d.notes,width,9);}y-=20;ensure(90);paragraph('Untuk Yayasan Gambut,',width,10);y-=26;paragraph('Mulyadi',width,10,bold);paragraph('Direktur',width,9);if(r.status==='issued')paragraph('Diterbitkan melalui akun Direktur pada '+new Date(r.issued_at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB.',width,8);else paragraph('Draf untuk pemeriksaan. Belum diterbitkan, dikirim, atau dinyatakan dibayar.',width,8);
+ y-=10;if(d.notes){y-=8;paragraph(d.notes,width,9);}y-=20;ensure(signature?145:90);paragraph('Untuk Yayasan Gambut,',width,10);if(signature){page.drawImage(signature,{x:left,y:y-70,width:105,height:70});y-=74;}else y-=26;paragraph('Mulyadi',width,10,bold);paragraph('Direktur',width,9);if(r.status==='issued')paragraph('Diterbitkan melalui akun Direktur pada '+new Date(r.issued_at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB.',width,8);else paragraph('Draf untuk pemeriksaan. Belum diterbitkan, dikirim, atau dinyatakan dibayar.',width,8);
  const pages=doc.getPages();pages.forEach((p,i)=>p.drawText('YG Finance | '+r.number+' | '+(i+1)+'/'+pages.length,{x:left,y:25,size:7,font:regular,color:rgb(.45,.5,.47)}));return doc.save();
 }

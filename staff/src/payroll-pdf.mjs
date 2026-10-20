@@ -1,12 +1,14 @@
+import {documentSignature,signatureEligible} from './document-signature.mjs';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {terbilang} from './payroll-print.mjs';
 const clean=s=>String(s??'').replace(/\u00a0/g,' ').replace(/[–—−]/g,'-').replace(/\r/g,'');
 const money=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(n);
 const date=s=>new Date(String(s).slice(0,10)+'T12:00:00+07:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'});
-export async function payrollPdf(r,logoBytes){
+export async function payrollPdf(r,logoBytes,signatureBytes){
  const doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
  const stamp=new Date(r.reviewed_at||r.created_at);doc.setCreationDate(stamp);doc.setModificationDate(stamp);doc.setTitle('Form Pengajuan Gaji '+r.period);doc.setAuthor('Yayasan Gambut');
  const m=r.form_meta||{},left=36,width=523.28,cols=[24,62,193,78,166.28],ink=rgb(.08,.12,.11),line=rgb(.25,.3,.28),green=rgb(.08,.36,.28);
+ const signature=signatureBytes&&signatureEligible(r)?await doc.embedPng(signatureBytes):null;
  let page,y;const logo=logoBytes?await doc.embedPng(logoBytes):null;
  function wrap(value,max,size=9,f=font){const result=[];for(const paragraph of clean(value).split('\n')){let current='';for(const word of paragraph.split(/\s+/)){if(f.widthOfTextAtSize(word,size)>max){if(current){result.push(current);current='';}let segment='';for(const c of word){if(f.widthOfTextAtSize(segment+c,size)>max){result.push(segment);segment='';}segment+=c;}current=segment;}else if(current&&f.widthOfTextAtSize(current+' '+word,size)>max){result.push(current);current=word;}else current+=(current?' ':'')+word;}result.push(current);}return result;}
  const draw=(value,x,top,size=9,f=font,color=ink)=>page.drawText(clean(value),{x,y:top-size,size,font:f,color});
@@ -30,7 +32,7 @@ export async function payrollPdf(r,logoBytes){
  if(r.notes){y-=6;paragraph(r.notes);}
  y-=12;ensure(140);paragraph((m.place?m.place+', ':'')+date(m.date||r.created_at),10);y-=10;
  const signatures=[['Diajukan oleh',m.applicant||r.creator_email,m.title||'Finance'],['Diperiksa oleh','Mulyadi, S.P.','Direktur'],['Disetujui oleh','Mulyadi, S.P.','Direktur']];
- for(const [index,[label,name,title]] of signatures.entries()){const x=left+index*178;draw(label+',',x,y,9);draw(r.status==='approved'?(index?'Persetujuan melalui akun':'Pengajuan melalui akun'):'Belum disetujui',x,y-23,8);const email=index?r.reviewer_email:r.creator_email;wrap(email||'',155,7).forEach((t,j)=>draw(t,x,y-36-j*10,7));wrap(name,155,9,bold).forEach((t,j)=>draw(t,x,y-65-j*12,9,bold));draw(title,x,y-94,8);}
+ for(const [index,[label,name,title]] of signatures.entries()){const x=left+index*178;draw(label+',',x,y,9);if(index===2&&signature)page.drawImage(signature,{x,y:y-64,width:78,height:52});else{draw(r.status==='approved'?(index?'Persetujuan melalui akun':'Pengajuan melalui akun'):'Belum disetujui',x,y-23,8);const email=index?r.reviewer_email:r.creator_email;wrap(email||'',155,7).forEach((t,j)=>draw(t,x,y-36-j*10,7));}wrap(name,155,9,bold).forEach((t,j)=>draw(t,x,y-65-j*12,9,bold));draw(title,x,y-94,8);}
  y-=114;if(r.status==='approved')paragraph('Disetujui pada '+new Date(r.reviewed_at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB.',8);
  const pages=doc.getPages();for(const [i,p] of pages.entries())p.drawText('YG Finance | '+clean(m.number||r.id)+' | Halaman '+(i+1)+'/'+pages.length,{x:left,y:25,size:7,font,color:rgb(.4,.4,.4)});
  return doc.save();
@@ -38,7 +40,7 @@ export async function payrollPdf(r,logoBytes){
 export async function pdfHash(bytes){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');}
 export async function savePayrollPdf(env,row,event,at){
  let logoBytes; if(env.ASSETS){const logo=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!logo.ok)throw Error('Logo dokumen tidak tersedia.');logoBytes=new Uint8Array(await logo.arrayBuffer());}
- const bytes=await payrollPdf(row,logoBytes),sha256=await pdfHash(bytes),object_key='payroll-private/'+row.id+'/approved-'+event+'.pdf',filename='Form-Gaji-'+row.period+'-'+event.slice(0,8)+'.pdf';
+ const bytes=await payrollPdf(row,logoBytes,await documentSignature(env,row)),sha256=await pdfHash(bytes),object_key='payroll-private/'+row.id+'/approved-'+event+'.pdf',filename='Form-Gaji-'+row.period+'-'+event.slice(0,8)+'.pdf';
  await env.MEDIA.put(object_key,bytes,{httpMetadata:{contentType:'application/pdf'}});
  return {object_key,filename,sha256,size:bytes.length,created_at:at};
 }

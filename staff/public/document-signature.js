@@ -1,0 +1,5 @@
+const status=document.querySelector('#signature-status'),form=document.querySelector('#signature-form');
+function show(r){status.textContent=r.active?'Aktif · '+r.activated_by+' · '+new Date(r.activated_at).toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB · SHA-256 '+r.sha256:'Belum aktif. Unggah berkas tanda tangan Anda.';form.hidden=r.active;}
+async function result(res){const r=await res.json();if(!res.ok)throw Error(r.error||'Permintaan gagal.');return r;}
+fetch('/finance/signature/api',{cache:'no-store'}).then(result).then(show).catch(e=>status.textContent=e.message);
+form.addEventListener('submit',async e=>{e.preventDefault();const file=document.querySelector('#signature-file').files[0];if(!file||!document.querySelector('#signature-confirm').checked)return;const button=form.querySelector('button');button.disabled=true;status.textContent='Menyimpan tanda tangan privat…';try{show(await result(await fetch('/finance/signature/api',{method:'POST',headers:{'Content-Type':'image/png','X-Confirm-Signature':'invoice-payroll-after-approval'},body:file})));}catch(e){status.textContent=e.message;}finally{button.disabled=false;}});

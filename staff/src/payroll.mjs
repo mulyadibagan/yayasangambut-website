@@ -1,3 +1,4 @@
+import {documentSignature,signatureDataUrl} from './document-signature.mjs';
 import {savePayrollPdf,pdfHash} from './payroll-pdf.mjs';
 import {payrollReviewPage} from './payroll-review.mjs';
 import {payrollNotificationStatement,payrollNotificationStatus,sendPayrollNotifications,payrollEmailService} from './payroll-notifications.mjs';
@@ -84,7 +85,7 @@ export async function payrollRoute(req,env,u,ctx){
    await q(env,'INSERT OR IGNORE INTO yg_payroll_reviews(token,request_id,actor_email,version,opened_at) VALUES(?,?,?,?,?)',uuid(),r.id,u.email,r.version,now()).run();
    review=await q(env,'SELECT * FROM yg_payroll_reviews WHERE request_id=? AND actor_email=? AND version=?',r.id,u.email,r.version).first();
   }
-  return new Response(payrollReviewPage(r,review),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+  return new Response(payrollReviewPage(r,review,signatureDataUrl(await documentSignature(env,r))),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  }
  const print=path.match(/^\/finance\/payroll\/print\/([a-f0-9-]{36})$/);
  if(print&&req.method==='GET'){
@@ -95,7 +96,7 @@ export async function payrollRoute(req,env,u,ctx){
    if(!evidence||r.status!=='submitted')fail(409,'Formulir berubah. Buka ulang review versi terbaru.');
    await q(env,'UPDATE yg_payroll_reviews SET print_opened_at=? WHERE token=?',now(),token).run();
   }
-  return new Response(payrollPrint(r),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+  return new Response(payrollPrint(r,signatureDataUrl(await documentSignature(env,r))),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  }
  if(path===prefix&&req.method==='GET')return Response.json({user:{name:u.name,email:u.email,director:financeOwner(u),operator:payrollOperator(u,env)},requests:(await q(env,'SELECT id,period,CASE WHEN cancelled_at IS NOT NULL THEN \'cancelled\' ELSE status END AS status,total,creator_email,version,created_at,updated_at,cancelled_at FROM yg_payroll_requests ORDER BY period DESC,created_at DESC LIMIT 500').all()).results});
  if(path===prefix&&req.method==='POST'){

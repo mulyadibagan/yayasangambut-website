@@ -1,4 +1,5 @@
 import {sendPayrollNotifications} from './payroll-notifications.mjs';
+import {signatureRoute} from './document-signature.mjs';
 import {invoiceRoute} from './invoices.mjs';
 import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
 import {driveCallback} from './agenda-drive.mjs';
@@ -254,6 +255,7 @@ async function route(req,env,ctx){
       if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/',{'Set-Cookie':cookie('__Host-yg-finance-return',encodeURIComponent(financeReturnPath(url.pathname+url.search)),600)});
       throw e;
     }
+    if(url.pathname==='/finance/signature'||url.pathname==='/finance/signature/api')return signatureRoute(req,env,u,readLimited);
     if(url.pathname==='/finance/invoices'||url.pathname.startsWith('/finance/invoices/'))return invoiceRoute(req,env,u,{payload,readLimited});
     if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u,ctx);
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&payrollOperator(u,env)&&!financeDashboardAccess(u))return redirect(env.APP_ORIGIN+'/finance/payroll');
