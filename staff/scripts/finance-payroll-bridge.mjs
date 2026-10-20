@@ -72,6 +72,12 @@ export default function PayrollPaymentsPanel(){
   page=page.slice(0,headerEnd+9)+'\n        <PayrollPaymentsPanel />'+page.slice(headerEnd+9);
   await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),page);
  }
+ if(!page.includes('id="finance-invoice-entry"')){
+  const anchor='<div className="archive-header-tools">';
+  if(!page.includes(anchor))throw Error('Finance header actions anchor missing.');
+  page=page.replace(anchor,anchor+'<a id="finance-invoice-entry" href="/finance/invoices" style={{display:"inline-flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:9,background:"#155b43",color:"white",fontSize:13,fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>Invoice <span aria-hidden="true">↗</span></a>');
+  await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),page);
+ }
  let workspace=await readFile(resolve(root,'app/reconciliation-workspace.tsx'),'utf8');
  if(!workspace.includes('import PayrollPaymentsPanel')){
   const anchor='<main className="recon-workspace" data-tab={tab}>';if(!workspace.includes(anchor))throw Error('Reconciliation payroll insertion point missing.');
