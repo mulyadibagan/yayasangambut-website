@@ -1,3 +1,5 @@
+Arsip Drive invoice memakai INVOICE_DRIVE_ROOT_ID dan koneksi OAuth Drive Direktur yang sudah ada. Setelah penerbitan, PDF cetak bertanda tangan disalin ke YG Finance/Invoice/Tahun/Kode pelanggan. Kegagalan tidak membatalkan persetujuan; dicoba ulang tiap lima menit dan melalui tombol invoice. Status pengiriman terpisah pada yg_invoice_drive; lease serial dan ID Drive yang dicadangkan mencegah unggahan ganda saat retry. Hash PDF, MD5 Drive, metadata invoice, dan turunan folder diverifikasi. Tidak mengubah izin folder atau arsip asli.
+
 PDF tanpa TTD menyediakan ruang kosong 74 pt (sekitar 2,6 cm) sebelum nama penanda tangan untuk tanda tangan pena. Rendition tanpa TTD memakai print-v3 agar cache lama tidak digunakan; arsip asli dan rendition bertanda tangan tetap utuh.
 
 Versi cetak print-v2 merapatkan tabel agar invoice RAPP beserta TTD muat satu A4 dan menghapus label FINAL serta waktu penerbitan dari dokumen. Untuk invoice yang sudah terbit, pilihan cetak memakai rendition privat terpisah berdasarkan snapshot terkunci, dengan hash sumber; PDF arsip asli tetap tersedia dan tidak ditimpa.

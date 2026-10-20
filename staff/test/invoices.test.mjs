@@ -1,4 +1,7 @@
 import test from 'node:test';
+import {createHash} from 'node:crypto';
+import {sealToken} from '../src/google-calendar.mjs';
+import {archiveInvoiceDrive,syncInvoiceDrive} from '../src/invoice-drive.mjs';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
@@ -9,7 +12,7 @@ import {sha} from '../src/core.mjs';
 import {invoicePdf} from '../src/invoice-pdf.mjs';
 import {invoiceSeed,invoiceInput} from '../src/invoice-model.mjs';
 const origin='https://staff.yayasangambut.org',base='/finance/invoices/api';
-async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0026_finance_invoices.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0026_finance_invoices.sql','0027_invoice_drive.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org'};
  for(const [id,email,role] of [['finance','rienaprasiddha@yayasangambut.org','staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-20','2026-10-20');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+3600000);}
@@ -91,4 +94,38 @@ test('full RAPP invoice including customer address, bank and signature fits one 
  const r={number:'10/YG-RAPP/26',status:'issued',issued_by:'mulyadi@yayasangambut.org',issued_at:'2026-10-20T08:25:19Z',amount:199200000,total:199200000,data:{...invoiceSeed,language,customer_address:'Jl. M.H. Thamrin (d/h Jl. Teluk Betung) No. 31, Kebon Melati, Tanah Abang, Jakarta Pusat 10230.',contract_ref:'0',description:'JASA PENDAMPINGAN DAN PENGEMBANGAN KEMITRAAN AGROFORESTRI ANTARA PERUSAHAAN DAN MASYARAKAT BERBASIS KEHUTANAN MASYARAKAT UNTUK RANTAI PASOKAN YANG BERKELANJUTAN',bank:'Bank Mandiri KCP Tangerang Bintaro',bank_address:'Jl. Jend. Sudirman A1-03, Tangerang Selatan',account_name:'Yayasan Gambut',swift:'BMRIIDJA',account:'1640003188440'}};
  assert.equal((await PDFDocument.load(await invoicePdf(r,logo,signature))).getPageCount(),1);
  }
+});
+
+
+async function driveFixture(){
+ const f=await setup();f.db.exec(readFileSync(new URL('../migrations/0020_agenda_drive.sql',import.meta.url),'utf8').split('ALTER TABLE')[0]);const root='1LM8jrwmbfRdYz1rfWJae67DaReOLiTFz',folderMime='application/vnd.google-apps.folder';
+ Object.assign(f.env,{ADMIN_EMAIL:'mulyadi@yayasangambut.org',AGENDA_DRIVE_ROOT_ID:root,INVOICE_DRIVE_ROOT_ID:root});
+ f.env.MEDIA={async put(k,v,o={}){if(o.onlyIf&&f.objects.has(k))return null;const record={bytes:new Uint8Array(v),customMetadata:o.customMetadata};f.objects.set(k,record);return record;},async get(k){const o=f.objects.get(k);return o?{customMetadata:o.customMetadata,body:o.bytes,async arrayBuffer(){return o.bytes.buffer;}}:null;}};
+ const image=new Uint8Array(readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url)));f.objects.set('document-private/director-signature-v1.png',{bytes:image,customMetadata:{activated_at:'2020-01-01',activated_by:'mulyadi@yayasangambut.org',sha256:await pdfHash(image)}});
+ f.db.prepare('INSERT INTO agenda_drive_connection VALUES(1,?,?,?,?,?,?,?)').run('director',f.env.ADMIN_EMAIL,await sealToken(f.env,'agenda-drive:director','private-refresh'),root,'agenda-folder','connected','2026');
+ const remote=new Map([[root,{id:root,mimeType:folderMime,capabilities:{canAddChildren:true}}],['agenda-folder',{id:'agenda-folder',parents:[root],mimeType:folderMime,capabilities:{canAddChildren:true}}]]),calls=[];let serial=0,timeoutAfterUpload=false,badHash=false,revoked=false;
+ const fetch=async(url,options={})=>{const u=new URL(url),method=options.method||'GET';calls.push({url:u.href,method});
+  if(u.hostname==='oauth2.googleapis.com')return revoked?Response.json({error:'invalid_grant'},{status:400}):Response.json({access_token:'access'});
+  if(u.pathname.endsWith('/generateIds'))return Response.json({ids:['invoice-remote-1']});
+  if(u.pathname.startsWith('/upload/')){const bytes=Buffer.from(await options.body.arrayBuffer()),sep=Buffer.from('Content-Type: application/pdf\r\n\r\n'),start=bytes.indexOf(sep)+sep.length,end=bytes.lastIndexOf(Buffer.from('\r\n--')),pdf=bytes.subarray(start,end),text=bytes.toString('utf8'),meta=JSON.parse(text.slice(text.indexOf('{'),text.indexOf('}\r\n--')+1));const object={...meta,size:pdf.length,md5Checksum:createHash('md5').update(pdf).digest('hex'),webViewLink:'https://drive.google.com/file/d/'+meta.id+'/view'};if(badHash)object.md5Checksum='incorrect';remote.set(meta.id,object);if(timeoutAfterUpload){timeoutAfterUpload=false;throw Error('simulated response loss');}return Response.json({id:meta.id});}
+  if(u.pathname.endsWith('/files')&&method==='POST'){const body=JSON.parse(options.body),id='folder-'+(++serial);remote.set(id,{...body,id,capabilities:{canAddChildren:true}});return Response.json({id});}
+  if(u.pathname.endsWith('/files')){const query=u.searchParams.get('q'),parent=/^'([^']+)' in parents/.exec(query)?.[1],name=/name = '([^']+)'/.exec(query)?.[1];return Response.json({files:[...remote.values()].filter(f=>f.mimeType===folderMime&&f.parents?.includes(parent)&&f.name===name).map(f=>({id:f.id}))});}
+  const id=u.pathname.split('/').at(-1),file=remote.get(id);return file?Response.json(file):Response.json({error:{}},{status:404});
+ };
+ return {...f,root,remote,calls,fetch,setTimeout(){timeoutAfterUpload=true;},setBadHash(){badHash=true;},setRevoked(){revoked=true;}};
+}
+async function readyInvoice(f){let r=await create(f);r=await(await call(f,base+'/'+r.id,'finance','PUT',{...r.data,number:r.number,version:r.version,customer_address:'Test customer address',organization_contact:'finance@example.org',bank:'Test bank',account:'123',account_name:'YG',number_reviewed:true,design_reviewed:true})).json();return attach(f,r,'contract');}
+test('issuing automatically archives signed PDF in chosen Drive tree, retry reuses ID, links are private and old records stay intact',async()=>{
+ const f=await driveFixture(),previous=globalThis.fetch;globalThis.fetch=f.fetch;
+ try{let r=await readyInvoice(f);const oldFinance=JSON.stringify(f.db.prepare('SELECT * FROM finance_transactions').all()),oldAgendas=JSON.stringify(f.db.prepare('SELECT * FROM team_agendas').all());f.setTimeout();
+  const response=await call(f,base+'/'+r.id+'/issue','director','POST',{version:r.version,reviewed_version:r.version});assert.equal(response.status,200);r=await response.json();assert.equal(r.status,'issued');assert.equal(r.drive.status,'error');const original=new Uint8Array(f.objects.get(f.db.prepare('SELECT pdf_key FROM yg_invoices WHERE id=?').get(r.id).pdf_key).bytes);
+  f.db.exec('UPDATE yg_invoice_drive SET retry_at=0');await syncInvoiceDrive(f.env);let status=await(await call(f,base+'/'+r.id)).json();assert.equal(status.drive.status,'archived');assert.equal(status.drive.url,'https://drive.google.com/file/d/invoice-remote-1/view');assert.equal(f.calls.filter(c=>c.url.includes('/upload/')).length,1);
+  const again=await call(f,base+'/'+r.id+'/drive','finance','POST',{});assert.equal(again.status,200,await again.clone().text());assert.equal(f.calls.filter(c=>c.url.includes('/upload/')).length,1);assert.deepEqual([...f.remote.values()].filter(x=>x.name&&x.mimeType.includes('folder')).map(x=>x.name),['YG Finance','Invoice','2026','RAPP']);assert.equal((await call(f,base+'/'+r.id+'/drive','other','POST',{})).status,403);
+  const cross=request(base+'/'+r.id+'/drive','director','POST',{});cross.headers.set('Origin','https://evil.test');assert.equal((await worker.fetch(cross,f.env)).status,403);const final=f.db.prepare('SELECT * FROM yg_invoices WHERE id=?').get(r.id);assert.equal(final.version,r.version);assert.deepEqual(f.objects.get(final.pdf_key).bytes,original);assert.equal(JSON.stringify(f.db.prepare('SELECT * FROM finance_transactions').all()),oldFinance);assert.equal(JSON.stringify(f.db.prepare('SELECT * FROM team_agendas').all()),oldAgendas);assert(!f.calls.some(c=>c.url.includes('/permissions')));assert(!JSON.stringify(status).includes('private-refresh'));
+ }finally{globalThis.fetch=previous;}
+});
+test('Drive archive rejects drafts and bad checksum; revoked connection never rolls back approval',async()=>{
+ const f=await driveFixture(),previous=globalThis.fetch;globalThis.fetch=f.fetch;
+ try{let r=await readyInvoice(f);assert.equal((await call(f,base+'/'+r.id+'/drive','director','POST',{})).status,409);f.setBadHash();r=await(await call(f,base+'/'+r.id+'/issue','director','POST',{version:r.version,reviewed_version:r.version})).json();assert.equal(r.status,'issued');assert.equal(r.drive.status,'error');assert.equal(r.drive.url,null);const before=JSON.stringify(f.db.prepare('SELECT * FROM yg_invoices').all());f.setRevoked();assert.equal((await call(f,base+'/'+r.id+'/drive','director','POST',{})).status,409);assert.equal(JSON.stringify(f.db.prepare('SELECT * FROM yg_invoices').all()),before);assert.equal(f.db.prepare('SELECT status FROM agenda_drive_connection').get().status,'reconnect');
+ }finally{globalThis.fetch=previous;}
 });

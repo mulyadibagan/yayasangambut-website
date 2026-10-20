@@ -10,14 +10,14 @@ const cookie=(v,age)=>`__Host-yg-drive=${v}; Path=/; HttpOnly; Secure; SameSite=
 const tokenOwner=u=>'agenda-drive:'+u;
 const rootId=env=>{const id=env.AGENDA_DRIVE_ROOT_ID;if(!/^[A-Za-z0-9_-]{10,120}$/.test(id||''))fail(503,'Folder arsip Google Drive belum dikonfigurasi.');return id;};
 export function drivePreviewUrl(value){try{const u=new URL(value);if(u.protocol==='https:'&&['drive.google.com','docs.google.com'].includes(u.hostname)&&!u.username&&!u.password&&!u.port)return u.href;}catch{}fail(502,'Tautan pratinjau Drive tidak valid.');}
-async function google(access,path,options={}){
+export async function google(access,path,options={}){
  const r=await fetch('https://www.googleapis.com'+path,{...options,headers:{Authorization:'Bearer '+access,...options.headers}});
  if(!r.ok){const e=await r.json().catch(()=>({})),disabled=(e.error?.errors||[]).some(x=>x.reason==='accessNotConfigured')||(e.error?.details||[]).some(x=>x.reason==='SERVICE_DISABLED');
   fail(r.status===401?409:502,disabled?'Google Drive API belum aktif pada project login YG. Aktifkan API lalu hubungkan kembali.':r.status===401?'Koneksi Drive berakhir. Direktur perlu menghubungkan kembali.':r.status===403||r.status===404?'Google Drive menolak akses. Periksa hak akun Direktur pada folder arsip YG.':'Penyimpanan Google Drive belum berhasil. Coba kembali; lampiran lama tetap tersedia.');
  }
  return r.status===204?null:r.json();
 }
-async function validFolder(access,id,root){
+export async function validFolder(access,id,root){
  const f=await google(access,`/drive/v3/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,mimeType,parents,trashed,capabilities(canAddChildren)`);
  if(f.trashed||f.mimeType!==folderMime||!f.capabilities?.canAddChildren||(root&&!f.parents?.includes(root)))fail(409,'Folder arsip Drive telah dipindah, dihapus, atau tidak dapat ditulis. Hubungkan kembali.');return f;
 }
@@ -60,13 +60,13 @@ export async function driveStatus(env){
  const c=await q(env,'SELECT c.folder_id,c.root_id,c.status FROM agenda_drive_connection c JOIN users u ON u.id=c.user_id WHERE c.id=1 AND u.disabled=0 AND u.role=\'admin\' AND lower(u.email)=?',String(env.ADMIN_EMAIL||'').toLowerCase()).first();
  return {enabled:!!env.AGENDA_DRIVE_ROOT_ID,connected:!!c&&c.root_id===env.AGENDA_DRIVE_ROOT_ID&&c.status==='connected',folderUrl:c?.folder_id?'https://drive.google.com/drive/folders/'+encodeURIComponent(c.folder_id):null};
 }
-async function driveAccess(env){
+export async function driveAccess(env){
  const c=await q(env,"SELECT c.* FROM agenda_drive_connection c JOIN users u ON u.id=c.user_id WHERE c.id=1 AND u.disabled=0 AND u.role='admin' AND lower(u.email)=?",String(env.ADMIN_EMAIL||'').toLowerCase()).first();
  if(!c||c.root_id!==rootId(env)||c.status!=='connected')fail(409,'Direktur perlu menghubungkan Google Drive pada bagian lampiran terlebih dahulu.');
  const refresh=await openToken(env,tokenOwner(c.user_id),c.refresh_token);
  const r=await fetch('https://oauth2.googleapis.com/token',{method:'POST',body:new URLSearchParams({client_id:env.GOOGLE_CLIENT_ID,client_secret:env.GOOGLE_CLIENT_SECRET,grant_type:'refresh_token',refresh_token:refresh})});
  if(!r.ok){const data=await r.json().catch(()=>({}));if(data.error==='invalid_grant'){await q(env,"UPDATE agenda_drive_connection SET status='reconnect' WHERE id=1 AND refresh_token=?",c.refresh_token).run();fail(409,'Izin Drive berakhir. Direktur perlu menghubungkan kembali.');}fail(502,'Koneksi Google belum tersedia. Coba kembali.');}
- const t=await r.json();if(!t.access_token)fail(502,'Token Google Drive tidak tersedia.');await validFolder(t.access_token,c.folder_id,c.root_id);return {access:t.access_token,folder:c.folder_id};
+ const t=await r.json();if(!t.access_token)fail(502,'Token Google Drive tidak tersedia.');await validFolder(t.access_token,c.folder_id,c.root_id);return {access:t.access_token,folder:c.folder_id,root:c.root_id};
 }
 export async function storeDriveFile(env,{id,agendaId,filename,type,bytes}){
  const {access,folder}=await driveAccess(env),boundary='yg-'+crypto.randomUUID();
