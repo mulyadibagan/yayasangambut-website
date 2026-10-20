@@ -1,3 +1,5 @@
+Pemeriksaan perpajakan dan dokumen pajak tidak lagi menjadi syarat penerbitan sesuai permintaan Direktur. Nilai pajak lama tetap dipertahankan; PDF final lama tidak diubah.
+
 # Invoice keluar YG Finance
 
 Direktur dapat memilih Dengan TTD / Tanpa TTD sebelum final. Pratinjau HTML dan PDF bertanda tangan mengambil gambar privat hanya setelah pemeriksaan akun Direktur di server, selalu menyertakan watermark PRATINJAU, dan tidak mengubah status/revisi invoice. Finance tetap hanya melihat pratinjau tanpa TTD. Pilihan yang dipakai menerbitkan final disimpan dalam data dan snapshot persetujuan; server mencocokkan pilihan TTD dengan konfirmasi review. Tombol penerbitan menjelaskan kekurangan secara aktif dan checklist mengarah ke kolom terkait.
@@ -14,7 +16,7 @@ Direktur dan Finance yang ditunjuk membuka `/finance/invoices` melalui menu Invo
 
 Nomor bersifat satu urutan tahunan lintas pelanggan. Sesuai permintaan nomor `10/YG-RAPP/26` dan referensi GEC `009/YG-GEC/26`, migrasi mencadangkan nomor 1–9 tahun 2026 sebagai rentang historis. Nomor baru dialokasikan atomik saat penyimpanan draf pertama; unik pada pasangan tahun/urutan dan nomor yang dinormalisasi. Pembatalan draf mempertahankan nomor dan audit. Pemakaian nomor historis harus dicocokkan kembali oleh Finance sebelum final. Tahun berikutnya dimulai dari 1. Tidak mengimpor atau mengubah invoice historis.
 
-Penerbitan final oleh Direktur memerlukan alamat pelanggan, kontrak/PO beserta lampiran, status/perlakuan pajak dan catatan/buktinya, identitas kop, rekening tujuan, serta konfirmasi pemeriksaan nomor dan desain. Nominal PPN/potongan diisi Finance; aplikasi tidak menentukan tarif atau status PKP secara otomatis. Pemeriksaan ini berdasarkan isian/dokumen internal, bukan koneksi ke layanan DJP. Draf RAPP membiarkan perpajakan belum terkonfirmasi.
+Penerbitan final oleh Direktur memerlukan alamat pelanggan, kontrak/PO beserta lampiran, identitas kop, rekening tujuan, serta konfirmasi pemeriksaan nomor dan desain. Nominal PPN/potongan diisi Finance; aplikasi tidak menentukan tarif atau status PKP secara otomatis. Pemeriksaan ini berdasarkan isian/dokumen internal, bukan koneksi ke layanan DJP. Draf RAPP membiarkan perpajakan belum terkonfirmasi.
 
 PDF final diarsipkan privat di R2 dengan SHA-256 dan tidak berubah setelah diterbitkan. Draf dapat disunting; final terkunci. Lampiran privat maksimal 20 berkas, masing-masing 5 MB, PDF/JPEG/PNG/WebP. Akun, waktu, versi, dan snapshot perubahan tersimpan. Uji mencakup akses, CSRF, urutan bersamaan, duplikasi, retry, revisi stale, dokumen wajib, final terkunci, cetak A4, sanitasi, kegagalan arsip, serta integritas data historis.
 

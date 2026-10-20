@@ -32,9 +32,6 @@ export function invoiceChecks(r,files=[]){
  if(!r.number||!r.seq)issues.push('Nomor invoice belum dialokasikan.');
  if(!d.customer_address)issues.push('Lengkapi alamat pelanggan.');
  if(!d.contract_ref||!files.some(f=>f.purpose==='contract'))issues.push('Lengkapi referensi dan lampiran kontrak/PO.');
- if(d.tax_status==='unknown'||d.tax_mode==='unknown'||!d.tax_note||!files.some(f=>f.purpose==='tax'))issues.push('Konfirmasi status/perlakuan pajak, catatan pemeriksaan, dan dokumen perpajakan.');
- if(d.tax_status==='non_pkp'&&(d.tax_mode!=='no_vat'||d.vat))issues.push('Status non-PKP belum sesuai dengan pilihan PPN.');
- if(d.tax_status==='pkp'&&(!['included','added'].includes(d.tax_mode)||!/^\d{15,16}$/.test(d.npwp.replace(/[^0-9]/g,''))))issues.push('Lengkapi NPWP dan perlakuan PPN untuk status PKP.');
  if(!d.organization_address||!d.organization_contact)issues.push('Lengkapi alamat dan kontak pada kop YG.');
  if(!d.bank||!d.account||!d.account_name)issues.push('Lengkapi bank, nomor rekening, dan nama pemilik rekening.');
  if(!d.design_reviewed)issues.push('Tinjau desain cetak terhadap invoice referensi.');
