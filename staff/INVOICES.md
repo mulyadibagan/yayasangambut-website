@@ -1,3 +1,5 @@
+Lampiran invoice menerima Word .doc (OLE) dan .docx (paket Word), selain PDF/gambar, maksimal 5 MB. Format diperiksa di server; unduhan privat menggunakan Content-Disposition attachment. Tidak ada konversi atau eksekusi isi Word.
+
 Nomor kontrak/PO bersifat opsional. Lampiran dengan jenis Kontrak / PO tetap diperlukan sebelum final, termasuk ketika nomor kontrak belum tersedia. Tidak mengubah draf atau arsip final yang sudah tersimpan.
 
 Pemeriksaan perpajakan dan dokumen pajak tidak lagi menjadi syarat penerbitan sesuai permintaan Direktur. Nilai pajak lama tetap dipertahankan; PDF final lama tidak diubah.

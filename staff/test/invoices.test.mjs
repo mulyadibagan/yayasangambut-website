@@ -68,3 +68,17 @@ test('print view escapes fields, preserves A4 format, and failed PDF archive can
  r=await(await call(f,path,'finance','PUT',{...complete,version:r.version})).json();r=await attach(f,r,'contract');r=await attach(f,r,'tax');const before=f.db.prepare('SELECT COUNT(*) n FROM yg_invoice_events').get().n;
  f.env.MEDIA.put=async()=>{throw Error('storage unavailable');};assert.equal((await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version})).status,500);assert.equal(f.db.prepare('SELECT status FROM yg_invoices').get().status,'draft');assert.equal(f.db.prepare('SELECT COUNT(*) n FROM yg_invoice_events').get().n,before);
 });
+
+
+test('Word contract attachments are stored privately, count as contracts, and download with correct types',async()=>{
+ const f=await setup();let r=await create(f);
+ for(const [name,bytes,mime] of [
+  ['Kontrak.doc',new Uint8Array([0xd0,0xcf,0x11,0xe0,0xa1,0xb1,0x1a,0xe1,0,0]),'application/msword'],
+  ['Kontrak.docx',new Uint8Array([0x50,0x4b,3,4,...new TextEncoder().encode('[Content_Types].xml word/document.xml')]),'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+ ]){
+  const headers={Origin:origin,Cookie:'__Host-yg-session=finance','X-Filename':encodeURIComponent(name),'X-Purpose':'contract','X-Version':String(r.version),'Content-Type':'application/octet-stream'};
+  const res=await worker.fetch(new Request(origin+base+'/'+r.id+'/files',{method:'POST',headers,body:bytes}),f.env);assert.equal(res.status,200,await res.clone().text());r=await res.json();assert.ok(!r.issues.some(i=>i.startsWith('Lampirkan dokumen')));
+  const file=r.files.find(x=>x.filename===name);assert.equal(file.mime,mime);const download=await call(f,base+'/'+r.id+'/files/'+file.id);assert.equal(download.headers.get('Content-Type'),mime);assert.ok(download.headers.get('Content-Disposition').startsWith('attachment;'));assert.deepEqual(new Uint8Array(await download.arrayBuffer()),bytes);assert.equal((await call(f,base+'/'+r.id+'/files/'+file.id,'other')).status,403);
+ }
+ const v=r.version;const res=await worker.fetch(request(base+'/'+r.id+'/files','finance','POST','<html>not Word</html>',{'X-Filename':'Fake.docx','X-Purpose':'contract','X-Version':String(v)}),f.env);assert.equal(res.status,400);assert.equal(f.db.prepare('SELECT version FROM yg_invoices WHERE id=?').get(r.id).version,v);
+});
