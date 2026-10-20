@@ -1,4 +1,5 @@
 import {sendPayrollNotifications} from './payroll-notifications.mjs';
+import {invoiceRoute} from './invoices.mjs';
 import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
 import {driveCallback} from './agenda-drive.mjs';
 import {assetApi} from './assets.mjs';
@@ -249,10 +250,11 @@ async function route(req,env,ctx){
     let u;
     try { u=await session(req,env); }
     catch(e) {
-      const pageRequest=req.method==='GET' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/finance/api/') && !url.pathname.startsWith('/finance/payroll/api') && (req.headers.get('Sec-Fetch-Mode')==='navigate'||req.headers.get('Accept')?.includes('text/html'));
+      const pageRequest=req.method==='GET' && !url.pathname.startsWith('/api/') && !url.pathname.startsWith('/finance/api/') && !url.pathname.startsWith('/finance/payroll/api') && !url.pathname.startsWith('/finance/invoices/api') && (req.headers.get('Sec-Fetch-Mode')==='navigate'||req.headers.get('Accept')?.includes('text/html'));
       if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/',{'Set-Cookie':cookie('__Host-yg-finance-return',encodeURIComponent(financeReturnPath(url.pathname+url.search)),600)});
       throw e;
     }
+    if(url.pathname==='/finance/invoices'||url.pathname.startsWith('/finance/invoices/'))return invoiceRoute(req,env,u,{payload,readLimited});
     if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u,ctx);
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&payrollOperator(u,env)&&!financeDashboardAccess(u))return redirect(env.APP_ORIGIN+'/finance/payroll');
     if(!financeDashboardAccess(u))fail(403,'Menu Keuangan hanya dapat diakses oleh staf Finance yang ditunjuk dan Direktur.');
@@ -276,7 +278,7 @@ async function route(req,env,ctx){
       .on('img[alt="Logo Yayasan Gambut"]',{element(element){element.setAttribute('src','/brand/yayasan-gambut-logo.png');element.setAttribute('style','width:46px;height:46px;object-fit:contain');}})
       .on('meta[property="og:image"],meta[name="twitter:image"]',{element(element){element.setAttribute('content',env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png');}})
       .on('body > a[href="/"]',{element(element){if((element.getAttribute('style')||'').includes('background:#123f32'))element.remove();}})
-      .on('body',{element(element){element.prepend('<nav class="yg-finance-tools" aria-label="Layanan Finance"><a class="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>',{html:true});}})
+      .on('body',{element(element){element.prepend('<nav class="yg-finance-tools" aria-label="Layanan Finance"><a class="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/invoices">Invoice</a><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>',{html:true});}})
       .on('head',{element(element){element.append(`<link rel="stylesheet" href="/finance-shell.css?v=20261019-2"><link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }
