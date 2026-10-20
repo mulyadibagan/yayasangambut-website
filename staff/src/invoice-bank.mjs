@@ -2,7 +2,7 @@ import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
 const key='invoice-private/settings/bank-v1.json',fields={account_name:160,bank:160,bank_address:300,swift:16,account:80};
 export async function invoiceBankDefaults(env){const obj=await env.MEDIA?.get(key);return obj?JSON.parse(new TextDecoder().decode(await obj.arrayBuffer())).data:{};}
-export function invoiceBankLines(d){return [d.account_name||'Yayasan Gambut',d.bank,d.bank_address,d.swift?'Swift code: '+d.swift:'',d.account?'A/c No: '+d.account+' (IDR)': 'Rekening tujuan belum dilengkapi.'].filter(Boolean);}
+export function invoiceBankLines(d){return [d.account_name||'Yayasan Gambut',d.bank,d.bank_address,d.swift?'Swift code: '+d.swift:'',d.account?'A/c No: '+d.account+' (IDR)': (d.language==='en'?'Payment account details have not been completed.':'Rekening tujuan belum dilengkapi.')].filter(Boolean);}
 export async function invoiceBankRoute(req,env,u,payload){
  if(!financeOwner(u))fail(403,'Rekening standar invoice diatur oleh Direktur.');
  const api=new URL(req.url).pathname.endsWith('/api');

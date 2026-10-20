@@ -1,5 +1,7 @@
 # Invoice keluar YG Finance
 
+Bahasa invoice dipilih sebelum final: `id` (Bahasa Indonesia, juga untuk record lama tanpa bahasa) atau `en` (English). Bahasa tersimpan pada snapshot draf, mengatur label cetak, tanggal, angka IDR, terbilang, instruksi pembayaran, dan penutup. Uraian dan catatan diisi sesuai bahasa pilihan; hanya uraian baku RAPP yang dapat beralih otomatis di formulir. Bahasa tidak membuat register atau urutan nomor terpisah. Invoice final tetap terkunci dan menggunakan PDF arsip aslinya.
+
 Invoice baru memakai alamat kop Pekanbaru dan kontak organisasi sebagai isian awal. Template cetak memakai kop putih dengan logo di kiri, alamat yang membungkus sesuai lebar, dan aksen garis oranye/hijau. Data invoice tersimpan tetap menjadi sumber kop masing-masing dokumen. Jalur cetak invoice final mengarah ke PDF arsip yang diverifikasi hash; template terbaru tidak merender ulang dokumen final.
 
 Rekening standar invoice disimpan privat melalui `/finance/invoices/bank-settings` oleh Direktur, terpisah dari kode publik. Seed invoice baru membaca pengaturan tersebut; invoice yang sudah tersimpan tidak diubah otomatis. Nama rekening, bank, alamat bank, SWIFT, dan nomor rekening dicetak sebagai baris tersendiri pada instruksi pembayaran. Perubahan draf tetap melalui penyimpanan berversi dan riwayat yang sudah ada.
