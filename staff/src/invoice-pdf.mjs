@@ -1,12 +1,12 @@
 import {invoiceBankLines} from './invoice-bank.mjs';
-import {signatureEligible} from './document-signature.mjs';
-import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
+import {invoiceSignatureEligible} from './document-signature.mjs';
+import {PDFDocument,StandardFonts,rgb,degrees} from 'pdf-lib';
 import {invoiceLanguage} from './invoice-language.mjs';
 export const invoiceMoney=n=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(n);
 const clean=s=>String(s??'').replace(/[–—−]/g,'-').replace(/\u00a0/g,' ').replace(/\r/g,'');
 export async function invoicePdf(r,logoBytes,signatureBytes){
  const doc=await PDFDocument.create(),regular=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),logo=logoBytes?await doc.embedPng(logoBytes):null;
- const signature=signatureBytes&&signatureEligible(r)?await doc.embedPng(signatureBytes):null;
+ const signature=signatureBytes&&invoiceSignatureEligible(r)?await doc.embedPng(signatureBytes):null;
  doc.setTitle('Invoice '+r.number);doc.setAuthor('Yayasan Gambut');
  const d=r.data,L=invoiceLanguage(d),money=L.money,left=42,width=511.28,green=rgb(.07,.3,.23),ink=rgb(.12,.15,.14),line=rgb(.55,.63,.58),pale=rgb(.94,.97,.95);let page,y;
  const draw=(s,x,top,size=10,font=regular,color=ink)=>page.drawText(clean(s),{x,y:top-size,size,font,color});
@@ -37,5 +37,6 @@ export async function invoicePdf(r,logoBytes,signatureBytes){
  const detailLines=wrap(detail,width-204);let n=0;while(n<detailLines.length){if(y<95){start();boxRow(L.remarks+L.continued,'TOTAL (IDR)',true,'REF');}const count=Math.max(1,Math.floor((y-65)/15)-1);boxRow(detailLines.slice(n,n+count).join('\n'),n===0?money(r.amount):'',false,n===0?'1':'');n+=count;}
  if(d.tax_mode==='added')boxRow(L.vatAdded,money(d.vat));if(d.tax_mode==='included')boxRow(L.vatIncluded,money(d.vat));if(d.withholding)boxRow(L.withholding,'-'+money(d.withholding));boxRow('TOTAL',money(r.total),true);y-=16;paragraph(L.wordsLabel+L.words(r.total),width,9,bold);
  y-=10;if(d.notes){y-=8;paragraph(d.notes,width,9);}y-=20;ensure(signature?160:105);paragraph(L.closing,width,10);paragraph('Yayasan Gambut',width,10);if(signature){page.drawImage(signature,{x:left,y:y-70,width:105,height:70});y-=74;}else y-=26;paragraph('Mulyadi',width,10,bold);paragraph(L.director,width,9);if(r.status==='issued')paragraph(L.issued+new Date(r.issued_at).toLocaleString(L.locale,{timeZone:'Asia/Jakarta'})+' WIB.',width,8);else paragraph(L.draftNote,width,8);
+ if(r.invoice_preview){for(const p of doc.getPages()){p.drawText('PRATINJAU',{x:110,y:410,size:58,font:bold,color:rgb(.65,.12,.08),opacity:.12,rotate:degrees(32)});p.drawText('PRATINJAU - BELUM DISETUJUI / DITERBITKAN',{x:left,y:40,size:9,font:bold,color:rgb(.65,.12,.08)});}}
  const pages=doc.getPages();pages.forEach((p,i)=>p.drawText('YG Finance | '+r.number+' | '+(i+1)+'/'+pages.length,{x:left,y:25,size:7,font:regular,color:rgb(.45,.5,.47)}));return doc.save();
 }

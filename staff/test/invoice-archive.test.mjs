@@ -17,3 +17,6 @@ test('approved invoice has immutable signed and unsigned PDF variants with indep
 test('legacy archives remain readable without regeneration and do not invent missing signature variants',async()=>{
  const {env,objects}=await setup();const key='legacy.pdf',bytes=new Uint8Array([37,80,68,70]);objects.set(key,{bytes});const r={...row,pdf_key:key,pdf_hash:await pdfHash(bytes)};assert.deepEqual(await invoiceArchiveOptions(env,r),{withSignature:false,withoutSignature:false});assert.deepEqual(await readInvoiceArchive(env,r),bytes);await assert.rejects(()=>readInvoiceArchive(env,r,'without'),e=>e.status===409);await assert.rejects(()=>readInvoiceArchive(env,r,'with'),e=>e.status===409);assert.deepEqual(objects.get(key).bytes,bytes);
 });
+test('Director may select an unsigned original while preserving a signed print variant',async()=>{
+ const {env}=await setup(),key='selected-without.pdf',r={...row,data:{...row.data,signature_mode:'without'}};const {hash}=await saveInvoiceArchive(env,r,key);r.pdf_key=key;r.pdf_hash=hash;assert.equal(await images(await readInvoiceArchive(env,r)),0);assert.ok(await images(await readInvoiceArchive(env,r,'with'))>0);assert.equal(await pdfHash(await readInvoiceArchive(env,r,'without')),hash);
+});

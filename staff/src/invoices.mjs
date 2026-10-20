@@ -1,3 +1,4 @@
+import {previewDocumentSignature,signatureDataUrl} from './document-signature.mjs';
 import {draftInvoicePdf,saveInvoiceArchive,readInvoiceArchive,invoiceArchiveOptions,invoicePrintChoices} from './invoice-archive.mjs';
 import {invoiceBankDefaults,invoiceBankRoute} from './invoice-bank.mjs';
 import {fail,now,sha,imageType} from './core.mjs';
@@ -30,19 +31,20 @@ export async function invoiceRoute(req,e,u,{payload,readLimited}){
  }
  const m=path.match(/^\/finance\/invoices\/(api|pdf|print)\/([a-f0-9-]{36})(?:\/(files|issue|cancel)(?:\/([a-f0-9-]{36}))?)?$/);if(!m)fail(404,'Halaman invoice tidak ditemukan.');
  const [,area,id,action,fileId]=m,r=await read(e,id);
- const signatureMode=url.searchParams.get('signature')||'original';if(!['original','with','without'].includes(signatureMode))fail(400,'Pilihan tanda tangan tidak valid.');
+ const signatureMode=url.searchParams.get('signature')||(r.status==='draft'&&financeOwner(u)?'with':'original');if(!['original','with','without'].includes(signatureMode))fail(400,'Pilihan tanda tangan tidak valid.');
  if(area==='print'&&method==='GET'&&!action){
   if(r.status==='cancelled')fail(409,'Invoice dibatalkan; dokumen tidak berlaku.');
   if(r.status==='issued'){
    if(url.searchParams.get('choose')==='1')return new Response(invoicePrintChoices(r,await invoiceArchiveOptions(e,r)),{headers:{'Content-Type':'text/html; charset=utf-8'}});
    return new Response(null,{status:302,headers:{Location:root+'/pdf/'+id+(signatureMode==='original'?'':'?signature='+signatureMode)}});
   }
-  if(signatureMode==='with')fail(409,'Tanda tangan elektronik hanya tersedia setelah persetujuan Direktur.');
-  return new Response(invoicePrint(r),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+  const signature=signatureMode==='with'?await previewDocumentSignature(e,u):null,preview={...r,invoice_preview:true,signature_preview:!!signature,allow_signature_preview:financeOwner(u)};
+  return new Response(invoicePrint(preview,signatureDataUrl(signature)),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  }
  if(area==='pdf'&&method==='GET'&&!action){
-  if(r.status==='cancelled')fail(409,'Invoice dibatalkan; PDF final tidak berlaku.');if(r.status!=='issued'&&signatureMode==='with')fail(409,'Tanda tangan elektronik hanya tersedia setelah persetujuan Direktur.');
-  const bytes=r.status==='issued'?await readInvoiceArchive(e,r,signatureMode):await draftInvoicePdf(e,r);
+  if(r.status==='cancelled')fail(409,'Invoice dibatalkan; PDF final tidak berlaku.');
+  const signature=r.status==='draft'&&signatureMode==='with'?await previewDocumentSignature(e,u):null;
+  const bytes=r.status==='issued'?await readInvoiceArchive(e,r,signatureMode):await draftInvoicePdf(e,{...r,invoice_preview:true,signature_preview:!!signature},signature);
   return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Invoice-'+r.number.replaceAll('/','-')+(r.status==='draft'?'-DRAFT':signatureMode==='without'?'-TANPA-TTD':signatureMode==='with'?'-TTD':'')+'.pdf"','Cache-Control':'no-store'}});
  }
 
@@ -53,7 +55,7 @@ export async function invoiceRoute(req,e,u,{payload,readLimited}){
  if(action==='files'&&method==='POST'&&!fileId){editable(r);if(!e.MEDIA)fail(503,'Arsip berkas belum tersedia.');const v=Number(req.headers.get('X-Version'));version(r,{version:v});const purpose=req.headers.get('X-Purpose');if(!['contract','tax','other'].includes(purpose))fail(400,'Pilih jenis lampiran.');const count=await q(e,'SELECT COUNT(*) n FROM yg_invoice_files WHERE invoice_id=?',id).first();if(count.n>=20)fail(400,'Maksimal 20 lampiran per invoice.');const bytes=await readLimited(req,5*1024*1024);if(!bytes.length)fail(400,'Pilih berkas.');const mime=imageType(bytes)||(new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':null);if(!mime)fail(400,'Lampiran harus PDF, JPEG, PNG atau WebP.');let name;try{name=decodeURIComponent(req.headers.get('X-Filename')||'Lampiran').replace(/[\r\n"\\/]/g,'_').slice(0,180);}catch{fail(400,'Nama berkas tidak valid.');}const fid=uuid(),key=uuid(),at=now();await e.MEDIA.put('invoice-private/files/'+fid,bytes,{httpMetadata:{contentType:mime}});try{await batch(e,[q(e,"UPDATE yg_invoices SET version=version+1,last_event=?,updated_at=? WHERE id=? AND version=? AND status='draft'",key,at,id,v),q(e,'INSERT INTO yg_invoice_files SELECT ?,id,?,?,?,?,?,? FROM yg_invoices WHERE id=? AND last_event=?',fid,purpose,name,mime,bytes.length,u.email,at,id,key),event(e,id,key,u,'attached',{filename:name,purpose})]);}catch(err){await e.MEDIA.delete('invoice-private/files/'+fid);throw err;}return Response.json(await detail(e,id));}
  if(['issue','cancel'].includes(action)&&method==='POST'&&!fileId){const b=await payload(req);version(r,b);editable(r);const key=uuid(),at=now();
   if(action==='cancel'){const reason=String(b.reason||'').trim();if(!reason||reason.length>1000)fail(400,'Isi alasan pembatalan.');await batch(e,[q(e,"UPDATE yg_invoices SET status='cancelled',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=? AND status='draft'",key,at,id,r.version),event(e,id,key,u,'cancelled',{...r,reason})]);}
-  else{if(!financeOwner(u))fail(403,'Penerbitan final dilakukan Direktur.');const view=await detail(e,id);if(view.issues.length)fail(400,view.issues.join(' '));if(b.reviewed_version!==r.version)fail(409,'Tinjau PDF dan versi invoice yang sama sebelum final.');const object='invoice-private/final/'+id+'/'+key+'.pdf',{hash}=await saveInvoiceArchive(e,{...r,status:'issued',issued_at:at,issued_by:u.email},object);await batch(e,[q(e,"UPDATE yg_invoices SET status='issued',issued_at=?,issued_by=?,pdf_key=?,pdf_hash=?,version=version+1,last_event=?,updated_at=? WHERE id=? AND version=? AND status='draft'",at,u.email,object,hash,key,at,id,r.version),event(e,id,key,u,'issued',{...r,pdf_hash:hash,checks:[]})]);}
+  else{if(!financeOwner(u))fail(403,'Penerbitan final dilakukan Direktur.');const view=await detail(e,id);if(view.issues.length)fail(400,view.issues.join(' '));if(b.reviewed_version!==r.version)fail(409,'Tinjau PDF dan versi invoice yang sama sebelum final.');const mode=b.signature_mode??'with';if(!['with','without'].includes(mode))fail(400,'Pilih dengan atau tanpa tanda tangan.');if(b.signature_mode&&b.reviewed_signature_mode!==mode)fail(409,'Periksa pratinjau dengan pilihan tanda tangan yang sama sebelum final.');const finalData={...r.data,...(b.signature_mode?{signature_mode:mode}:{})};const object='invoice-private/final/'+id+'/'+key+'.pdf',{hash}=await saveInvoiceArchive(e,{...r,data:finalData,status:'issued',issued_at:at,issued_by:u.email},object);await batch(e,[q(e,"UPDATE yg_invoices SET data=?,status='issued',issued_at=?,issued_by=?,pdf_key=?,pdf_hash=?,version=version+1,last_event=?,updated_at=? WHERE id=? AND version=? AND status='draft'",JSON.stringify(finalData),at,u.email,object,hash,key,at,id,r.version),event(e,id,key,u,'issued',{...r,data:finalData,pdf_hash:hash,checks:[]})]);}
   return Response.json(await detail(e,id));
  }
  fail(405,'Metode tidak didukung.');

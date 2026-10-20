@@ -3,22 +3,23 @@ import {documentSignature,signatureEligible} from './document-signature.mjs';
 import {invoicePdf} from './invoice-pdf.mjs';
 import {pdfHash} from './payroll-pdf.mjs';
 async function logo(env){if(!env.ASSETS)return;const r=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!r.ok)fail(503,'Logo YG belum tersedia.');return new Uint8Array(await r.arrayBuffer());}
-export async function draftInvoicePdf(env,r){return invoicePdf(r,await logo(env));}
+export async function draftInvoicePdf(env,r,signature){return invoicePdf(r,await logo(env),signature);}
 export async function saveInvoiceArchive(env,r,key){
  if(!signatureEligible(r))fail(409,'Invoice harus disetujui Direktur sebelum diarsipkan.');
  if(!env.MEDIA)fail(503,'Arsip PDF final belum tersedia.');
- const image=await logo(env),signature=await documentSignature(env,r),bytes=await invoicePdf(r,image,signature),hash=await pdfHash(bytes),metadata={signature:signature?'with':'without',sha256:hash};
- if(signature){const unsigned=await invoicePdf(r,image),unsignedHash=await pdfHash(unsigned),unsignedKey=key+'.without-signature.pdf';metadata.unsigned_key=unsignedKey;metadata.unsigned_sha256=unsignedHash;
+ const image=await logo(env),signature=await documentSignature(env,r);if(r.data.signature_mode==='with'&&!signature)fail(409,'Tanda tangan privat belum tersedia untuk invoice ini.');const signed=signature?await invoicePdf(r,image,signature):null,unsigned=await invoicePdf(r,image),useSignature=!!signature&&r.data.signature_mode!=='without',bytes=useSignature?signed:unsigned,hash=await pdfHash(bytes),metadata={signature:useSignature?'with':'without',sha256:hash};
+ if(signature&&useSignature){const unsignedHash=await pdfHash(unsigned),unsignedKey=key+'.without-signature.pdf';metadata.unsigned_key=unsignedKey;metadata.unsigned_sha256=unsignedHash;
   const saved=await env.MEDIA.put(unsignedKey,unsigned,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/pdf'},customMetadata:{sha256:unsignedHash,source_sha256:hash}});if(saved===null)fail(409,'Versi cetak sudah tersimpan.');
  }
+ if(signature&&!useSignature){const signedHash=await pdfHash(signed),signedKey=key+'.with-signature.pdf';metadata.signed_key=signedKey;metadata.signed_sha256=signedHash;const saved=await env.MEDIA.put(signedKey,signed,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/pdf'},customMetadata:{sha256:signedHash,source_sha256:hash}});if(saved===null)fail(409,'Versi cetak sudah tersimpan.');}
  const saved=await env.MEDIA.put(key,bytes,{onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/pdf'},customMetadata:metadata});if(saved===null)fail(409,'PDF final sudah tersimpan.');return {hash};
 }
-export async function invoiceArchiveOptions(env,r){const object=await env.MEDIA.get(r.pdf_key);if(!object)fail(503,'Arsip PDF final belum dapat dibaca.');const m=object.customMetadata||{};return {withSignature:m.signature==='with',withoutSignature:m.signature==='without'||!!(m.unsigned_key&&m.unsigned_sha256)};}
+export async function invoiceArchiveOptions(env,r){const object=await env.MEDIA.get(r.pdf_key);if(!object)fail(503,'Arsip PDF final belum dapat dibaca.');const m=object.customMetadata||{};return {withSignature:m.signature==='with'||!!(m.signed_key&&m.signed_sha256),withoutSignature:m.signature==='without'||!!(m.unsigned_key&&m.unsigned_sha256)};}
 export async function readInvoiceArchive(env,r,mode='original'){
  if(!['original','with','without'].includes(mode))fail(400,'Pilihan tanda tangan tidak valid.');
  const original=await env.MEDIA.get(r.pdf_key);if(!original)fail(503,'Arsip PDF final belum dapat dibaca.');const bytes=new Uint8Array(await original.arrayBuffer());if(await pdfHash(bytes)!==r.pdf_hash)fail(503,'Pemeriksaan PDF gagal.');const m=original.customMetadata||{};
  if(mode==='original')return bytes;
- if(mode==='with'){if(m.signature!=='with')fail(409,'Arsip ini tidak memiliki versi dengan tanda tangan elektronik. Dokumen asli tetap utuh.');return bytes;}
+ if(mode==='with'){if(m.signature==='with')return bytes;if(!m.signed_key||!m.signed_sha256)fail(409,'Arsip ini tidak memiliki versi dengan tanda tangan elektronik. Dokumen asli tetap utuh.');const object=await env.MEDIA.get(m.signed_key);if(!object)fail(503,'Arsip bertanda tangan belum dapat dibaca.');const data=new Uint8Array(await object.arrayBuffer());if(await pdfHash(data)!==m.signed_sha256||object.customMetadata?.source_sha256!==r.pdf_hash)fail(503,'Pemeriksaan versi cetak gagal.');return data;}
  if(m.signature==='without')return bytes;
  if(!m.unsigned_key||!m.unsigned_sha256)fail(409,'Versi tanpa tanda tangan belum tersedia untuk arsip lama ini. Dokumen asli tetap utuh.');
  const unsigned=await env.MEDIA.get(m.unsigned_key);if(!unsigned)fail(503,'Arsip tanpa tanda tangan belum dapat dibaca.');const data=new Uint8Array(await unsigned.arrayBuffer());if(await pdfHash(data)!==m.unsigned_sha256||unsigned.customMetadata?.source_sha256!==r.pdf_hash)fail(503,'Pemeriksaan versi cetak gagal.');return data;

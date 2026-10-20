@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {PDFDocument} from 'pdf-lib';
+import {PDFDocument,PDFName,PDFDict} from 'pdf-lib';
+import {pdfHash} from '../src/payroll-pdf.mjs';
 import worker from '../src/worker.mjs';
 import {sha} from '../src/core.mjs';
 import {invoiceSeed,invoiceInput} from '../src/invoice-model.mjs';
@@ -26,7 +27,7 @@ test('invoice access is private, draft defaults are exact and no old finance/age
  const evil=request(base,'finance','POST',seed());evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,f.env)).status,403);
  assert.equal((await call(f,'/finance/invoices/pdf/'+r.id,'other')).status,403);const pdf=await call(f,'/finance/invoices/pdf/'+r.id);assert.equal(pdf.headers.get('Content-Type'),'application/pdf');const d=await PDFDocument.load(await pdf.arrayBuffer());assert.equal(d.getPageCount(),1);assert.ok(Math.abs(d.getPage(0).getWidth()-595.28)<.01);
  assert.deepEqual({...f.db.prepare('SELECT * FROM finance_transactions').get()},{id:'historical',amount:123456});assert.equal(f.db.prepare('SELECT COUNT(*) n FROM team_agendas').get().n,1);
- assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=with')).status,409);assert.equal((await call(f,'/finance/invoices/print/'+r.id+'?signature=with')).status,409);assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=without')).status,200);
+ assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=with')).status,403);assert.equal((await call(f,'/finance/invoices/print/'+r.id+'?signature=with')).status,403);assert.equal((await call(f,'/finance/invoices/pdf/'+r.id+'?signature=without')).status,200);
 });
 test('annual numbers are atomic, canonical, ordered, never reused, and retry is idempotent',async()=>{
  const f=await setup(),b=seed();let res=await call(f,base,'finance','POST',b),r=await res.json();assert.equal(res.status,201);assert.equal((await call(f,base,'finance','POST',b)).status,200);
@@ -42,8 +43,17 @@ test('draft revisions, private documents, issuance checks and immutable final PD
  let res=await call(f,path,'finance','PUT',{...complete,version:r.version});assert.equal(res.status,200);r=await res.json();assert.equal((await call(f,path,'finance','PUT',{...complete,version:1})).status,409);r=await attach(f,r,'contract');r=await attach(f,r,'tax');assert.deepEqual(r.issues,[]);
  assert.equal((await call(f,path+'/files/'+r.files[0].id,'other')).status,403);assert.equal((await call(f,path+'/issue','finance','POST',{version:r.version,reviewed_version:r.version})).status,403);
  assert.equal((await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:1})).status,409);
+ assert.equal((await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version,signature_mode:'without',reviewed_signature_mode:'with'})).status,409);
  res=await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version});assert.equal(res.status,200,await res.clone().text());r=await res.json();assert.equal(r.status,'issued');assert.ok(r.pdf_hash);assert.equal(r.events.filter(x=>x.action==='issued').length,1);
  const first=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();assert.equal((await call(f,path,'finance','PUT',{...complete,version:r.version})).status,409);assert.equal((await call(f,path+'/cancel','director','POST',{version:r.version,reason:'cancel'})).status,409);const print=await call(f,'/finance/invoices/print/'+r.id);assert.equal(print.status,302);assert.equal(print.headers.get('Location'),'/finance/invoices/pdf/'+r.id);const second=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();assert.deepEqual(new Uint8Array(first),new Uint8Array(second));
+});
+test('Director can preview signature on a watermarked draft without approval or changing its saved version',async()=>{
+ const f=await setup(),r=await create(f),png=new Uint8Array(readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url))),hash=await pdfHash(png),get=f.env.MEDIA.get;
+ f.env.MEDIA.get=async k=>k==='document-private/director-signature-v1.png'?{customMetadata:{activated_by:'mulyadi@yayasangambut.org',activated_at:'2020-01-01',sha256:hash},async arrayBuffer(){return png.buffer;}}:get(k);
+ const path='/finance/invoices/print/'+r.id,html=await(await call(f,path+'?signature=with','director')).text();assert.ok(html.includes('data:image/png;base64,'));assert.ok(html.includes('PRATINJAU — BELUM DISETUJUI / DITERBITKAN'));assert.ok(html.includes('Dengan TTD'));assert.ok(! (await(await call(f,path+'?signature=without','director')).text()).includes('alt="Tanda tangan Mulyadi"'));
+ assert.equal((await call(f,path+'?signature=with','finance')).status,403);
+ const response=await call(f,'/finance/invoices/pdf/'+r.id+'?signature=with','director');assert.equal(response.status,200);const pdf=await PDFDocument.load(await response.arrayBuffer());assert.ok(pdf.getPage(0).node.Resources().lookup(PDFName.of('XObject'),PDFDict).keys().length>0);
+ const saved=f.db.prepare('SELECT status,version,issued_at FROM yg_invoices WHERE id=?').get(r.id);assert.deepEqual({...saved},{status:'draft',version:1,issued_at:null});assert.equal(f.db.prepare('SELECT COUNT(*) n FROM yg_invoice_events').get().n,1);
 });
 test('invalid dates, mismatched values, forged numbering and cancelled PDFs fail safely',async()=>{
  const f=await setup();assert.throws(()=>invoiceInput({...invoiceSeed,date:'2026-13-01'}));assert.throws(()=>invoiceInput({...invoiceSeed,date:'2026-02-30'}));assert.throws(()=>invoiceInput({...invoiceSeed,percentage:101}));assert.throws(()=>invoiceInput({...invoiceSeed,vat:1000}));

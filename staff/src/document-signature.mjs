@@ -4,6 +4,12 @@ import {financeOwner} from './finance-access.mjs';
 const key='document-private/director-signature-v1.png';
 const hash=async bytes=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(n=>n.toString(16).padStart(2,'0')).join('');
 export function signatureEligible(r){return !r.preview&&!r.cancelled_at&&((r.status==='issued'&&!!r.issued_at&&r.issued_by==='mulyadi@yayasangambut.org')||(r.status==='approved'&&!!r.reviewed_at&&r.reviewer_email==='mulyadi@yayasangambut.org'));}
+export const invoiceSignatureEligible=r=>signatureEligible(r)||(r.status==='draft'&&r.invoice_preview===true&&r.signature_preview===true);
+export async function previewDocumentSignature(env,u){
+ if(!financeOwner(u))fail(403,'Pratinjau tanda tangan hanya untuk Direktur.');
+ const object=await env.MEDIA?.get(key);if(!object)fail(409,'Aktifkan tanda tangan privat Direktur terlebih dahulu melalui /finance/signature.');
+ const m=object.customMetadata||{},bytes=new Uint8Array(await object.arrayBuffer());if(m.activated_by!=='mulyadi@yayasangambut.org'||!m.sha256||await hash(bytes)!==m.sha256)fail(503,'Pemeriksaan tanda tangan gagal.');return bytes;
+}
 export async function documentSignature(env,r){
  if(!signatureEligible(r))return null;
  const object=await env.MEDIA?.get(key);if(!object)return null;
