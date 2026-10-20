@@ -1,3 +1,5 @@
+PDF tanpa TTD menyediakan ruang kosong 74 pt (sekitar 2,6 cm) sebelum nama penanda tangan untuk tanda tangan pena. Rendition tanpa TTD memakai print-v3 agar cache lama tidak digunakan; arsip asli dan rendition bertanda tangan tetap utuh.
+
 Versi cetak print-v2 merapatkan tabel agar invoice RAPP beserta TTD muat satu A4 dan menghapus label FINAL serta waktu penerbitan dari dokumen. Untuk invoice yang sudah terbit, pilihan cetak memakai rendition privat terpisah berdasarkan snapshot terkunci, dengan hash sumber; PDF arsip asli tetap tersedia dan tidak ditimpa.
 
 Lampiran invoice menerima Word .doc (OLE) dan .docx (paket Word), selain PDF/gambar, maksimal 5 MB. Format diperiksa di server; unduhan privat menggunakan Content-Disposition attachment. Tidak ada konversi atau eksekusi isi Word.
