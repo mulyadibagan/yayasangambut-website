@@ -1,5 +1,7 @@
 # Invoice keluar YG Finance
 
+Invoice baru memakai alamat kop Pekanbaru dan kontak organisasi sebagai isian awal. Template cetak memakai kop putih dengan logo di kiri, alamat yang membungkus sesuai lebar, dan aksen garis oranye/hijau. Data invoice tersimpan tetap menjadi sumber kop masing-masing dokumen. Jalur cetak invoice final mengarah ke PDF arsip yang diverifikasi hash; template terbaru tidak merender ulang dokumen final.
+
 Rekening standar invoice disimpan privat melalui `/finance/invoices/bank-settings` oleh Direktur, terpisah dari kode publik. Seed invoice baru membaca pengaturan tersebut; invoice yang sudah tersimpan tidak diubah otomatis. Nama rekening, bank, alamat bank, SWIFT, dan nomor rekening dicetak sebagai baris tersendiri pada instruksi pembayaran. Perubahan draf tetap melalui penyimpanan berversi dan riwayat yang sudah ada.
 
 Direktur dan Finance yang ditunjuk membuka `/finance/invoices` melalui menu Invoice di YG Finance. Simpan draf untuk mengalokasikan nomor, buka pratinjau cetak A4, gunakan Cetak / simpan PDF atau Unduh PDF A4. Data tagihan berada pada tabel `yg_invoice_*`; tidak membuat mutasi, penerimaan, piutang terposting, email, atau status pembayaran pada sumber keuangan historis.

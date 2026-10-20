@@ -11,7 +11,17 @@ export async function invoicePdf(r,logoBytes,signatureBytes){
  const d=r.data,left=42,width=511.28,green=rgb(.07,.3,.23),ink=rgb(.12,.15,.14),line=rgb(.55,.63,.58),pale=rgb(.94,.97,.95);let page,y;
  const draw=(s,x,top,size=10,font=regular,color=ink)=>page.drawText(clean(s),{x,y:top-size,size,font,color});
  function wrap(value,w,size=10,font=regular){const out=[];for(const p of clean(value).split('\n')){let cur='';for(const word of p.split(/\s+/)){if(font.widthOfTextAtSize(word,size)>w){if(cur){out.push(cur);cur='';}for(const c of word){if(font.widthOfTextAtSize(cur+c,size)>w){out.push(cur);cur='';}cur+=c;}}else if(cur&&font.widthOfTextAtSize(cur+' '+word,size)>w){out.push(cur);cur=word;}else cur+=(cur?' ':'')+word;}out.push(cur);}return out;}
- function start(){page=doc.addPage([595.28,841.89]);y=800;page.drawRectangle({x:left,y:724,width,height:84,color:rgb(1,.96,.89)});page.drawRectangle({x:left,y:804,width,height:6,color:rgb(.93,.46,.14)});if(logo)page.drawImage(logo,{x:left,y:y-52,width:52,height:52});draw('YAYASAN GAMBUT',left+65,y,16,bold,green);let hy=y-24;for(const s of wrap(d.organization_address||'Yayasan Gambut',width-65,8)){draw(s,left+65,hy,8);hy-=11;}for(const s of wrap(d.organization_contact||'yayasangambut.org',width-65,8)){draw(s,left+65,hy,8);hy-=11;}y=Math.min(726,hy-14);page.drawLine({start:{x:left,y},end:{x:left+width,y},thickness:1.8,color:green});y-=22;draw('INVOICE',left,y,22,bold,green);draw(r.status==='issued'?'FINAL':'DRAFT - BELUM DITERBITKAN',left+280,y+2,11,bold,rgb(.55,.33,.13));y-=38;}
+ function start(){
+  page=doc.addPage([595.28,841.89]);const top=794,tx=left+82,tw=width-82;
+  page.drawRectangle({x:left,y:812,width,height:3,color:rgb(.93,.46,.14)});
+  if(logo)page.drawImage(logo,{x:left,y:top-62,width:62,height:62});
+  draw('YAYASAN GAMBUT',tx,top,18,bold,green);
+  let hy=top-30;for(const s of wrap(d.organization_address||'Yayasan Gambut',tw,9)){draw(s,tx,hy,9);hy-=13;}
+  hy-=4;for(const s of wrap(d.organization_contact||'yayasangambut.org',tw,8.5)){draw(s,tx,hy,8.5);hy-=12;}
+  y=Math.min(top-88,hy-13);page.drawLine({start:{x:left,y},end:{x:left+width,y},thickness:1.2,color:green});
+  y-=24;draw('INVOICE',left,y,22,bold,green);draw(r.status==='issued'?'FINAL':'DRAFT - BELUM DITERBITKAN',left+280,y+2,11,bold,rgb(.55,.33,.13));y-=38;
+ }
+
  function ensure(h){if(y-h<55)start();}
  function paragraph(s,w=width,size=10,font=regular,x=left){for(const t of wrap(s,w,size,font)){ensure(size+5);draw(t,x,y,size,font);y-=size+5;}}
  function boxRow(label,value,heading=false,ref=''){const a=wrap(label,width-194,10,heading?bold:regular),b=wrap(value,130,10,bold),h=Math.max(a.length,b.length)*15+14;ensure(h);page.drawRectangle({x:left,y:y-h,width,height:h,borderColor:line,borderWidth:.6,...(heading?{color:pale}:{})});page.drawLine({start:{x:left+width-140,y},end:{x:left+width-140,y:y-h},thickness:.6,color:line});page.drawLine({start:{x:left+40,y},end:{x:left+40,y:y-h},thickness:.6,color:line});draw(ref,left+9,y-7,9,bold);a.forEach((s,i)=>draw(s,left+48,y-7-i*15,10,heading?bold:regular));b.forEach((s,i)=>draw(s,left+width-8-bold.widthOfTextAtSize(s,10),y-7-i*15,10,bold));y-=h;}

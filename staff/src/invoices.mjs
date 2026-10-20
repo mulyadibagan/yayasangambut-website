@@ -32,7 +32,7 @@ export async function invoiceRoute(req,e,u,{payload,readLimited}){
  }
  const m=path.match(/^\/finance\/invoices\/(api|pdf|print)\/([a-f0-9-]{36})(?:\/(files|issue|cancel)(?:\/([a-f0-9-]{36}))?)?$/);if(!m)fail(404,'Halaman invoice tidak ditemukan.');
  const [,area,id,action,fileId]=m,r=await read(e,id);
- if(area==='print'&&method==='GET'&&!action){if(r.status==='cancelled')fail(409,'Invoice dibatalkan; dokumen tidak berlaku.');return new Response(invoicePrint(r,signatureDataUrl(await documentSignature(e,r))),{headers:{'Content-Type':'text/html; charset=utf-8'}});}
+ if(area==='print'&&method==='GET'&&!action){if(r.status==='cancelled')fail(409,'Invoice dibatalkan; dokumen tidak berlaku.');if(r.status==='issued')return new Response(null,{status:302,headers:{Location:root+'/pdf/'+id}});return new Response(invoicePrint(r,signatureDataUrl(await documentSignature(e,r))),{headers:{'Content-Type':'text/html; charset=utf-8'}});}
  if(area==='pdf'&&method==='GET'&&!action){if(r.status==='cancelled')fail(409,'Invoice dibatalkan; PDF final tidak berlaku.');let bytes;if(r.status==='issued'){const obj=await e.MEDIA.get(r.pdf_key);if(!obj)fail(503,'Arsip PDF final belum dapat dibaca.');bytes=new Uint8Array(await obj.arrayBuffer());if(await pdfHash(bytes)!==r.pdf_hash)fail(503,'Pemeriksaan PDF gagal.');}else bytes=await pdf(e,r);return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Invoice-'+r.number.replaceAll('/','-')+(r.status==='draft'?'-DRAFT':'')+'.pdf"','Cache-Control':'no-store'}});}
  if(area!=='api')fail(405,'Metode tidak didukung.');
  if(!action&&method==='GET')return Response.json(await detail(e,id));
