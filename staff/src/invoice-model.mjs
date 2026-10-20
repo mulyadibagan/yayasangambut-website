@@ -31,7 +31,7 @@ export function invoiceChecks(r,files=[]){
  if(!d.number_reviewed)issues.push('Cocokkan nomor dengan arsip invoice sebelum penerbitan final.');
  if(!r.number||!r.seq)issues.push('Nomor invoice belum dialokasikan.');
  if(!d.customer_address)issues.push('Lengkapi alamat pelanggan.');
- if(!d.contract_ref||!files.some(f=>f.purpose==='contract'))issues.push('Lengkapi referensi dan lampiran kontrak/PO.');
+ if(!files.some(f=>f.purpose==='contract'))issues.push('Lampirkan dokumen kontrak/PO. Nomor kontrak boleh dikosongkan jika belum tersedia.');
  if(!d.organization_address||!d.organization_contact)issues.push('Lengkapi alamat dan kontak pada kop YG.');
  if(!d.bank||!d.account||!d.account_name)issues.push('Lengkapi bank, nomor rekening, dan nama pemilik rekening.');
  if(!d.design_reviewed)issues.push('Tinjau desain cetak terhadap invoice referensi.');
