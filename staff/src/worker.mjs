@@ -5,6 +5,7 @@ import {assetApi} from './assets.mjs';
 import {financeOwner,financeDashboardAccess} from './finance-access.mjs';
 import {payrollAccess,payrollOperator,payrollRoute} from './payroll.mjs';
 import {financeEmailSync} from './finance-email-sync.mjs';
+import {minutesApi} from './agenda-minutes.mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
@@ -150,6 +151,7 @@ async function api(req,env,url,u){
   if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
   if(path==='/api/assets'||path.startsWith('/api/assets/'))return assetApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
+  if(path==='/api/agenda-minutes'||path.startsWith('/api/agenda-minutes/'))return minutesApi(req,env,url,u,{payload});
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
