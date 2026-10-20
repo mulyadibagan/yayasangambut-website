@@ -1,5 +1,5 @@
 import {previewDocumentSignature,signatureDataUrl} from './document-signature.mjs';
-import {draftInvoicePdf,saveInvoiceArchive,readInvoiceArchive,invoiceArchiveOptions,invoicePrintChoices} from './invoice-archive.mjs';
+import {draftInvoicePdf,saveInvoiceArchive,readInvoiceArchive,invoicePrintRendition,invoiceArchiveOptions,invoicePrintChoices} from './invoice-archive.mjs';
 import {invoiceBankDefaults,invoiceBankRoute} from './invoice-bank.mjs';
 import {fail,now,sha,imageType} from './core.mjs';
 import {financeDashboardAccess,financeOwner} from './finance-access.mjs';
@@ -51,7 +51,7 @@ export async function invoiceRoute(req,e,u,{payload,readLimited}){
  if(area==='pdf'&&method==='GET'&&!action){
   if(r.status==='cancelled')fail(409,'Invoice dibatalkan; PDF final tidak berlaku.');
   const signature=r.status==='draft'&&signatureMode==='with'?await previewDocumentSignature(e,u):null;
-  const bytes=r.status==='issued'?await readInvoiceArchive(e,r,signatureMode):await draftInvoicePdf(e,{...r,invoice_preview:true,signature_preview:!!signature},signature);
+  const bytes=r.status==='issued'?await (url.searchParams.get('layout')==='compact'?invoicePrintRendition(e,r,signatureMode):readInvoiceArchive(e,r,signatureMode)):await draftInvoicePdf(e,{...r,invoice_preview:true,signature_preview:!!signature},signature);
   return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Invoice-'+r.number.replaceAll('/','-')+(r.status==='draft'?'-DRAFT':signatureMode==='without'?'-TANPA-TTD':signatureMode==='with'?'-TTD':'')+'.pdf"','Cache-Control':'no-store'}});
  }
 

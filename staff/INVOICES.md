@@ -1,3 +1,5 @@
+Versi cetak print-v2 merapatkan tabel agar invoice RAPP beserta TTD muat satu A4 dan menghapus label FINAL serta waktu penerbitan dari dokumen. Untuk invoice yang sudah terbit, pilihan cetak memakai rendition privat terpisah berdasarkan snapshot terkunci, dengan hash sumber; PDF arsip asli tetap tersedia dan tidak ditimpa.
+
 Lampiran invoice menerima Word .doc (OLE) dan .docx (paket Word), selain PDF/gambar, maksimal 5 MB. Format diperiksa di server; unduhan privat menggunakan Content-Disposition attachment. Tidak ada konversi atau eksekusi isi Word.
 
 Nomor kontrak/PO bersifat opsional. Lampiran dengan jenis Kontrak / PO tetap diperlukan sebelum final, termasuk ketika nomor kontrak belum tersedia. Tidak mengubah draf atau arsip final yang sudah tersimpan.

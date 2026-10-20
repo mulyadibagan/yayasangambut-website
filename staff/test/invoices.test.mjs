@@ -6,6 +6,7 @@ import {PDFDocument,PDFName,PDFDict} from 'pdf-lib';
 import {pdfHash} from '../src/payroll-pdf.mjs';
 import worker from '../src/worker.mjs';
 import {sha} from '../src/core.mjs';
+import {invoicePdf} from '../src/invoice-pdf.mjs';
 import {invoiceSeed,invoiceInput} from '../src/invoice-model.mjs';
 const origin='https://staff.yayasangambut.org',base='/finance/invoices/api';
 async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0026_finance_invoices.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
@@ -45,7 +46,7 @@ test('draft revisions, private documents, issuance checks and immutable final PD
  assert.equal((await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:1})).status,409);
  assert.equal((await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version,signature_mode:'without',reviewed_signature_mode:'with'})).status,409);
  res=await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version});assert.equal(res.status,200,await res.clone().text());r=await res.json();assert.equal(r.status,'issued');assert.ok(r.pdf_hash);assert.equal(r.events.filter(x=>x.action==='issued').length,1);
- const first=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();assert.equal((await call(f,path,'finance','PUT',{...complete,version:r.version})).status,409);assert.equal((await call(f,path+'/cancel','director','POST',{version:r.version,reason:'cancel'})).status,409);const print=await call(f,'/finance/invoices/print/'+r.id);assert.equal(print.status,302);assert.equal(print.headers.get('Location'),'/finance/invoices/pdf/'+r.id);const second=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();assert.deepEqual(new Uint8Array(first),new Uint8Array(second));
+ const first=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();const compact=await call(f,'/finance/invoices/pdf/'+r.id+'?layout=compact');assert.equal(compact.status,200);assert.equal((await PDFDocument.load(await compact.arrayBuffer())).getPageCount(),1);assert.equal((await call(f,path,'finance','PUT',{...complete,version:r.version})).status,409);assert.equal((await call(f,path+'/cancel','director','POST',{version:r.version,reason:'cancel'})).status,409);const print=await call(f,'/finance/invoices/print/'+r.id);assert.equal(print.status,302);assert.equal(print.headers.get('Location'),'/finance/invoices/pdf/'+r.id);const second=await(await call(f,'/finance/invoices/pdf/'+r.id)).arrayBuffer();assert.deepEqual(new Uint8Array(first),new Uint8Array(second));
 });
 test('Director can preview signature on a watermarked draft without approval or changing its saved version',async()=>{
  const f=await setup(),r=await create(f),png=new Uint8Array(readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url))),hash=await pdfHash(png),get=f.env.MEDIA.get;
@@ -81,4 +82,13 @@ test('Word contract attachments are stored privately, count as contracts, and do
   const file=r.files.find(x=>x.filename===name);assert.equal(file.mime,mime);const download=await call(f,base+'/'+r.id+'/files/'+file.id);assert.equal(download.headers.get('Content-Type'),mime);assert.ok(download.headers.get('Content-Disposition').startsWith('attachment;'));assert.deepEqual(new Uint8Array(await download.arrayBuffer()),bytes);assert.equal((await call(f,base+'/'+r.id+'/files/'+file.id,'other')).status,403);
  }
  const v=r.version;const res=await worker.fetch(request(base+'/'+r.id+'/files','finance','POST','<html>not Word</html>',{'X-Filename':'Fake.docx','X-Purpose':'contract','X-Version':String(v)}),f.env);assert.equal(res.status,400);assert.equal(f.db.prepare('SELECT version FROM yg_invoices WHERE id=?').get(r.id).version,v);
+});
+
+
+test('full RAPP invoice including customer address, bank and signature fits one A4 page in both languages',async()=>{
+ const logo=readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url));
+ for(const language of ['id','en'])for(const signature of [undefined,logo]){
+ const r={number:'10/YG-RAPP/26',status:'issued',issued_by:'mulyadi@yayasangambut.org',issued_at:'2026-10-20T08:25:19Z',amount:199200000,total:199200000,data:{...invoiceSeed,language,customer_address:'Jl. M.H. Thamrin (d/h Jl. Teluk Betung) No. 31, Kebon Melati, Tanah Abang, Jakarta Pusat 10230.',contract_ref:'0',description:'JASA PENDAMPINGAN DAN PENGEMBANGAN KEMITRAAN AGROFORESTRI ANTARA PERUSAHAAN DAN MASYARAKAT BERBASIS KEHUTANAN MASYARAKAT UNTUK RANTAI PASOKAN YANG BERKELANJUTAN',bank:'Bank Mandiri KCP Tangerang Bintaro',bank_address:'Jl. Jend. Sudirman A1-03, Tangerang Selatan',account_name:'Yayasan Gambut',swift:'BMRIIDJA',account:'1640003188440'}};
+ assert.equal((await PDFDocument.load(await invoicePdf(r,logo,signature))).getPageCount(),1);
+ }
 });
