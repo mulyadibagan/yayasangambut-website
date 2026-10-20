@@ -129,3 +129,11 @@ test('Drive archive rejects drafts and bad checksum; revoked connection never ro
  try{let r=await readyInvoice(f);assert.equal((await call(f,base+'/'+r.id+'/drive','director','POST',{})).status,409);f.setBadHash();r=await(await call(f,base+'/'+r.id+'/issue','director','POST',{version:r.version,reviewed_version:r.version})).json();assert.equal(r.status,'issued');assert.equal(r.drive.status,'error');assert.equal(r.drive.url,null);const before=JSON.stringify(f.db.prepare('SELECT * FROM yg_invoices').all());f.setRevoked();assert.equal((await call(f,base+'/'+r.id+'/drive','director','POST',{})).status,409);assert.equal(JSON.stringify(f.db.prepare('SELECT * FROM yg_invoices').all()),before);assert.equal(f.db.prepare('SELECT status FROM agenda_drive_connection').get().status,'reconnect');
  }finally{globalThis.fetch=previous;}
 });
+
+
+test('USD and SGD invoices save and issue integer cents with currency locked in final snapshot, keeping historical rows intact',async()=>{
+ for(const currency of ['USD','SGD']){
+ const f=await setup();let r=await create(f,{currency,contract_amount:12500.25,percentage:40});const path=base+'/'+r.id;assert.equal(r.total,500010);assert.equal(r.data.currency,currency);assert.equal(f.db.prepare('SELECT typeof(total) t FROM yg_invoices').get().t,'integer');const list=await(await call(f)).json();assert.equal(list.invoices[0].currency,currency);
+ r=await(await call(f,path,'finance','PUT',{...r.data,number:r.number,version:r.version,customer_address:'Test address',bank:'Test bank',account:'123456789',account_name:'YG',number_reviewed:true,design_reviewed:true})).json();r=await attach(f,r,'contract');const result=await call(f,path+'/issue','director','POST',{version:r.version,reviewed_version:r.version});assert.equal(result.status,200,await result.clone().text());r=await result.json();assert.equal(r.status,'issued');assert.equal(r.data.currency,currency);assert.equal(r.total,500010);assert.equal((await call(f,path,'finance','PUT',{...r.data,currency:'IDR',number:r.number,version:r.version})).status,409);assert.equal(f.db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
+ }
+});

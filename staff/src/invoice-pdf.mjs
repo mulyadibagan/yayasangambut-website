@@ -32,10 +32,10 @@ export async function invoicePdf(r,logoBytes,signatureBytes){
  const date=L.date(d.date);
  const meta='INV NO: '+r.number;draw(meta,left+width-bold.widthOfTextAtSize(meta,10),y,10,bold);draw(L.dateLabel+date,left+width-regular.widthOfTextAtSize(L.dateLabel+date,9),y-19,9);
  paragraph(L.to,280,10,bold);paragraph(d.customer,280);if(d.customer_address)paragraph(d.customer_address,280);if(d.contract_ref)paragraph(L.contract+d.contract_ref,280,9);y-=18;
- boxRow(L.remarks,'TOTAL (IDR)',true,'REF');
+ boxRow(L.remarks,'TOTAL ('+L.currency+')',true,'REF');
  const detail=d.description+'\n'+L.installment(d.percentage,d.contract_amount)+'\n\n'+L.payment+'\n'+invoiceBankLines(d).join('\n');
- const detailLines=wrap(detail,width-204);let n=0;while(n<detailLines.length){if(y<95){start();boxRow(L.remarks+L.continued,'TOTAL (IDR)',true,'REF');}const count=Math.max(1,Math.floor((y-65)/13)-1);boxRow(detailLines.slice(n,n+count).join('\n'),n===0?money(r.amount):'',false,n===0?'1':'');n+=count;}
- if(d.tax_mode==='added')boxRow(L.vatAdded,money(d.vat));if(d.tax_mode==='included')boxRow(L.vatIncluded,money(d.vat));if(d.withholding)boxRow(L.withholding,'-'+money(d.withholding));boxRow('TOTAL',money(r.total),true);y-=16;paragraph(L.wordsLabel+L.words(r.total),width,9,bold);
+ const detailLines=wrap(detail,width-204);let n=0;while(n<detailLines.length){if(y<95){start();boxRow(L.remarks+L.continued,'TOTAL ('+L.currency+')',true,'REF');}const count=Math.max(1,Math.floor((y-65)/13)-1);boxRow(detailLines.slice(n,n+count).join('\n'),n===0?money(r.amount):'',false,n===0?'1':'');n+=count;}
+ if(d.tax_mode==='added')boxRow(L.vatAdded,L.valueMoney(d.vat));if(d.tax_mode==='included')boxRow(L.vatIncluded,L.valueMoney(d.vat));if(d.withholding)boxRow(L.withholding,'-'+L.valueMoney(d.withholding));boxRow('TOTAL',money(r.total),true);y-=16;paragraph(L.wordsLabel+L.words(r.total),width,9,bold);
  y-=10;if(d.notes){y-=8;paragraph(d.notes,width,9);}y-=20;ensure(140);paragraph(L.closing,width,10);paragraph('Yayasan Gambut',width,10);if(signature){page.drawImage(signature,{x:left,y:y-70,width:105,height:70});y-=74;}else y-=74;paragraph('Mulyadi',width,10,bold);paragraph(L.director,width,9);if(r.status!=='issued')paragraph(L.draftNote,width,8);
  if(r.invoice_preview){for(const p of doc.getPages()){p.drawText('PRATINJAU',{x:110,y:410,size:58,font:bold,color:rgb(.65,.12,.08),opacity:.12,rotate:degrees(32)});p.drawText('PRATINJAU - BELUM DISETUJUI / DITERBITKAN',{x:left,y:40,size:9,font:bold,color:rgb(.65,.12,.08)});}}
  const pages=doc.getPages();pages.forEach((p,i)=>p.drawText('YG Finance | '+r.number+' | '+(i+1)+'/'+pages.length,{x:left,y:25,size:7,font:regular,color:rgb(.45,.5,.47)}));return doc.save();
