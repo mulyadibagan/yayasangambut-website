@@ -1,5 +1,6 @@
 import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
 import {saveClosingReconciliation} from './kups-reconciliation.mjs';
+import {balancesAt,entireReport} from './kups-reporting.mjs';
 import {fail,now,imageType} from './core.mjs';
 import {validateWebgisSession} from './webgis-sso.mjs';
 const origin='https://webgisyg.id';
@@ -50,6 +51,13 @@ export async function finance(req,env,url){
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
+ if(path==='/balances'&&method==='GET'){
+  const date=url.searchParams.get('date'),exclude=url.searchParams.get('exclude')||'';
+  if(!validDate(date)||group.start_date&&date<group.start_date)fail(400,'Pilih tanggal setelah awal pembukuan.');
+  if(exclude&&!/^[a-f0-9-]{36}$/.test(exclude))fail(400,'Transaksi tidak valid.');
+  return json(await balancesAt(env,q,g,group,date,exclude));
+ }
+ if(path==='/report'&&method==='GET')return json(await entireReport(env,q,g));
  if(path==='/reconciliation'&&method==='POST')return await saveClosingReconciliation(req,env,url,{u,g,group,requireAdmin,body,q,json});
  const extended=await detailsRoute(req,env,url,{u,g,group,write,requireAdmin,json,body,q,audit,verifyEvidence});if(extended)return extended;
  if(path==='/setup'&&method==='POST'){
