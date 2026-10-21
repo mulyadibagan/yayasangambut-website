@@ -58,6 +58,7 @@ export async function detailsRoute(req,env,url,c){
 }
 export function validateTransfer(b){if(!date(b.date))fail(400,'Tanggal transfer tidak valid.');const p={date:b.date,from_account:account(b.from_account),to_account:account(b.to_account),amount:amount(b.amount),description:text(b.description||'',500),evidence_id:text(b.evidence_id||'',80),source_ref:text(b.source_ref||'',120)};if(p.from_account===p.to_account||!p.description)fail(400,'Pilih dua akun berbeda dan isi uraian transfer.');return p;}
 export async function ledgerDetails(env,q,g,group,month){
+ const openingReconciliation=await q(env,'SELECT * FROM kups_reconciliations WHERE group_id=? AND month<? ORDER BY month DESC LIMIT 1',g,month).first();
  const transfers=(await q(env,'SELECT * FROM kups_transfers WHERE group_id=? AND substr(date,1,7)=? ORDER BY date,created_at,id',g,month).all()).results;
  const documents=(await q(env,"SELECT d.*,COALESCE((SELECT SUM(a.amount) FROM kups_transactions a WHERE a.document_id=d.id AND a.deleted_at IS NULL),0) AS paid_total,COALESCE((SELECT SUM(t.amount) FROM kups_transactions t WHERE t.document_id=d.id AND t.deleted_at IS NULL AND substr(t.date,1,7)<=?),0) AS paid_amount FROM kups_documents d WHERE group_id=? AND substr(d.date,1,7)<=? ORDER BY d.date DESC,d.created_at DESC",month,g,month).all()).results.map(d=>({...d,remaining:d.total_amount-d.paid_amount,remaining_current:d.total_amount-d.paid_total}));
  const opens=(await q(env,'SELECT * FROM kups_account_openings WHERE group_id=?',g).all()).results;
@@ -65,6 +66,16 @@ export async function ledgerDetails(env,q,g,group,month){
  const moves=(await q(env,"SELECT from_account,to_account,substr(date,1,7) AS month,SUM(amount) AS amount FROM kups_transfers WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)<=? GROUP BY from_account,to_account,substr(date,1,7)",g,month).all()).results;
  const accounts=['cash','bank','unassigned'].map(id=>{const initial=id==='unassigned'?(group.opening_amount===null?null:group.opening_amount-opens.reduce((n,a)=>n+a.amount,0)):opens.find(a=>a.account===id)?.amount??null;let prior=0,income=0,expense=0,transfer_in=0,transfer_out=0;for(const r of cash.filter(r=>r.account===id)){const signed=r.kind==='income'?r.amount:-r.amount;if(r.month<month)prior+=signed;else if(r.kind==='income')income+=r.amount;else expense+=r.amount;}for(const r of moves){if(r.month<month){if(r.to_account===id)prior+=r.amount;if(r.from_account===id)prior-=r.amount;}else{if(r.to_account===id)transfer_in+=r.amount;if(r.from_account===id)transfer_out+=r.amount;}}const opening=initial===null?null:initial+prior;return {id,initial,opening,income,expense,transfer_in,transfer_out,net:income-expense+transfer_in-transfer_out,closing:opening===null?null:opening+income-expense+transfer_in-transfer_out};});
  const outstanding={receivable:0,payable:0};for(const d of documents.filter(d=>!d.deleted_at)){if(d.kind==='income')outstanding.receivable+=d.remaining;else outstanding.payable+=d.remaining;}
- return {transfers,documents,accounts,outstanding,categories};
+ // A closing observation is the next month's opening basis, never a cash entry.
+ // Discard historical account ambiguity only through that observation's month.
+ if(openingReconciliation){
+  for(const a of accounts){
+   let opening=a.id==='cash'?openingReconciliation.cash_amount:a.id==='bank'?openingReconciliation.bank_amount:0;
+   for(const r of cash)if(r.account===a.id&&r.month>openingReconciliation.month&&r.month<month)opening+=r.kind==='income'?r.amount:-r.amount;
+   for(const r of moves)if(r.month>openingReconciliation.month&&r.month<month){if(r.to_account===a.id)opening+=r.amount;if(r.from_account===a.id)opening-=r.amount;}
+   a.opening=opening;a.closing=opening+a.net;
+  }
+ }
+ return {transfers,documents,accounts,outstanding,categories,opening_reconciliation:openingReconciliation};
 }
 

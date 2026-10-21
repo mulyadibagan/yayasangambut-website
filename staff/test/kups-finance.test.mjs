@@ -38,6 +38,40 @@ test('closing reconciliation preserves openings, transactions, account mapping a
  assert.equal((await call(f,raw,'/ledger?month=2026-09')).data.reconciliation,null);
 });
 
+test('September reconciliation carries bank and cash into October without writing or duplicating transactions',async()=>{
+ const f=fixture(),raw=await auth(f);
+ await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:30508299.855265,version:1});
+ await call(f,raw,'/transactions','POST',tx({date:'2026-09-01',amount:353000}));
+ await call(f,raw,'/transactions','POST',tx({date:'2026-09-30',kind:'expense',amount:8370000}));
+ const september=(await call(f,raw,'/ledger?month=2026-09')).data;
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-09','POST',{month:'2026-09',bank_amount:9314784,cash_amount:13176516,note:'BKU September',version:0})).status,200);
+ const snapshot=()=>JSON.stringify({group:f.db.prepare('SELECT * FROM kups_groups').all(),rows:f.db.prepare('SELECT * FROM kups_transactions').all(),opens:f.db.prepare('SELECT * FROM kups_account_openings').all(),audit:f.db.prepare('SELECT * FROM kups_audit').all()});
+ const before=snapshot();
+ for(let i=0;i<2;i++){
+  const october=(await call(f,raw,'/ledger?month=2026-10')).data;
+  assert.equal(october.summary.opening,22491300);assert.equal(october.summary.closing,22491300);
+  assert.equal(october.accounts.find(a=>a.id==='bank').opening,9314784);
+  assert.equal(october.accounts.find(a=>a.id==='cash').opening,13176516);
+  assert.equal(october.accounts.find(a=>a.id==='unassigned').opening,0);
+  assert.equal(october.rows.length,0);assert.equal(october.opening_reconciliation.month,'2026-09');
+ }
+ assert.equal(snapshot(),before);
+ assert.deepEqual((await call(f,raw,'/ledger?month=2026-09')).data.summary,september.summary);
+ // Subsequent cash movements are counted once; deleted movements stay excluded.
+ await call(f,raw,'/transactions','POST',tx({date:'2026-10-02',amount:10000,account:'bank'}));
+ await call(f,raw,'/transactions','POST',tx({date:'2026-10-03',kind:'expense',amount:3000,account:'cash'}));
+ await call(f,raw,'/transfers','POST',{date:'2026-10-04',from_account:'bank',to_account:'cash',amount:2000,description:'Tarik tunai'});
+ let november=(await call(f,raw,'/ledger?month=2026-11')).data;
+ assert.equal(november.summary.opening,22498300);
+ assert.equal(november.accounts.find(a=>a.id==='bank').opening,9322784);
+ assert.equal(november.accounts.find(a=>a.id==='cash').opening,13175516);
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-10','POST',{month:'2026-10',bank_amount:9322784,cash_amount:13175516,note:'Oktober',version:0})).status,200);
+ const october=(await call(f,raw,'/ledger?month=2026-10')).data;
+ assert.equal(october.reconciliation.book_amount,october.summary.closing);
+ november=(await call(f,raw,'/ledger?month=2026-11')).data;
+ assert.equal(november.opening_reconciliation.month,'2026-10');assert.equal(november.summary.opening,22498300);
+});
+
 test('reconciliation is admin only and rejects mismatched month, invalid amounts and stale versions',async()=>{
  const f=fixture(),admin=await auth(f),member=await auth(f,'member');
  f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','member@gmail.com','treasurer',0)");
