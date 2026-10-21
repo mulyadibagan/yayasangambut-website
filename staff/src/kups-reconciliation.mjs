@@ -14,10 +14,11 @@ export async function saveClosingReconciliation(req,env,url,{u,g,group,requireAd
   // Compute the book snapshot in the write statement, including only active cash
   // entries through this month. Version guards protect concurrent corrections.
   const write=q(env,`INSERT INTO kups_reconciliations(group_id,month,cash_amount,bank_amount,book_amount,note,version,updated_by,updated_at)
-    SELECT ?,?,?,?,?+COALESCE((SELECT SUM(CASE WHEN kind='income' THEN amount ELSE -amount END) FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)<=?),0),?,1,?,?
+    WITH anchor AS (SELECT * FROM kups_reconciliations WHERE group_id=? AND month<? ORDER BY month DESC LIMIT 1)
+    SELECT ?,?,?,?,COALESCE((SELECT cash_amount+bank_amount FROM anchor),?)+COALESCE((SELECT SUM(CASE WHEN kind='income' THEN amount ELSE -amount END) FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)>COALESCE((SELECT month FROM anchor),'') AND substr(date,1,7)<=?),0),?,1,?,?
     WHERE ?=0 OR EXISTS(SELECT 1 FROM kups_reconciliations WHERE group_id=? AND month=? AND version=?)
     ON CONFLICT(group_id,month) DO UPDATE SET cash_amount=excluded.cash_amount,bank_amount=excluded.bank_amount,book_amount=excluded.book_amount,note=excluded.note,version=kups_reconciliations.version+1,updated_by=excluded.updated_by,updated_at=excluded.updated_at
-    WHERE kups_reconciliations.version=?`,g,month,b.cash_amount,b.bank_amount,group.opening_amount,g,month,b.note.trim(),u.email,stamp,b.version,g,month,b.version,b.version);
+    WHERE kups_reconciliations.version=?`,g,month,g,month,b.cash_amount,b.bank_amount,group.opening_amount,g,month,b.note.trim(),u.email,stamp,b.version,g,month,b.version,b.version);
   const audit=q(env,'INSERT INTO kups_audit SELECT ?,?,?,?,?,?,? WHERE changes()>0',crypto.randomUUID(),g,u.email,'closing-reconciliation',month,JSON.stringify({before,after:{...b,note:b.note.trim()}}),stamp);
   const results=await env.DB.batch([write,audit]);
   if(!results[0].meta.changes)fail(409,'Rekonsiliasi berubah. Muat ulang sebelum menyimpan.');
