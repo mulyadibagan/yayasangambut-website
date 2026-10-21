@@ -17,18 +17,22 @@ const types=body=>`<?xml version="1.0"?><Types xmlns="http://schemas.openxmlform
 const override=(part,type)=>`<Override PartName="/${part}" ContentType="application/vnd.openxmlformats-officedocument.${type}+xml"/>`;
 const p=(text,bold=false,size=22,after=75)=>text?`<w:p><w:pPr><w:spacing w:after="${after}"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>${bold?'<w:b/>':''}<w:sz w:val="${size}"/></w:rPr><w:t xml:space="preserve">${xml(text)}</w:t></w:r></w:p>`:'<w:p><w:pPr><w:spacing w:line="80" w:lineRule="exact" w:after="0"/></w:pPr></w:p>';
 const ns='xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
-export const LETTER_LAYOUT='formal-v2';
+export const LETTER_LAYOUT='formal-v3';
+export const bankField=line=>{const match=line.match(/^(Nama pemilik rekening|Nama bank|Cabang|Nomor rekening|Alamat cabang bank)\s*:\s*(.*)$/);return match?{label:match[1],value:match[2]}:null;};
 export const SIGNATURE_KEY='surat-assets/ttd-yayasan-gambut.png';
 const months=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 export const letterDate=date=>`${Number(date.slice(8,10))} ${months[Number(date.slice(5,7))-1]} ${date.slice(0,4)}`;
 const formalP=(text,{bold=false,justify=false,keep=false,after=0,before=0,space=0,metadata=false}={})=>`<w:p><w:pPr>${keep?'<w:keepNext/>':''}<w:keepLines/><w:spacing w:before="${before}" w:after="${after}" w:line="${space||276}" w:lineRule="${space?'exact':'auto'}"/>${justify?'<w:jc w:val="both"/>':''}${metadata?'<w:tabs><w:tab w:val="left" w:pos="1500"/><w:tab w:val="right" w:pos="9026"/></w:tabs>':''}</w:pPr><w:r><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/>${bold?'<w:b/>':''}<w:sz w:val="22"/></w:rPr>${text.split('\t').map(t=>`<w:t xml:space="preserve">${xml(t)}</w:t>`).join('<w:tab/>')}</w:r></w:p>`;
+function bankTable(rows){const cell=(value,width)=>`<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:tcMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tcMar></w:tcPr>${formalP(value)}</w:tc>`;
+ return `<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(side=>`<w:${side} w:val="nil"/>`).join('')}</w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="2400"/><w:gridCol w:w="200"/><w:gridCol w:w="6426"/></w:tblGrid>${rows.map(row=>`<w:tr><w:trPr><w:cantSplit/></w:trPr>${cell(row.label,2400)}${cell(':',200)}${cell(row.value,6426)}</w:tr>`).join('')}</w:tbl>`;
+}
 function formalBody(r){const d=r.data,parts=[];
  if(r.status!=='issued')parts.push(formalP('DRAFT — BELUM TERBIT',{bold:true,after:120}));
  parts.push(formalP(`Nomor Surat\t: ${r.number||'Belum dialokasikan'}\t${letterDate(d.date)}`,{metadata:true,keep:true}),formalP(`Perihal\t: ${d.subject}`,{metadata:true,keep:true}),formalP(`Lampiran\t: ${d.attachments||'-'}`,{metadata:true,after:300,keep:true}));
  const recipient=['Kepada Yth.',d.recipient,d.institution,d.address||'Di tempat'].filter(Boolean);
  recipient.forEach((t,i)=>parts.push(formalP(t,{keep:true,after:i===recipient.length-1?180:0})));
- for(const line of d.body.split('\n'))parts.push(formalP(line,{justify:!!line,space:line?0:140}));
- parts.push(formalP('Hormat kami,',{before:180,keep:true}),formalP('YAYASAN GAMBUT',{bold:true,after:1400,keep:true}),formalP('MULYADI',{bold:true,keep:true}),formalP('DIREKTUR YAYASAN GAMBUT',{bold:true}));
+ const lines=d.body.split('\n');for(let i=0;i<lines.length;i++){const field=bankField(lines[i]);if(field){const rows=[field];while(i+1<lines.length&&bankField(lines[i+1]))rows.push(bankField(lines[++i]));parts.push(bankTable(rows));}else parts.push(formalP(lines[i],{justify:!!lines[i],space:lines[i]?0:140}));}
+ parts.push(formalP('Hormat kami,',{before:180,after:1400,keep:true}),formalP('MULYADI',{bold:true,keep:true}),formalP('DIREKTUR YAYASAN GAMBUT',{bold:true}));
  return parts.join('');
 }
 export function letterDocx(r,logo,letterhead){
@@ -52,8 +56,8 @@ export async function letterPdf(r,logoBytes,letterhead,signatureBytes){
  const date=letterDate(r.data.date);text('Nomor Surat',left,y);text(': '+(r.number||'Belum dialokasikan'),147,y);text(date,right-font.widthOfTextAtSize(date,size),y);y-=leading;
  for(const [label,value] of [['Perihal',r.data.subject],['Lampiran',r.data.attachments||'-']]){text(label,left,y);paragraph(': '+value,false,147,right-147);}y-=15;
  const recipient=['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean);for(const line of recipient)paragraph(line);y-=10;
- for(const line of r.data.body.split('\n')){if(line)paragraph(line,true);else y-=7;}
- room(142);y-=10;text('Hormat kami,',left,y);y-=20;text('YAYASAN GAMBUT',left,y,bold);y-=size;
+ for(const line of r.data.body.split('\n')){const field=bankField(line);if(field){const valueLines=wrap(field.value,width-130);room(valueLines.length*leading);text(field.label,left,y);text(':',left+120,y);paragraph(field.value,false,left+130,width-130);}else if(line)paragraph(line,true);else y-=7;}
+ room(122);y-=10;text('Hormat kami,',left,y);y-=size;
  // The supplied transparent PNG remains private and is used only for an issued electronic PDF.
  if(signature)page.drawImage(signature,{x:left-6,y:y-93,width:105,height:105});
  y-=87;text('MULYADI',left,y,bold);y-=20;text('DIREKTUR YAYASAN GAMBUT',left,y,bold);
