@@ -6,10 +6,10 @@ import {PDFDocument} from 'pdf-lib';
 import worker from '../src/worker.mjs';
 import {sha} from '../src/core.mjs';
 import {letterInput} from '../src/letters.mjs';
-import {letterDocuments} from '../src/letters-documents.mjs';
+import {letterDocuments,bankField} from '../src/letters-documents.mjs';
 const origin='https://staff.yayasangambut.org';
 const sample={date:'2026-10-21',kind:'SKR',subject:'Surat Keterangan Rekening Bank',recipient:'',institution:'PT Riau Andalan Pulp and Paper',address:'',body:'Yayasan Gambut menerangkan rekening bank organisasi berikut.\nPemilik: Yayasan Gambut\nBank: Bank Mandiri\nCabang: KCP Tangerang Bintaro\nNomor rekening: 1640003188440\nAlamat cabang: Jl. Jend. Sudirman A1-03, Tangerang Selatan\nDemikian keterangan ini disampaikan.',attachments:'',signer:'Mulyadi, Direktur Yayasan Gambut',notes:''};
-async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0030_letters.sql','0031_letters_annual.sql','0032_letters_layout.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0030_letters.sql','0031_letters_annual.sql','0032_letters_layout.sql','0033_letters_renditions.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  let queue=Promise.resolve();const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};}};},async batch(stmts){const execute=async()=>{db.exec('BEGIN');try{const out=[];for(const s of stmts)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}};const result=queue.then(execute);queue=result.catch(()=>{});return result;}};
  const files=new Map(),logo=readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url)),env={APP_ORIGIN:origin,GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',ADMIN_EMAIL:'mulyadi@yayasangambut.org',DB,ASSETS:{fetch:async req=>new Response(req.url.endsWith('surat-letterhead.png')?readFileSync(new URL('../public/brand/surat-letterhead.png',import.meta.url)):logo)},MEDIA:{async put(k,b){files.set(k,b);},async get(k){const b=k==='surat-assets/ttd-yayasan-gambut.png'?logo:files.get(k);return b?{body:b,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength)}:null;}}};
  for(const [id,email,role] of [['m','mulyadi','admin'],['r','rienaprasiddha','staff'],['z','zamharier','editor'],['a','rajaalpian','staff'],['x','other','admin']]){await DB.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').bind(id,email+'@yayasangambut.org',id,role,'2026-10-21','2026-10-21').run();await DB.prepare('INSERT INTO sessions VALUES(?,?,?)').bind(await sha(id),id,Date.now()+600000).run();}return {db,env,files};}
@@ -42,18 +42,18 @@ test('format refresh preserves issuance, original archives and Drive references;
  assert.equal((await call(env,'/'+r.id+'/format','r','POST',{version:r.version})).status,403);
  assert.equal((await call(env,'/'+r.id+'/format','m','POST',{version:r.version})).status,409);
  await historical(env,65);r=await action(env,await approve(env,r),'issue');
- db.prepare('DELETE FROM surat_layout_archives WHERE surat_id=?').run(r.id);r=await (await call(env,'/'+r.id)).json();
+ db.prepare('DELETE FROM surat_renditions WHERE surat_id=?').run(r.id);r=await (await call(env,'/'+r.id)).json();
  const original={...r},oldBytes=files.get(r.pdf_key);
  db.prepare('INSERT INTO surat_annual_drive VALUES(?,?,?,?,?)').run(r.id,'pdf','old-drive','https://drive.google.com/file/d/old-drive/view','old-time');
  const refreshed=await Promise.all([action(env,r,'format'),action(env,r,'format')]);r=refreshed[0];
- assert.equal(r.layout,'formal-v2');assert.equal(r.number,original.number);assert.equal(r.issued_at,original.issued_at);assert.equal(r.version,original.version);
+ assert.equal(r.layout,'formal-v3');assert.equal(r.number,original.number);assert.equal(r.issued_at,original.issued_at);assert.equal(r.version,original.version);
  assert.notEqual(r.pdf_key,original.pdf_key);assert.deepEqual(files.get(original.pdf_key),oldBytes);
  assert.equal(db.prepare('SELECT pdf_key FROM surat_annual WHERE id=?').get(r.id).pdf_key,original.pdf_key);
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);
- assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='format_formal-v2'").get().n,1);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='format_formal-v3'").get().n,1);
  assert.equal(r.previousArchives[0].file_id,'old-drive');assert.equal(r.archives.length,0);
- await action(env,r,'format');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_layout_archives').get().n,1);
- db.prepare('INSERT INTO surat_layout_drive VALUES(?,?,?,?,?)').run(r.id,'pdf','new-drive','https://drive.google.com/file/d/new-drive/view','new-time');
+ await action(env,r,'format');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_renditions').get().n,1);
+ db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(r.id,'formal-v3','pdf','new-drive','https://drive.google.com/file/d/new-drive/view','new-time');
  const register=await (await call(env,'/register')).json();assert.equal(register.rows[0].archives[0].file_id,'new-drive');
  const download=await call(env,'/'+r.id+'/pdf');assert.deepEqual(new Uint8Array(await download.arrayBuffer()),files.get(r.pdf_key));
  const next=await action(env,await approve(env,await create(env)),'issue');assert.equal(next.sequence,67);
@@ -69,4 +69,32 @@ test('signature is required for issued PDF, never embedded in Word or draft PDF'
  assert.deepEqual(draft.docx, (await letterDocuments({data:sample,status:'draft'},logo,head)).docx);
  const images=async bytes=>{const pdf=await PDFDocument.load(bytes);return pdf.getPage(0).node.Resources().lookup((await import('pdf-lib')).PDFName.of('XObject')).keys().length;};
  assert.equal(await images(draft.pdf),1);assert.equal(await images(issued.pdf),2);
+});
+
+
+test('bank fields keep their values and labels; ordinary prose is not treated as account data',()=>{
+ assert.deepEqual(bankField('Nomor rekening : 1640003188440 (IDR)'),{label:'Nomor rekening',value:'1640003188440 (IDR)'});
+ assert.deepEqual(bankField('Alamat cabang bank : Jl. Jend. Sudirman A1-03, Tangerang Selatan'),{label:'Alamat cabang bank',value:'Jl. Jend. Sudirman A1-03, Tangerang Selatan'});
+ assert.equal(bankField('Dengan hormat,'),null);assert.equal(bankField('Demikian: penutup'),null);
+});
+
+test('new format retains prior layout and Drive references without issuing again',async()=>{
+ const {env,db,files}=await setup();await historical(env,65);let r=await action(env,await approve(env,await create(env)),'issue');
+ db.prepare('DELETE FROM surat_renditions WHERE surat_id=?').run(r.id);
+ db.prepare('INSERT INTO surat_renditions VALUES(?,?,?,?,?,?)').run(r.id,'formal-v2','v2.docx','v2.pdf','m','2026-10-21');
+ db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(r.id,'formal-v2','pdf','v2-drive','https://drive.google.com/file/d/v2-drive/view','old-time');
+ files.set('v2.pdf',new Uint8Array([1,2,3]));r=await (await call(env,'/'+r.id)).json();assert.equal(r.layout,'formal-v2');
+ r=await action(env,r,'format');assert.equal(r.layout,'formal-v3');assert.equal(r.previousArchives[0].file_id,'v2-drive');
+ assert.deepEqual(files.get('v2.pdf'),new Uint8Array([1,2,3]));assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_renditions WHERE surat_id=?').get(r.id).n,2);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);
+});
+
+test('rendition migration copies existing final formats and Drive URLs exactly',async()=>{
+ const db=new DatabaseSync(':memory:');for(const name of ['0001_initial.sql','0030_letters.sql','0031_letters_annual.sql','0032_letters_layout.sql'])db.exec(readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8'));
+ db.exec("INSERT INTO users VALUES('m','mulyadi@yayasangambut.org','Mulyadi','admin',0,'x','x')");
+ db.prepare("INSERT INTO surat_annual(id,owner,data,number_year,status,sequence,number,created_at,updated_at) VALUES('old','m',?,2026,'issued',65,'65/YG/SKR/X/2026','x','x')").run(JSON.stringify(sample));
+ db.exec("INSERT INTO surat_layout_archives VALUES('old','formal-v2','v2.docx','v2.pdf','m','x'); INSERT INTO surat_layout_drive VALUES('old','pdf','drive-65','https://drive.google.com/file/d/drive-65/view','x')");
+ db.exec(readFileSync(new URL('../migrations/0033_letters_renditions.sql',import.meta.url),'utf8'));
+ assert.equal(db.prepare('SELECT pdf_key FROM surat_renditions').get().pdf_key,'v2.pdf');assert.equal(db.prepare('SELECT web_url FROM surat_rendition_drive').get().web_url,'https://drive.google.com/file/d/drive-65/view');
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_layout_drive').get().n,1);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
 });
