@@ -1,6 +1,6 @@
 # Administrasi Surat YG
 
-Modul `/surat` memakai sesi Workspace, D1 `DB`, dan R2 privat `MEDIA` milik Worker staf. Migrasi tambahan `0030_letters.sql` tidak menghapus tabel/data. Navigasi ditampilkan berdasarkan `/api/me`; semua API, unduhan, serta penerbitan tetap memeriksa otorisasi server.
+Modul `/surat` memakai sesi Workspace, D1 `DB`, dan R2 privat `MEDIA` milik Worker staf. Migrasi tambahan `0030_letters.sql` dan `0031_letters_annual.sql` tidak menghapus tabel/data. Navigasi ditampilkan berdasarkan `/api/me`; semua API, unduhan, serta penerbitan tetap memeriksa otorisasi server.
 
 ## Akun dan alur
 
@@ -12,13 +12,21 @@ Draft → menunggu persetujuan → disetujui → terbit. Nomor dialokasikan di d
 
 Nomor dialokasikan dahulu; jika unggahan arsip gagal, status masih disetujui dan nomor tetap dicadangkan. Muat ulang lalu Terbitkan lagi untuk melanjutkan nomor yang sama. Status Terbit hanya tersimpan setelah Word dan PDF berhasil diunggah. R2 berada di prefix `surat/`, tanpa endpoint publik. Unduhan final memakai arsip, bukan hasil generasi ulang.
 
-## Aktivasi register dan nomor 65
+## Keputusan Direktur tentang awal web dan reset tahunan
+
+Pada 21 Oktober 2026, pengguna menetapkan: mulai langsung dari nomor 65 sebagai produksi surat pertama dari web; tahun berikutnya mulai dari nomor 1 lagi. Keputusan ini menggantikan persyaratan sebelumnya untuk menunggu rekonsiliasi seluruh register historis sebelum memulai web. Riwayat lama tidak dianggap lengkap dan tidak direkayasa untuk mengisi nomor kosong.
+
+Direktur membuka Tetapkan awal penomoran web, memilih draft RAPP pertama, mencatat dasar keputusan, dan mengaktifkan awal 65 pada 2026 dengan reset tahunan. Aktivasi tercatat pada surat pertama dan tidak dapat ditimpa lewat endpoint. Surat pertama terikat ke ID draft RAPP tersebut sehingga surat lain tidak dapat mengambil 65. Penerbitan tetap memerlukan persetujuan Direktur. Nomor berikutnya setelah 65 terbit adalah 66 pada 2026; pertama 2027 adalah 1, dan pertama 2028 kembali 1. UNIQUE memakai pasangan tahun dan nomor urut, sedangkan nomor surat lengkap tetap unik. Bulan tidak mereset urutan.
+
+Migrasi `0031_letters_annual.sql` menyalin semua surat, riwayat, register dan referensi Drive ke tabel `surat_annual*` dengan pemeriksaan tahun. Tabel lama dipertahankan sebagai snapshot baca-saja; tidak ada DROP atau penghapusan data. Dokumen final dan key R2 tetap sama. Kebijakan titik awal disimpan dalam `surat_numbering_policy`; flag `surat_settings.verified` tidak diubah menjadi benar untuk keputusan baseline.
+
+## Mode alternatif verifikasi historis lengkap
 
 Penomoran sengaja nonaktif pada instalasi awal. Tabel `surat_references` hanya menyimpan dua referensi yang diberikan; bukan register lengkap atau bukti nomor 65 sudah terbit. Tidak ada counter yang langsung dipasang ke 65/66.
 
 Direktur mengimpor JSON seluruh register global sejak nomor 1, termasuk pembatalan, dengan kolom `sequence`, `number`, `date`, `subject`, `status` (`issued` atau `cancelled`). Kolom tambahan seperti `kind`, `institution`, `recipient`, `signer` dipertahankan. Cantumkan sumber/bukti pemeriksaan. Impor merupakan transaksi, menolak nomor yang sudah terdaftar/dicadangkan. Impor berikutnya membatalkan status verifikasi sampai diperiksa lagi. Tidak ada fungsi hapus/menimpa register.
 
-Verifikasi memerlukan rentang lengkap, referensi 64 yang sesuai, dan referensi 65 yang sesuai jika sudah masuk register. Penomoran global tidak direset bulanan/tahunan. Jika register organisasi ternyata memakai seri tahunan, jangan aktifkan sampai aturan dan register dikonfirmasi; implementasi ini mengikuti instruksi global tanpa reset.
+Verifikasi memerlukan rentang lengkap, referensi 64 yang sesuai, dan referensi 65 yang sesuai jika sudah masuk register. Format lama dipertahankan sebagai bukti sumber. Aturan web yang berlaku mengikuti keputusan Direktur: urutan lintas jenis surat dalam satu tahun, reset setiap tahun, tanpa reset bulanan.
 
 Jika 65 sudah terbit, impor sebagai `65/YG/SKR/X/2026`; sistem menolak reservasi ulang dan memakai nomor maksimum berikutnya. Jika 65 baru disetujui, Direktur harus memeriksa dokumen asli, menyetujui draft SKR bertanggal 2026-10-21 dengan tujuan PT Riau Andalan Pulp and Paper, lalu memilih reservasi khusus RAPP. Nomor umum masih terkunci sampai 65 terbit atau tercatat pada register. Setelah itu nomor berikutnya 66 jika tidak ada nomor lebih tinggi.
 
@@ -38,4 +46,4 @@ Uji surat meliputi empat akun, akun lain/admin lain, anonim/nonaktif/lintas orig
 
 DOCX contoh berhasil dibuka dan diekspor melalui Microsoft Word terpasang, satu halaman A4, lalu PDF dirasterisasi dan diperiksa. Renderer `render_docx.py` tidak dapat digunakan karena LibreOffice tidak terpasang; pemeriksaan Word digunakan sebagai pengganti. Isi surat RAPP sebenarnya tetap perlu diperiksa dari sumber asli.
 
-Sesudah deploy: periksa `/surat` dan API tanpa sesi ditolak, migrasi tercatat, lalu lakukan penerimaan dengan akun Workspace sah. Jangan meniru identitas staf atau menyalin cookie produksi ke pengujian. Jangan mengaktifkan register tanpa bukti lengkap.
+Sesudah deploy: periksa `/surat` dan API tanpa sesi ditolak, migrasi tercatat, lalu lakukan penerimaan dengan akun Workspace sah. Jangan meniru identitas staf atau menyalin cookie produksi ke pengujian. Untuk mode verifikasi historis, jangan menyatakan register lengkap tanpa bukti. Untuk awal web yang disetujui Direktur, gunakan keputusan baseline yang terpisah.
