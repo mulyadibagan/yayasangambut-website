@@ -276,6 +276,10 @@ async function route(req,env,ctx){
     if(url.pathname==='/finance/email-sync')return financeEmailSync(req,env,headers);
     const response=await env.FINANCE.fetch(new Request(req,{headers}));
     if(!response.headers.get('Content-Type')?.includes('text/html'))return response;
+    // React hydrates the Finance document, including its body and head. Its UI
+    // is supplied by finance-react-shell.mjs at build time, not injected here.
+    // Standalone HTML API exports keep the existing print/branding treatment.
+    if(!url.pathname.startsWith('/finance/api/'))return response;
     // Finance has its own HTML shell; use the same identity as the staff portal.
     const brandIcon='/favicon.png?v=yg-20261019-1';
     return new HTMLRewriter()
