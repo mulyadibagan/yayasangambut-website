@@ -3,3 +3,5 @@
 
 /* Match the supplied DOCX full-page anchored header; keep body margins. */
 .a4{position:relative;padding-top:126pt}.a4 header{position:absolute;left:0;top:0;width:100%;height:126pt;overflow:hidden}.a4 header .full-letterhead{position:absolute;left:-1.2095%;top:-19.2pt;width:102.069%;height:201pt;max-width:none}@media(max-width:650px){.a4{min-width:595.28pt}.letters #editor{overflow-x:auto}}
+
+.a4{padding-left:72pt;padding-right:72pt;color:#000;font:11pt/1.15 Arial}.a4 .body{text-align:justify;white-space:pre-wrap}.letter-meta{position:relative;margin:0 0 20pt}.letter-meta>div{display:grid;grid-template-columns:75pt 1fr;line-height:15pt}.letter-meta>div:first-child{padding-right:110pt}.letter-meta time{position:absolute;right:0;top:0;line-height:15pt}.a4 .draft:empty{display:none}.a4 .signature{margin-top:15pt}.a4 .signature-space{height:70pt}.letters #actions p{flex-basis:100%;margin:0}
