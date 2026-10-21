@@ -208,12 +208,13 @@ async function api(req,env,url,u){
     await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
   if(path==='/api/analytics'&&method==='GET'){const site=url.searchParams.get('site')||'website';if(!['website','webgis'].includes(site))fail(400,'Situs statistik tidak dikenal.');const period=url.searchParams.get('period')||url.searchParams.get('days')||'28';try{analyticsPeriod(period);}catch(e){fail(400,e.message);}return analytics(env,period,site);}
-  if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
+  if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,"SELECT id,email,name,role,disabled,last_login FROM users WHERE email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access WHERE email=users.email AND scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results);}
   if(path==='/api/users'&&method==='PATCH'){
     if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');const input=await payload(req);
     if(input.id===u.id)fail(400,'Anda tidak dapat mengubah akses akun sendiri.');
     if(!['staff','editor'].includes(input.role)||typeof input.disabled!=='boolean')fail(400,'Peran tidak valid.');
     const target=await query(env,'SELECT * FROM users WHERE id=?',input.id).first();if(!target||target.role==='admin')fail(403,'Akun ini tidak dapat diubah.');
+    if(!target.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN)||(await query(env,'SELECT scope FROM webgis_access WHERE email=?',target.email).first())?.scope==='kups-finance')fail(403,'Akses akun KUPS dikelola melalui Keuangan KUPS.');
     await env.DB.batch([query(env,'UPDATE users SET role=?,disabled=? WHERE id=?',input.role,Number(input.disabled),input.id),query(env,'DELETE FROM sessions WHERE user_id=?',input.id)]);await audit(env,u,'access:'+input.role+':'+input.disabled,input.id);return json({ok:true});
   }
   fail(404,'Halaman tidak ditemukan.');

@@ -84,3 +84,16 @@ test('translation failure leaves website unchanged and saved copy retryable',asy
  try{const r=await worker.fetch(request('/api/posts/'+p.id+'/publish','writer','POST',{version:1}),env);assert.equal(r.status,502);assert.equal(writes.length,0);const saved=await env.DB.prepare('SELECT * FROM posts WHERE id=?').bind(p.id).first();assert.equal(saved.body,draft.body);assert.equal(saved.status,'review');assert(saved.publish_error.includes('Terjemahan Inggris'));}finally{globalThis.fetch=original;}
 });
 
+
+ test('KUPS accounts stay outside staff user management and cannot gain a staff role',async()=>{
+ const env=await setup();
+ await env.DB.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').bind('kups-external','fino@example.com','External KUPS','staff','2026-10-21','2026-10-21').run();
+ await env.DB.prepare("INSERT INTO webgis_access(email,scope,disabled) VALUES(?,'kups-finance',0)").bind('other@yayasangambut.org').run();
+ const response=await worker.fetch(request('/api/users','admin'),env);assert.equal(response.status,200);
+ const users=await response.json();assert(users.some(u=>u.id==='writer'));assert(!users.some(u=>['other','kups-external'].includes(u.id)));
+ for(const id of ['other','kups-external']){
+  assert.equal((await worker.fetch(request('/api/users','admin','PATCH',{id,role:'editor',disabled:false}),env)).status,403);
+  assert.equal((await env.DB.prepare('SELECT role FROM users WHERE id=?').bind(id).first()).role,'staff');
+ }
+ assert.equal((await worker.fetch(request('/api/me','other'),env)).status,403);
+ });
