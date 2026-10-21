@@ -1,3 +1,4 @@
+import {lettersApi,letterAccess} from './letters.mjs';
 import {syncInvoiceDrive} from './invoice-drive.mjs';
 import {sendPayrollNotifications} from './payroll-notifications.mjs';
 import {signatureRoute} from './document-signature.mjs';
@@ -151,13 +152,14 @@ async function analytics(env,days,site='website'){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
+  if(path==='/api/surat'||path.startsWith('/api/surat/'))return lettersApi(req,env,url,u,{payload});
   if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
   if(path==='/api/assets'||path.startsWith('/api/assets/'))return assetApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agenda-minutes'||path.startsWith('/api/agenda-minutes/'))return minutesApi(req,env,url,u,{payload});
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,letterAccess:letterAccess(u),taskDirector:taskDirector(u,env),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
@@ -285,6 +287,7 @@ async function route(req,env,ctx){
       .on('head',{element(element){element.append(`<link rel="stylesheet" href="/finance-shell.css?v=20261019-2"><link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }
+  if(url.pathname==='/surat'){const u=await session(req,env);if(!letterAccess(u))fail(403,'Akses surat tidak diizinkan.');return env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/surat.html'));}
   if(url.pathname.startsWith('/api/')){if(!configured(env))fail(503,'Dashboard staf sedang disiapkan.');const u=await session(req,env);if(!u.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN))fail(403,'Akses hanya untuk Keuangan KUPS.');return api(req,env,url,u);}
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
   return env.ASSETS.fetch(req);
