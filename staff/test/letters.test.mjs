@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {PDFDocument} from 'pdf-lib';
 import worker from '../src/worker.mjs';
 import {sha} from '../src/core.mjs';
+import {letterTypes} from '../src/letters-types.mjs';
 import {letterInput} from '../src/letters.mjs';
 import {letterDocuments,bankField} from '../src/letters-documents.mjs';
 const origin='https://staff.yayasangambut.org';
@@ -97,4 +98,18 @@ test('rendition migration copies existing final formats and Drive URLs exactly',
  db.exec(readFileSync(new URL('../migrations/0033_letters_renditions.sql',import.meta.url),'utf8'));
  assert.equal(db.prepare('SELECT pdf_key FROM surat_renditions').get().pdf_key,'v2.pdf');assert.equal(db.prepare('SELECT web_url FROM surat_rendition_drive').get().web_url,'https://drive.google.com/file/d/drive-65/view');
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_layout_drive').get().n,1);assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
+});
+
+
+test('all eleven letter types are available through settings and accepted as unnumbered drafts',async()=>{
+ const {env,db}=await setup();const settings=await (await call(env,'/settings')).json();
+ assert.equal(settings.types.length,11);assert.deepEqual(settings.types,letterTypes);
+ for(const type of letterTypes){const r=await create(env,'r',{...sample,kind:type.code});assert.equal(r.data.kind,type.code);assert.equal(r.sequence,null);}
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_annual WHERE sequence IS NOT NULL').get().n,0);
+ assert.equal((await call(env,'','r','POST',{...sample,kind:'UNKNOWN'})).status,400);
+});
+
+test('new letter types share annual numbering and keep their code in the issued number',async()=>{
+ const {env}=await setup();await historical(env,65);let expected=66;
+ for(const kind of ['PMH','PBT','PNG','KUA','REK','PNY']){const r=await action(env,await approve(env,await create(env,'m',{...sample,kind})),'issue');assert.equal(r.sequence,expected);assert.equal(r.number,`${expected}/YG/${kind}/X/2026`);expected++;}
 });

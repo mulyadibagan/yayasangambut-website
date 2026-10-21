@@ -1,6 +1,7 @@
 import {fail,now} from './core.mjs';
 import {letterDocuments,registerXlsx,LETTER_LAYOUT,SIGNATURE_KEY} from './letters-documents.mjs';
 import {letterDrive} from './letters-drive.mjs';
+import {letterTypes,isLetterKind} from './letters-types.mjs';
 import {activateNumbering,numberingState} from './letters-numbering.mjs';
 const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org']);
 export const letterAccess=u=>!!u&&!u.disabled&&accounts.has(u.email);
@@ -12,7 +13,7 @@ export function letterInput(v){
  const data={};for(const [key,max] of Object.entries({date:10,kind:12,subject:240,recipient:200,institution:240,address:1000,body:18000,attachments:1000,signer:100,notes:2000})){
   if(typeof v[key]!=='string'||v[key].length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v[key]))fail(400,'Isian surat tidak valid: '+key);data[key]=v[key].trim();
  }
- if(!/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!Number.isFinite(Date.parse(data.date))||new Date(data.date).toISOString().slice(0,10)!==data.date||!['SPT','SKR','UND','SK','UM'].includes(data.kind)||!data.subject||!data.body||data.signer!=='Mulyadi, Direktur Yayasan Gambut')fail(400,'Periksa tanggal, jenis, perihal, isi, dan penandatangan.');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!Number.isFinite(Date.parse(data.date))||new Date(data.date).toISOString().slice(0,10)!==data.date||!isLetterKind(data.kind)||!data.subject||!data.body||data.signer!=='Mulyadi, Direktur Yayasan Gambut')fail(400,'Periksa tanggal, jenis, perihal, isi, dan penandatangan.');
  return data;
 }
 const decode=r=>({...r,data:JSON.parse(r.data)});
@@ -29,7 +30,7 @@ export async function lettersApi(...args){try{return await handleLetters(...args
 async function handleLetters(req,e,url,u,{payload}){
  if(!letterAccess(u))fail(403,'Administrasi surat hanya untuk empat akun berwenang.');
  const p=url.pathname,m=req.method,director=letterDirector(u);
- if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),numbering:await numberingState(e,Number(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'}).slice(0,4))),director,references:(await q(e,'SELECT * FROM surat_references').all()).results});
+ if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),numbering:await numberingState(e,Number(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'}).slice(0,4))),director,types:letterTypes,references:(await q(e,'SELECT * FROM surat_references').all()).results});
  if(p==='/api/surat/numbering/start'&&m==='POST'){if(!director)fail(403,'Hanya Direktur dapat menetapkan titik awal.');return json(await activateNumbering(e,u,await payload(req)));}
  if(p==='/api/surat/register'&&m==='GET'){
   const rows=(await q(e,'SELECT * FROM surat_annual '+(director?'':'WHERE owner=? ')+'ORDER BY created_at DESC',...(director?[]:[u.id])).all()).results.map(decode);
