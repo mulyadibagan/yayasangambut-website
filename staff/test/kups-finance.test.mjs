@@ -10,12 +10,103 @@ function fixture(){
  const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE users(id TEXT PRIMARY KEY,email TEXT,name TEXT,role TEXT,disabled INTEGER DEFAULT 0); INSERT INTO users VALUES('u','admin@yayasangambut.org','Admin','admin',0); INSERT INTO users VALUES('member','member@gmail.com','Member','staff',0);");
  db.exec(readFileSync(new URL('../migrations/0005_webgis_sso.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0006_kups_finance.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/0007_kups_accounts_documents.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/0029_kups_closing_reconciliation.sql',import.meta.url),'utf8'));
  db.exec("INSERT INTO webgis_access VALUES('member@gmail.com','kups-finance',0)");
  const adapter={prepare(sql){let args=[];const wrapper={bind(...v){args=v;return wrapper;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};return wrapper;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};return {db,env:{DB:adapter}};
 }
 async function auth(f,user='u'){const raw='yg-google-'+user;await f.env.DB.prepare('INSERT INTO webgis_sessions VALUES(?,?,?,?,?)').bind(await sha(raw),user,user==='u'?'webgis-staff':'kups-finance',user==='u'?'admin':'kups',Date.now()+100000).run();return raw;}
 const tx=(extra={})=>({date:'2026-08-10',kind:'income',category:extra.kind==='expense'?'Biaya lainnya':'Penjualan nanas',description:'Nanas',amount:10000,...extra});
 async function call(f,raw,path,method='GET',b){const url=new URL('https://staff.yayasangambut.org/api/kups'+path);url.searchParams.set('group',g);const req=new Request(url,{method,headers:{Origin:'https://webgisyg.id',Authorization:'Bearer '+raw,'Content-Type':'application/json'},...(b?{body:JSON.stringify(b)}:{})});const r=await finance(req,f.env,url);return {status:r.status,data:await r.json()};}
+
+test('closing reconciliation preserves openings, transactions, account mapping and open periods',async()=>{
+ const f=fixture(),raw=await auth(f);
+ await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:10000.855265,version:1});
+ await call(f,raw,'/transactions','POST',tx({amount:3000}));
+ const before=(await call(f,raw,'/ledger?month=2026-08')).data;
+ const request={month:'2026-08',cash_amount:5001,bank_amount:8000,note:'Saldo akhir sesuai laporan',version:0};
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-08','POST',request)).status,200);
+ const after=(await call(f,raw,'/ledger?month=2026-08')).data;
+ assert.deepEqual(after.summary,before.summary);assert.deepEqual(after.rows,before.rows);assert.deepEqual(after.accounts,before.accounts);
+ assert.deepEqual(after.group,before.group);assert.equal(after.period,null);
+ assert.equal(after.reconciliation.cash_amount,5001);assert.equal(after.reconciliation.bank_amount,8000);
+ assert.equal(after.reconciliation.book_amount,13000.855265);assert.equal(after.reconciliation.version,1);
+ assert.ok(Math.abs(after.reconciliation.cash_amount+after.reconciliation.bank_amount-after.summary.closing-0.144735)<1e-8);
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-08','POST',request)).status,409);
+ assert.equal(f.db.prepare("SELECT COUNT(*) n FROM kups_audit WHERE action='closing-reconciliation'").get().n,1);
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-08','POST',{...request,note:'Diperiksa ulang',version:1})).status,200);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM kups_reconciliations').get().n,1);
+ assert.equal((await call(f,raw,'/ledger?month=2026-09')).data.reconciliation,null);
+});
+
+test('September reconciliation carries bank and cash into October without writing or duplicating transactions',async()=>{
+ const f=fixture(),raw=await auth(f);
+ await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:30508299.855265,version:1});
+ await call(f,raw,'/transactions','POST',tx({date:'2026-09-01',amount:353000}));
+ await call(f,raw,'/transactions','POST',tx({date:'2026-09-30',kind:'expense',amount:8370000}));
+ const september=(await call(f,raw,'/ledger?month=2026-09')).data;
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-09','POST',{month:'2026-09',bank_amount:9314784,cash_amount:13176516,note:'BKU September',version:0})).status,200);
+ const snapshot=()=>JSON.stringify({group:f.db.prepare('SELECT * FROM kups_groups').all(),rows:f.db.prepare('SELECT * FROM kups_transactions').all(),opens:f.db.prepare('SELECT * FROM kups_account_openings').all(),audit:f.db.prepare('SELECT * FROM kups_audit').all()});
+ const before=snapshot();
+ for(let i=0;i<2;i++){
+  const october=(await call(f,raw,'/ledger?month=2026-10')).data;
+  assert.equal(october.summary.opening,22491300);assert.equal(october.summary.closing,22491300);
+  assert.equal(october.accounts.find(a=>a.id==='bank').opening,9314784);
+  assert.equal(october.accounts.find(a=>a.id==='cash').opening,13176516);
+  assert.equal(october.accounts.find(a=>a.id==='unassigned').opening,0);
+  assert.equal(october.rows.length,0);assert.equal(october.opening_reconciliation.month,'2026-09');
+ }
+ assert.equal(snapshot(),before);
+ assert.deepEqual((await call(f,raw,'/ledger?month=2026-09')).data.summary,september.summary);
+ // Subsequent cash movements are counted once; deleted movements stay excluded.
+ await call(f,raw,'/transactions','POST',tx({date:'2026-10-02',amount:10000,account:'bank'}));
+ await call(f,raw,'/transactions','POST',tx({date:'2026-10-03',kind:'expense',amount:3000,account:'cash'}));
+ await call(f,raw,'/transfers','POST',{date:'2026-10-04',from_account:'bank',to_account:'cash',amount:2000,description:'Tarik tunai'});
+ let november=(await call(f,raw,'/ledger?month=2026-11')).data;
+ assert.equal(november.summary.opening,22498300);
+ assert.equal(november.accounts.find(a=>a.id==='bank').opening,9322784);
+ assert.equal(november.accounts.find(a=>a.id==='cash').opening,13175516);
+ assert.equal((await call(f,raw,'/reconciliation?month=2026-10','POST',{month:'2026-10',bank_amount:9322784,cash_amount:13175516,note:'Oktober',version:0})).status,200);
+ const october=(await call(f,raw,'/ledger?month=2026-10')).data;
+ assert.equal(october.reconciliation.book_amount,october.summary.closing);
+ november=(await call(f,raw,'/ledger?month=2026-11')).data;
+ assert.equal(november.opening_reconciliation.month,'2026-10');assert.equal(november.summary.opening,22498300);
+});
+
+test('dated preview and entire report are read-only, scoped and count actual payments once',async()=>{
+ const f=fixture(),raw=await auth(f);
+ await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:30508299.855265,version:1});
+ await call(f,raw,'/transactions','POST',tx({date:'2026-09-01',amount:353000}));
+ await call(f,raw,'/reconciliation?month=2026-09','POST',{month:'2026-09',cash_amount:13176516,bank_amount:9314784,note:'September',version:0});
+ const entries=[['income','cash',1000],['expense','cash',200],['income','bank',3000],['expense','bank',400]];
+ let excluded;
+ for(const [kind,account,amount] of entries){const r=await call(f,raw,'/transactions','POST',tx({date:'2026-10-03',kind,account,amount}));if(kind==='expense'&&account==='bank')excluded=r.data.id;}
+ await call(f,raw,'/transfers','POST',{date:'2026-10-03',from_account:'bank',to_account:'cash',amount:500,description:'Tarik tunai'});
+ await call(f,raw,'/transactions','POST',tx({date:'2026-10-04',account:'bank',amount:9000}));
+ const deleted=await call(f,raw,'/transactions','POST',tx({date:'2026-10-03',account:'cash',amount:999}));await call(f,raw,'/transactions/'+deleted.data.id+'/trash','POST',{version:1,reason:'Duplikat'});
+ const dbSnapshot=()=>JSON.stringify({rows:f.db.prepare('SELECT * FROM kups_transactions').all(),groups:f.db.prepare('SELECT * FROM kups_groups').all(),audit:f.db.prepare('SELECT * FROM kups_audit').all()});const before=dbSnapshot();
+ let r=await call(f,raw,'/balances?date=2026-10-03');assert.equal(r.status,200);
+ assert.equal(r.data.accounts.find(a=>a.id==='cash').balance,13177816);
+ assert.equal(r.data.accounts.find(a=>a.id==='bank').balance,9316884);
+ r=await call(f,raw,'/balances?date=2026-10-03&exclude='+excluded);assert.equal(r.data.accounts.find(a=>a.id==='bank').balance,9317284);
+ r=await call(f,raw,'/balances?date=2026-10-02');assert.equal(r.data.accounts.find(a=>a.id==='cash').balance,13176516);
+ r=await call(f,raw,'/report');assert.equal(r.data.rows.length,6);assert.equal(r.data.summary.income,366000);assert.equal(r.data.summary.expense,600);assert.equal(r.data.transfers.length,1);
+ assert.equal(dbSnapshot(),before);
+ assert.equal((await call(f,raw,'/balances?date=2026-02-30')).status,400);
+ const member=await auth(f,'member');assert.equal((await call(f,member,'/report')).status,403);assert.equal((await call(f,member,'/balances?date=2026-10-03')).status,403);
+ f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','member@gmail.com','viewer',0)");assert.equal((await call(f,member,'/report')).status,200);
+});
+
+test('reconciliation is admin only and rejects mismatched month, invalid amounts and stale versions',async()=>{
+ const f=fixture(),admin=await auth(f),member=await auth(f,'member');
+ f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','member@gmail.com','treasurer',0)");
+ await call(f,admin,'/setup','POST',{start_date:'2026-08-01',opening_amount:10000,version:1});
+ const b={month:'2026-08',cash_amount:5000,bank_amount:5000,note:'',version:0};
+ assert.equal((await call(f,member,'/reconciliation?month=2026-08','POST',b)).status,403);
+ for(const patch of [{month:'2026-09'},{cash_amount:-1},{bank_amount:1.5},{bank_amount:1e12+1},{version:-1},{note:'x'.repeat(501)}])assert.equal((await call(f,admin,'/reconciliation?month=2026-08','POST',{...b,...patch})).status,400);
+ assert.equal((await call(f,admin,'/reconciliation?month=2026-07','POST',{...b,month:'2026-07'})).status,400);
+ assert.equal((await call(f,admin,'/reconciliation?month=2026-08','POST',{...b,version:2})).status,409);
+ assert.equal(f.db.prepare('SELECT COUNT(*) n FROM kups_reconciliations').get().n,0);
+});
 test('dates and integer money reject invalid calendar days and decimal currency',()=>{assert.equal(validDate('2026-02-30'),false);assert.equal(validDate('2026-99-99'),false);assert.throws(()=>validateTransaction(tx({amount:1.1})));assert.throws(()=>validateTransaction(tx({quantity:5,unit:''})));});
 test('KUPS role cannot impersonate administrator or cross group boundaries',()=>{assert.throws(()=>assertGroupAccess({scope:'kups-finance',role:'admin'},null));assert.throws(()=>assertGroupAccess({scope:'kups-finance',role:'kups'},{role:'viewer',disabled:0},true));assert.throws(()=>assertGroupAccess({scope:'webgis-staff',role:'staff'},null));});
 test('anonymous, unlisted member and incorrect Origin are rejected',async()=>{const f=fixture(),raw=await auth(f,'member');assert.equal((await call(f,'bad','/groups')).status,401);assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,403);const r=await finance(new Request('https://staff.yayasangambut.org/api/kups/groups',{headers:{Origin:'https://evil.example',Authorization:'Bearer '+raw}}),f.env,new URL('https://staff.yayasangambut.org/api/kups/groups'));assert.equal(r.status,403);});

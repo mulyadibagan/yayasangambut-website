@@ -1,4 +1,5 @@
-import {fail,now,imageType} from './core.mjs';
+import {agendaAttachmentType} from './agenda-attachment-type.mjs';
+import {fail,now} from './core.mjs';
 import {taskDirector} from './tasks.mjs';
 import {driveApi,driveStatus,drivePreviewUrl,storeDriveFile,migrateDriveFile} from './agenda-drive.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
@@ -38,8 +39,8 @@ export async function agendaApi(req,env,url,u,{payload,readLimited}){
   if(match[4])fail(405,'Metode tidak didukung.');
   if(method==='POST'&&!fileId){
    const bytes=await readLimited(req,5*1024*1024);if(!bytes.length)fail(400,'Pilih berkas lampiran.');
-   const type=imageType(bytes)||(new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':null);if(!type)fail(400,'Gunakan PDF, JPEG, PNG, atau WebP. Maksimal 5 MB per berkas.');
    let filename;try{filename=decodeURIComponent(req.headers.get('X-Filename')||'Lampiran').replace(/[\x00-\x1f\x7f"\\/]/g,'_').trim().slice(0,180)||'Lampiran';}catch{fail(400,'Nama berkas tidak valid.');}
+   const type=agendaAttachmentType(filename,bytes);
    const id=crypto.randomUUID();
    if(env.AGENDA_DRIVE_ROOT_ID){
     const stored=await storeDriveFile(env,{id,agendaId:a.id,filename,type,bytes});

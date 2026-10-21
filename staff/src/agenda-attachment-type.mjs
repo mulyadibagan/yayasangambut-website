@@ -1,0 +1,6 @@
+import {imageType} from './core.mjs';
+const types={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',odt:'application/vnd.oasis.opendocument.text',ods:'application/vnd.oasis.opendocument.spreadsheet',odp:'application/vnd.oasis.opendocument.presentation',rtf:'application/rtf',txt:'text/plain',csv:'text/csv',tsv:'text/tab-separated-values',json:'application/json',xml:'application/xml',zip:'application/zip','7z':'application/x-7z-compressed',rar:'application/vnd.rar',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',gif:'image/gif',tif:'image/tiff',tiff:'image/tiff',heic:'image/heic'};
+// Files remain private downloads; unrecognized formats use a neutral binary type.
+export function agendaAttachmentType(filename,bytes){
+ return imageType(bytes)||(new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':null)||types[filename.split('.').pop().toLowerCase()]||'application/octet-stream';
+}

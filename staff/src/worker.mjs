@@ -1,4 +1,5 @@
 import {lettersApi,letterAccess} from './letters.mjs';
+import {teamSizesApi,teamSizesAccess} from './team-sizes.mjs';
 import {syncInvoiceDrive} from './invoice-drive.mjs';
 import {sendPayrollNotifications} from './payroll-notifications.mjs';
 import {signatureRoute} from './document-signature.mjs';
@@ -153,13 +154,14 @@ async function analytics(env,days,site='website'){
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
   if(path==='/api/surat'||path.startsWith('/api/surat/'))return lettersApi(req,env,url,u,{payload});
+  if(path==='/api/team-sizes'||path.startsWith('/api/team-sizes/'))return teamSizesApi(req,env,url,u,{payload});
   if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
   if(path==='/api/assets'||path.startsWith('/api/assets/'))return assetApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agenda-minutes'||path.startsWith('/api/agenda-minutes/'))return minutesApi(req,env,url,u,{payload});
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,letterAccess:letterAccess(u),taskDirector:taskDirector(u,env),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,letterAccess:letterAccess(u),taskDirector:taskDirector(u,env),teamSizesAccess:teamSizesAccess(u),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
@@ -208,12 +210,13 @@ async function api(req,env,url,u){
     await env.MEDIA.put(id,bytes,{httpMetadata:{contentType:type}});await query(env,'INSERT INTO media(id,owner,filename,type,size,public,created_at) VALUES(?,?,?,?,?,0,?)',id,u.id,filename,type,bytes.length,now()).run();await audit(env,u,'upload',id);return json({id,url:env.APP_ORIGIN+'/media/'+id,filename});
   }
   if(path==='/api/analytics'&&method==='GET'){const site=url.searchParams.get('site')||'website';if(!['website','webgis'].includes(site))fail(400,'Situs statistik tidak dikenal.');const period=url.searchParams.get('period')||url.searchParams.get('days')||'28';try{analyticsPeriod(period);}catch(e){fail(400,e.message);}return analytics(env,period,site);}
-  if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,'SELECT id,email,name,role,disabled,last_login FROM users ORDER BY name').all()).results);}
+  if(path==='/api/users'&&method==='GET'){if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');return json((await query(env,"SELECT id,email,name,role,disabled,last_login FROM users WHERE email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access WHERE email=users.email AND scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results);}
   if(path==='/api/users'&&method==='PATCH'){
     if(u.role!=='admin')fail(403,'Akses administrator diperlukan.');const input=await payload(req);
     if(input.id===u.id)fail(400,'Anda tidak dapat mengubah akses akun sendiri.');
     if(!['staff','editor'].includes(input.role)||typeof input.disabled!=='boolean')fail(400,'Peran tidak valid.');
     const target=await query(env,'SELECT * FROM users WHERE id=?',input.id).first();if(!target||target.role==='admin')fail(403,'Akun ini tidak dapat diubah.');
+    if(!target.email.endsWith('@'+env.GOOGLE_WORKSPACE_DOMAIN)||(await query(env,'SELECT scope FROM webgis_access WHERE email=?',target.email).first())?.scope==='kups-finance')fail(403,'Akses akun KUPS dikelola melalui Keuangan KUPS.');
     await env.DB.batch([query(env,'UPDATE users SET role=?,disabled=? WHERE id=?',input.role,Number(input.disabled),input.id),query(env,'DELETE FROM sessions WHERE user_id=?',input.id)]);await audit(env,u,'access:'+input.role+':'+input.disabled,input.id);return json({ok:true});
   }
   fail(404,'Halaman tidak ditemukan.');

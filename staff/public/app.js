@@ -1,3 +1,5 @@
+import {teamSizesUI} from './team-sizes.js';
+let teamSizes;
 import {calendarUI} from './calendar.js';
 let calendarConnection;
 import {assetUI} from './assets.js';
@@ -22,9 +24,11 @@ function handle(fn){return async(...args)=>{try{await fn(...args);}catch(e){noti
 async function lock(fn){if(busy)return;busy=true;$$('.editor-actions button').forEach(b=>b.disabled=true);try{await fn();}finally{busy=false;setEditorState();}}
 async function show(next){
  if(view==='editor'&&dirty&&next!=='editor'&&!confirm('Ada perubahan yang belum disimpan. Tinggalkan tulisan?'))return;
+ if(next==='team-sizes'&&!user.teamSizesAccess)throw new Error('Data ukuran kaos hanya untuk Mulyadi dan Riena.');
  const calendarRoot=$('#calendar-connection');calendarRoot.hidden=!['agendas','tasks'].includes(next);if(!calendarRoot.hidden){calendarConnection??=calendarUI({api,esc,handle,notice});try{await calendarConnection.load();}catch{calendarRoot.textContent='Koneksi kalender belum tersedia. Coba muat ulang.';}}
  dirty=false;view=next;$$('.view').forEach(e=>e.hidden=e.id!==next);$$('nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===next));
- $('#view-title').textContent={overview:'Ringkasan',assets:'Daftar Aset',tasks:'Tugas Tim',agendas:'Agenda Tim',posts:'Tulisan',editor:current?'Sunting tulisan':'Tulisan baru',media:'Media',analytics:'Statistik',users:'Pengguna'}[next];$('#notice').hidden=true;
+ $('#view-title').textContent={overview:'Ringkasan','team-sizes':'Ukuran Kaos Tim',assets:'Daftar Aset',tasks:'Tugas Tim',agendas:'Agenda Tim',posts:'Tulisan',editor:current?'Sunting tulisan':'Tulisan baru',media:'Media',analytics:'Statistik',users:'Pengguna'}[next];$('#notice').hidden=true;
+ if(next==='team-sizes'){teamSizes??=teamSizesUI({api,esc,notice,handle});await teamSizes.load();}
  if(next==='assets'){inventory??=assetUI({api,esc,notice,handle});await inventory.load();}
  if(next==='overview'||next==='posts')await loadPosts();if(next==='media')await loadMedia();if(next==='analytics')await loadStats();if(next==='users')await loadUsers();if(next==='agendas'){teamAgendas??=agendaUI({user,api,esc,notice,handle});await teamAgendas.load();}if(next==='tasks'){teamTasks??=taskUI({user,api,esc,notice,handle});await teamTasks.load();}
 }
@@ -143,7 +147,7 @@ async function init(){
  $('#today').textContent=new Date().toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta',weekday:'long',day:'numeric',month:'long',year:'numeric'});
  const config=await api('/api/config');if(!config.ready){$('#login-status').textContent='Ruang Staf sedang disiapkan. Login akan tersedia setelah aktivasi selesai.';return;}
  $('#google-login').hidden=false;$('#login-status').textContent='';try{user=await api('/api/me');}catch{return;}
- $('[data-surat]').forEach(e=>e.hidden=!user.letterAccess);$('#login').hidden=true;$('#app').hidden=false;$('#user-name').textContent=user.name;$('#user-role').textContent={staff:'Staf',editor:'Editor',admin:'Administrator'}[user.role];$('#avatar').textContent=user.name.split(' ').slice(0,2).map(x=>x[0]).join('');$('#greeting').textContent='Selamat datang, '+user.name.split(' ')[0]+'.';$$('[data-editor]').forEach(e=>e.hidden=!editor());$$('[data-admin]').forEach(e=>e.hidden=user.role!=='admin');$$('[data-finance]').forEach(e=>e.hidden=!user.financeAccess);const params=new URLSearchParams(location.search);if(params.get('site')==='webgis'||sessionStorage.getItem('yg-stats-site')==='webgis')$('#stats-site').value='webgis';await show(params.get('view')==='assets'?'assets':params.get('view')==='agendas'?'agendas':params.get('view')==='tasks'?'tasks':params.get('view')==='analytics'||sessionStorage.getItem('yg-stats-view')==='analytics'?'analytics':'overview');sessionStorage.removeItem('yg-stats-view');sessionStorage.removeItem('yg-stats-site');
+ $('[data-surat]').forEach(e=>e.hidden=!user.letterAccess);$('#login').hidden=true;$('#app').hidden=false;$('#user-name').textContent=user.name;$('#user-role').textContent={staff:'Staf',editor:'Editor',admin:'Administrator'}[user.role];$('#avatar').textContent=user.name.split(' ').slice(0,2).map(x=>x[0]).join('');$('#greeting').textContent='Selamat datang, '+user.name.split(' ')[0]+'.';$$('[data-editor]').forEach(e=>e.hidden=!editor());$$('[data-admin]').forEach(e=>e.hidden=user.role!=='admin');$$('[data-team-sizes]').forEach(e=>e.hidden=!user.teamSizesAccess);$$('[data-finance]').forEach(e=>e.hidden=!user.financeAccess);const params=new URLSearchParams(location.search);if(params.get('site')==='webgis'||sessionStorage.getItem('yg-stats-site')==='webgis')$('#stats-site').value='webgis';await show(params.get('view')==='team-sizes'&&user.teamSizesAccess?'team-sizes':params.get('view')==='assets'?'assets':params.get('view')==='agendas'?'agendas':params.get('view')==='tasks'?'tasks':params.get('view')==='analytics'||sessionStorage.getItem('yg-stats-view')==='analytics'?'analytics':'overview');sessionStorage.removeItem('yg-stats-view');sessionStorage.removeItem('yg-stats-site');
 }
 $$('[data-view]').forEach(b=>b.onclick=handle(()=>show(b.dataset.view)));$('#new-post').onclick=$('#start-writing').onclick=handle(()=>openPost());$('#back-posts').onclick=handle(()=>show('posts'));$('#refresh-posts').onclick=handle(loadPosts);$('#post-search').oninput=filterPosts;$('#post-filter').onchange=filterPosts;
 $('#trash-post').onclick=handle(trashPost);$('#restore-post').onclick=handle(restorePost);$('#check-post').onclick=handle(()=>openPost(current.id));
