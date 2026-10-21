@@ -1,14 +1,4 @@
-import {syncInvoiceDrive} from './invoice-drive.mjs';
-import {sendPayrollNotifications} from './payroll-notifications.mjs';
-import {signatureRoute} from './document-signature.mjs';
-import {invoiceRoute} from './invoices.mjs';
-import {calendarApi,calendarCallback,syncCalendars} from './google-calendar.mjs';
-import {driveCallback} from './agenda-drive.mjs';
-import {assetApi} from './assets.mjs';
-import {financeOwner,financeDashboardAccess} from './finance-access.mjs';
-import {payrollAccess,payrollOperator,payrollRoute} from './payroll.mjs';
-import {financeEmailSync} from './finance-email-sync.mjs';
-import {minutesApi} from './agenda-minutes.mjs';
+import {teamSizesApi,teamSize…173 tokens truncated…mjs';
 import {agendaApi} from './agendas.mjs';
 import {taskApi,taskDirector} from './tasks.mjs';
 import {finance} from './kups-finance.mjs';
@@ -151,13 +141,14 @@ async function analytics(env,days,site='website'){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
+  if(path==='/api/team-sizes'||path.startsWith('/api/team-sizes/'))return teamSizesApi(req,env,url,u,{payload});
   if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
   if(path==='/api/assets'||path.startsWith('/api/assets/'))return assetApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/preview'&&method==='POST'){const input=await payload(req);const post=validatePost({...input,title:input.title||'Tanpa judul'},env.APP_ORIGIN);if(url.searchParams.get('view')==='website'){const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/website-preview/'+post.language+'.html'));if(!template.ok)fail(503,'Pratinjau website belum tersedia.');return json({html:renderPreview(await template.text(),post)});}return json(post);}
   if(path==='/api/agenda-minutes'||path.startsWith('/api/agenda-minutes/'))return minutesApi(req,env,url,u,{payload});
   if(path==='/api/agendas'||path.startsWith('/api/agendas/'))return agendaApi(req,env,url,u,{payload,readLimited});
   if(path==='/api/tasks'||path.startsWith('/api/tasks/'))return taskApi(req,env,url,u,{payload,readLimited});
-  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
+  if(path==='/api/me')return json({id:u.id,name:u.name,email:u.email,role:u.role,taskDirector:taskDirector(u,env),teamSizesAccess:teamSizesAccess(u),financeAccess:financeDashboardAccess(u)||payrollAccess(u,env),publishing:!!env.GITHUB_APP_ID,analytics:!!env.GA_SERVICE_ACCOUNT_EMAIL});
   if(path==='/api/logout'&&method==='POST'){await query(env,'DELETE FROM sessions WHERE id=?',await sha(cookies(req)['__Host-yg-session']||'')).run();return new Response('{}',{headers:{'Set-Cookie':cookie('__Host-yg-session','',0)}});}
   if(path==='/api/posts'&&method==='GET'){
     const r=await query(env,'SELECT id,title,slug,language,status,owner,updated_at,version,publish_error,deleted_at,publish_action,published_at,publishing_started_at,github_sha FROM posts '+(isEditor(u)?'':'WHERE owner=? ')+'ORDER BY updated_at DESC LIMIT 300',...(isEditor(u)?[]:[u.id])).all();return json(await Promise.all(r.results.map(p=>checkPublish(env,p))));
