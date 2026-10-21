@@ -11,6 +11,7 @@ import {applyAvailableCashDisplay} from './finance-available-display.mjs';
 import {applyAdvanceBreakdown} from './finance-advance-display.mjs';
 import {applyTerminDisplay} from './finance-termin-display.mjs';
 import {applyPayrollBridge} from './finance-payroll-bridge.mjs';
+import {applyFinanceReactShell} from './finance-react-shell.mjs';
 import {applyUmReturnIntegration} from './finance-um-return-display.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
@@ -74,6 +75,7 @@ await applyAdvanceBreakdown(root,reconciliationUpdates[0].results.length?JSON.pa
 await applyUmReturnIntegration(root,reconciliationUpdates[0].results.length?JSON.parse(reconciliationUpdates[0].results[0].setting_value):{});
 await applyTerminDisplay(root);
 await applyPayrollBridge(root);
+await applyFinanceReactShell(root);
 run('npm',['run','build']);
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
 if(checked.status!==0)throw Error('Private finance integration checks failed.');
