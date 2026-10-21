@@ -65,7 +65,7 @@ test('agenda files are private, scoped to their event, and managed only by creat
 });
 test('agenda uploads reject invalid, oversized, and cross-origin files; trash retains attachments',async()=>{
  const {env,objects}=await setup();const a=await (await worker.fetch(request('/api/agendas','writer','POST',sample),env)).json(),base='/api/agendas/'+a.id,path=base+'/files';
- for(const content of ['', '<script>alert(1)</script>'])assert.equal((await worker.fetch(uploadRequest(path,'writer',content),env)).status,400);
+ for(const content of [''])assert.equal((await worker.fetch(uploadRequest(path,'writer',content),env)).status,400);
  assert.equal((await worker.fetch(uploadRequest(path,'writer','%PDF-'+ 'x'.repeat(5*1024*1024)),env)).status,413);
  const cross=uploadRequest(path);cross.headers.set('Origin','https://evil.org');assert.equal((await worker.fetch(cross,env)).status,403);assert.equal(objects.size,0);
  const f=await (await worker.fetch(uploadRequest(path,'director'),env)).json();await worker.fetch(request(base,'writer','DELETE',{version:a.version}),env);
@@ -75,4 +75,14 @@ test('agenda uploads reject invalid, oversized, and cross-origin files; trash re
 test('failed agenda attachment metadata insert removes the uploaded object',async()=>{
  const {env,objects}=await setup();const a=await (await worker.fetch(request('/api/agendas','writer','POST',sample),env)).json();const prepare=env.DB.prepare.bind(env.DB);env.DB.prepare=sql=>{const stmt=prepare(sql);if(sql.startsWith('INSERT INTO agenda_files'))stmt.run=async()=>{throw Error('simulated database failure');};return stmt;};
  assert.equal((await worker.fetch(uploadRequest('/api/agendas/'+a.id+'/files'),env)).status,500);assert.equal(objects.size,0);
+});
+
+test('agenda accepts document and other formats as private downloads',async()=>{
+ const {env}=await setup();const a=await (await worker.fetch(request('/api/agendas','writer','POST',sample),env)).json();const path='/api/agendas/'+a.id+'/files';
+ for(const [name,type] of [['TOR.docx','application/vnd.openxmlformats-officedocument.wordprocessingml.document'],['Budget.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],['Slides.pptx','application/vnd.openxmlformats-officedocument.presentationml.presentation'],['Data.csv','text/csv'],['Arsip.zip','application/zip'],['Other.custom','application/octet-stream'],['Page.html','application/octet-stream']]){
+ const content=name.endsWith('.html')?'<script>alert(1)</script>':'sample bytes';
+ const upload=await worker.fetch(uploadRequest(path,'writer',content,name),env);assert.equal(upload.status,201);const {id}=await upload.json();
+ const download=await worker.fetch(request(path+'/'+id,'rasid'),env);assert.equal(download.headers.get('Content-Type'),type);assert.match(download.headers.get('Content-Disposition'),/^attachment;/);assert.equal(download.headers.get('X-Content-Type-Options'),'nosniff');assert.equal(await download.text(),content);
+ assert.equal((await worker.fetch(request(path+'/'+id,'other'),env)).status,403);
+ }
 });
