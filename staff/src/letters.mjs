@@ -1,5 +1,5 @@
 import {fail,now} from './core.mjs';
-import {letterDocuments,registerXlsx} from './letters-documents.mjs';
+import {letterDocuments,registerXlsx,LETTER_LAYOUT,SIGNATURE_KEY} from './letters-documents.mjs';
 import {letterDrive} from './letters-drive.mjs';
 import {activateNumbering,numberingState} from './letters-numbering.mjs';
 const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org']);
@@ -17,7 +17,13 @@ export function letterInput(v){
 }
 const decode=r=>({...r,data:JSON.parse(r.data)});
 const history=(e,id,u,action,version)=>q(e,'INSERT INTO surat_annual_history VALUES(?,?,?,?,?,?)',crypto.randomUUID(),id,u.id,action,version,now());
-async function row(e,id,u){const r=await q(e,'SELECT * FROM surat_annual WHERE id=?',id).first();if(!r)fail(404,'Surat tidak ditemukan.');if(r.owner!==u.id&&!letterDirector(u))fail(403,'Surat bukan milik Anda.');return decode(r);}
+async function row(e,id,u){const r=await q(e,'SELECT * FROM surat_annual WHERE id=?',id).first();if(!r)fail(404,'Surat tidak ditemukan.');if(r.owner!==u.id&&!letterDirector(u))fail(403,'Surat bukan milik Anda.');return (await withArchives(e,[decode(r)]))[0];}
+async function withArchives(e,records){
+ const layouts=(await q(e,'SELECT * FROM surat_layout_archives').all()).results;
+ const original=(await q(e,'SELECT * FROM surat_annual_drive').all()).results;
+ const formatted=(await q(e,'SELECT * FROM surat_layout_drive').all()).results;
+ return records.map(r=>{const layout=layouts.find(l=>l.surat_id===r.id);return {...r,...(layout?{layout:layout.layout,docx_key:layout.docx_key,pdf_key:layout.pdf_key}:{}),archives:(layout?formatted:original).filter(f=>f.surat_id===r.id&&f.web_url),previousArchives:layout?original.filter(f=>f.surat_id===r.id&&f.web_url):[]};});
+}
 async function change(e,r,u,action,sql,args){const result=await e.DB.batch([q(e,sql,...args),q(e,'INSERT INTO surat_annual_history SELECT ?,id,?,?,version,? FROM surat_annual WHERE id=? AND version=? AND changes()>0',crypto.randomUUID(),u.id,action,now(),r.id,r.version+1)]);if(!result[0].meta.changes)fail(409,'Surat telah berubah. Muat ulang.');return row(e,r.id,u);}
 export async function lettersApi(...args){try{return await handleLetters(...args);}catch(e){if(/UNIQUE constraint failed/.test(String(e?.message)))fail(409,'Nomor atau reservasi sudah tercatat. Muat ulang register.');throw e;}}
 async function handleLetters(req,e,url,u,{payload}){
@@ -28,8 +34,8 @@ async function handleLetters(req,e,url,u,{payload}){
  if(p==='/api/surat/register'&&m==='GET'){
   const rows=(await q(e,'SELECT * FROM surat_annual '+(director?'':'WHERE owner=? ')+'ORDER BY created_at DESC',...(director?[]:[u.id])).all()).results.map(decode);
   const historical=director?(await q(e,'SELECT * FROM surat_annual_register ORDER BY sequence').all()).results.map(decode):[];
-  if(url.searchParams.get('format')==='xlsx')return download(registerXlsx([...rows,...historical]),'register-surat.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  return json({rows,historical});
+  if(url.searchParams.get('format')==='xlsx')return download(registerXlsx([...(await withArchives(e,rows)),...historical]),'register-surat.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  return json({rows:await withArchives(e,rows),historical});
  }
  if(p==='/api/surat/import'&&m==='POST'){
   if(!director)fail(403,'Hanya Direktur dapat memverifikasi register.');const b=await payload(req);
@@ -51,7 +57,7 @@ async function handleLetters(req,e,url,u,{payload}){
  if(p==='/api/surat'&&m==='POST'){
   const data=letterInput(await payload(req)),id=crypto.randomUUID(),t=now();await e.DB.batch([q(e,'INSERT INTO surat_annual(id,owner,data,number_year,created_at,updated_at) VALUES(?,?,?,?,?,?)',id,u.id,JSON.stringify(data),Number(data.date.slice(0,4)),t,t),history(e,id,u,'create',1)]);return Response.json(await row(e,id,u),{status:201});
  }
- const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise|drive))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
+ const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise|drive|format))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
  const [,id,a]=match,r=await row(e,id,u);
  if(m==='GET'&&!a)return json(r);
  if(m==='GET'&&a==='history')return json((await q(e,'SELECT * FROM surat_annual_history WHERE surat_id=? ORDER BY created_at,id',id).all()).results);
@@ -60,6 +66,20 @@ async function handleLetters(req,e,url,u,{payload}){
   const docs=await documents(e,r);return download(docs[a],'DRAFT_'+id+'.'+a,mime(a));
  }
  if(!['POST','PUT'].includes(m))fail(405,'Metode tidak didukung.');const b=await payload(req);if(b.version!==r.version)fail(409,'Versi surat telah berubah.');
+ if(a==='format'){
+  if(!director)fail(403,'Hanya Direktur dapat memperbarui format arsip.');
+  if(r.status!=='issued')fail(409,'Hanya arsip surat terbit dapat diperbarui formatnya.');
+  if(r.layout===LETTER_LAYOUT)return json(r);
+  const docs=await documents(e,r),base='surat/'+id+'/'+LETTER_LAYOUT;
+  for(const ext of ['docx','pdf'])await e.MEDIA.put(base+'.'+ext,docs[ext],{httpMetadata:{contentType:mime(ext)},onlyIf:{etagDoesNotMatch:'*'}});
+  for(const ext of ['docx','pdf'])if(!await e.MEDIA.get(base+'.'+ext))fail(503,'Arsip format baru belum lengkap. Coba kembali.');
+  const result=await e.DB.batch([
+   q(e,"INSERT OR IGNORE INTO surat_layout_archives SELECT id,?,?,?,?,? FROM surat_annual WHERE id=? AND version=? AND status='issued'",LETTER_LAYOUT,base+'.docx',base+'.pdf',u.id,now(),id,r.version),
+   q(e,'INSERT INTO surat_annual_history SELECT ?,id,?,?,version,? FROM surat_annual WHERE id=? AND changes()>0',crypto.randomUUID(),u.id,'format_'+LETTER_LAYOUT,now(),id)
+  ]);
+  if(!result[0].meta.changes){const current=await row(e,id,u);if(current.layout!==LETTER_LAYOUT)fail(409,'Surat telah berubah. Muat ulang.');return json(current);}
+  return json(await row(e,id,u));
+ }
  if(a==='drive'){if(!director)fail(403,'Hanya Direktur dapat menyalin arsip ke Drive.');return json(await letterDrive(e,r,u));}
  if(m==='PUT'&&!a){if(r.status!=='draft'||r.number)fail(409,'Kembalikan ke draf sebelum menyunting.');const data=letterInput(b);return json(await change(e,r,u,'edit','UPDATE surat_annual SET data=?,number_year=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status=\'draft\' AND number IS NULL',[JSON.stringify(data),Number(data.date.slice(0,4)),now(),id,r.version]));}
  if(a==='revise'&&r.number){const newId=crypto.randomUUID();await e.DB.batch([q(e,'INSERT INTO surat_annual(id,owner,data,number_year,created_at,updated_at) VALUES(?,?,?,?,?,?)',newId,u.id,JSON.stringify({...r.data,notes:('Revisi atas '+r.number+'\n'+r.data.notes).slice(0,2000)}),r.number_year,now(),now()),history(e,newId,u,'revision_of:'+id,1)]);return json(await row(e,newId,u));}
@@ -88,7 +108,9 @@ async function handleLetters(req,e,url,u,{payload}){
   // Create-only objects: overlapping retries must never replace an archived rendition.
   await e.MEDIA.put(allocated.docx_key,docs.docx,{httpMetadata:{contentType:mime('docx')},onlyIf:{etagDoesNotMatch:'*'}});await e.MEDIA.put(allocated.pdf_key,docs.pdf,{httpMetadata:{contentType:mime('pdf')},onlyIf:{etagDoesNotMatch:'*'}});
   if(!await e.MEDIA.get(allocated.docx_key)||!await e.MEDIA.get(allocated.pdf_key))fail(503,'Arsip belum lengkap. Muat ulang lalu lanjutkan penerbitan.');
-  return json(await change(e,allocated,u,'issue',"UPDATE surat_annual SET status='issued',issued_at=?,updated_at=?,version=version+1 WHERE id=? AND version=? AND status='approved'",[now(),now(),id,allocated.version]));
+  const issued=await change(e,allocated,u,'issue',"UPDATE surat_annual SET status='issued',issued_at=?,updated_at=?,version=version+1 WHERE id=? AND version=? AND status='approved'",[now(),now(),id,allocated.version]);
+  await q(e,'INSERT OR IGNORE INTO surat_layout_archives VALUES(?,?,?,?,?,?)',id,LETTER_LAYOUT,issued.docx_key,issued.pdf_key,u.id,now()).run();
+  return json(await row(e,id,u));
  }
  const transitions={submit:['draft','review'],approve:['review','approved'],return:['review','draft'],cancel:[r.status,'cancelled']};const t=transitions[a];
  if(!t||r.status!==t[0]||r.status==='cancelled'||(r.number&&a!=='cancel'))fail(409,'Perubahan status tidak diizinkan.');if(['approve','return','cancel'].includes(a)&&!director)fail(403,'Hanya Direktur.');
@@ -96,4 +118,4 @@ async function handleLetters(req,e,url,u,{payload}){
 }
 function mime(a){return a==='pdf'?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';}
 function download(body,name,type){return new Response(body,{headers:{'Content-Type':type,'Content-Disposition':'attachment; filename="'+name+'"','Cache-Control':'private, no-store'}});}
-async function documents(e,r){const logo=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!logo.ok)fail(503,'Logo asli belum tersedia.');const head=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/surat-letterhead.png'));if(!head.ok)fail(503,'Kop surat belum tersedia.');return letterDocuments(r,new Uint8Array(await logo.arrayBuffer()),new Uint8Array(await head.arrayBuffer()));}
+async function documents(e,r){const logo=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!logo.ok)fail(503,'Logo asli belum tersedia.');const head=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/surat-letterhead.png'));if(!head.ok)fail(503,'Kop surat belum tersedia.');const signature=r.status==='issued'?await e.MEDIA.get(SIGNATURE_KEY):null;if(r.status==='issued'&&!signature)fail(503,'Tanda tangan dan stempel elektronik belum tersedia.');return letterDocuments(r,new Uint8Array(await logo.arrayBuffer()),new Uint8Array(await head.arrayBuffer()),signature?new Uint8Array(await signature.arrayBuffer()):undefined);}
