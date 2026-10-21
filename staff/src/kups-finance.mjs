@@ -1,4 +1,5 @@
 import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
+import {saveClosingReconciliation} from './kups-reconciliation.mjs';
 import {fail,now,imageType} from './core.mjs';
 import {validateWebgisSession} from './webgis-sso.mjs';
 const origin='https://webgisyg.id';
@@ -49,6 +50,7 @@ export async function finance(req,env,url){
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
+ if(path==='/reconciliation'&&method==='POST')return await saveClosingReconciliation(req,env,url,{u,g,group,requireAdmin,body,q,json});
  const extended=await detailsRoute(req,env,url,{u,g,group,write,requireAdmin,json,body,q,audit,verifyEvidence});if(extended)return extended;
  if(path==='/setup'&&method==='POST'){
   requireAdmin(u);const b=await body(req);openingBalance(b.opening_amount);const earliest=await q(env,'SELECT MIN(date) AS date FROM kups_transactions WHERE group_id=?',g).first();if(earliest.date&&b.start_date>earliest.date)fail(400,'Tanggal awal tidak boleh melewati transaksi yang sudah ada.');if(!validDate(b.start_date))fail(400,'Tanggal awal tidak valid.');
@@ -60,7 +62,7 @@ export async function finance(req,env,url){
   const prior=await q(env,"SELECT COALESCE(SUM(CASE WHEN kind='income' THEN amount ELSE -amount END),0) AS net FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)<?",g,month).first();
   const active=rows.filter(t=>!t.deleted_at);const income=active.filter(t=>t.kind==='income').reduce((n,t)=>n+t.amount,0),expense=active.filter(t=>t.kind==='expense').reduce((n,t)=>n+t.amount,0);const opening=group.opening_amount===null?null:group.opening_amount+prior.net;
   const chart=(await q(env,"SELECT substr(date,1,7) AS month,SUM(CASE WHEN kind='income' THEN amount ELSE 0 END) AS income,SUM(CASE WHEN kind='expense' THEN amount ELSE 0 END) AS expense FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL AND substr(date,1,7)>=? AND substr(date,1,7)<=? GROUP BY substr(date,1,7) ORDER BY month",g,String(Number(month.slice(0,4))-1)+month.slice(4),month).all()).results;
-  const period=await q(env,'SELECT * FROM kups_periods WHERE group_id=? AND month=?',g,month).first();return json({group,access,rows,summary:{opening,income,expense,closing:opening===null?null:opening+income-expense},chart,period,...await ledgerDetails(env,q,g,group,month)});
+  const period=await q(env,'SELECT * FROM kups_periods WHERE group_id=? AND month=?',g,month).first();const reconciliation=await q(env,'SELECT * FROM kups_reconciliations WHERE group_id=? AND month=?',g,month).first();return json({group,access,rows,summary:{opening,income,expense,closing:opening===null?null:opening+income-expense},chart,period,reconciliation,...await ledgerDetails(env,q,g,group,month)});
  }
  if(path==='/transactions'&&method==='POST'){
   write();if(group.opening_amount===null)fail(409,'Saldo awal belum ditetapkan.');const p=validateTransaction(await body(req),true);await verifyEvidence(env,g,p.evidence_id);const id=crypto.randomUUID();await env.DB.batch([await insertTx(env,u,g,p,id),audit(env,u,g,'create',id,p)]);return json({ok:true,id},201);
