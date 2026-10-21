@@ -1,5 +1,6 @@
 import {fail,now} from './core.mjs';
 import {letterDocuments,registerXlsx} from './letters-documents.mjs';
+import {letterDrive} from './letters-drive.mjs';
 const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org']);
 export const letterAccess=u=>!!u&&!u.disabled&&accounts.has(u.email);
 export const letterDirector=u=>letterAccess(u)&&u.email==='mulyadi@yayasangambut.org'&&u.role==='admin';
@@ -17,7 +18,8 @@ const decode=r=>({...r,data:JSON.parse(r.data)});
 const history=(e,id,u,action,version)=>q(e,'INSERT INTO surat_history VALUES(?,?,?,?,?,?)',crypto.randomUUID(),id,u.id,action,version,now());
 async function row(e,id,u){const r=await q(e,'SELECT * FROM surat WHERE id=?',id).first();if(!r)fail(404,'Surat tidak ditemukan.');if(r.owner!==u.id&&!letterDirector(u))fail(403,'Surat bukan milik Anda.');return decode(r);}
 async function change(e,r,u,action,sql,args){const result=await e.DB.batch([q(e,sql,...args),q(e,'INSERT INTO surat_history SELECT ?,id,?,?,version,? FROM surat WHERE id=? AND version=? AND changes()>0',crypto.randomUUID(),u.id,action,now(),r.id,r.version+1)]);if(!result[0].meta.changes)fail(409,'Surat telah berubah. Muat ulang.');return row(e,r.id,u);}
-export async function lettersApi(req,e,url,u,{payload}){
+export async function lettersApi(...args){try{return await handleLetters(...args);}catch(e){if(/UNIQUE constraint failed/.test(String(e?.message)))fail(409,'Nomor atau reservasi sudah tercatat. Muat ulang register.');throw e;}}
+async function handleLetters(req,e,url,u,{payload}){
  if(!letterAccess(u))fail(403,'Administrasi surat hanya untuk empat akun berwenang.');
  const p=url.pathname,m=req.method,director=letterDirector(u);
  if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),director,references:(await q(e,'SELECT * FROM surat_references').all()).results});
@@ -41,12 +43,13 @@ export async function lettersApi(req,e,url,u,{payload}){
   const rows=(await q(e,'SELECT sequence FROM surat_register ORDER BY sequence').all()).results;
   if(b.complete!==true||!s.evidence||!rows.length||rows.some((r,i)=>r.sequence!==i+1)||rows.at(-1).sequence<64)fail(409,'Impor register lengkap sejak nomor 1, termasuk nomor batal. Verifikasi tidak dapat memakai dua referensi saja.');
   const r64=await q(e,'SELECT * FROM surat_register WHERE sequence=64').first();if(r64.number!=='64/YG/SPT/X/2026')fail(409,'Referensi nomor 64 tidak cocok.');
+  const r65=await q(e,'SELECT * FROM surat_register WHERE sequence=65').first();if(r65&&r65.number!=='65/YG/SKR/X/2026')fail(409,'Referensi nomor 65 tidak cocok.');
   await q(e,'UPDATE surat_settings SET verified=1,verified_by=?,verified_at=? WHERE id=1',u.id,now()).run();return json({ok:true});
  }
  if(p==='/api/surat'&&m==='POST'){
   const data=letterInput(await payload(req)),id=crypto.randomUUID(),t=now();await e.DB.batch([q(e,'INSERT INTO surat(id,owner,data,created_at,updated_at) VALUES(?,?,?,?,?)',id,u.id,JSON.stringify(data),t,t),history(e,id,u,'create',1)]);return Response.json(await row(e,id,u),{status:201});
  }
- const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
+ const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise|drive))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
  const [,id,a]=match,r=await row(e,id,u);
  if(m==='GET'&&!a)return json(r);
  if(m==='GET'&&a==='history')return json((await q(e,'SELECT * FROM surat_history WHERE surat_id=? ORDER BY created_at,id',id).all()).results);
@@ -55,6 +58,7 @@ export async function lettersApi(req,e,url,u,{payload}){
   const docs=await documents(e,r);return download(docs[a],'DRAFT_'+id+'.'+a,mime(a));
  }
  if(!['POST','PUT'].includes(m))fail(405,'Metode tidak didukung.');const b=await payload(req);if(b.version!==r.version)fail(409,'Versi surat telah berubah.');
+ if(a==='drive'){if(!director)fail(403,'Hanya Direktur dapat menyalin arsip ke Drive.');return json(await letterDrive(e,r,u));}
  if(m==='PUT'&&!a){if(r.status!=='draft'||r.number)fail(409,'Kembalikan ke draf sebelum menyunting.');const data=letterInput(b);return json(await change(e,r,u,'edit','UPDATE surat SET data=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status=\'draft\' AND number IS NULL',[JSON.stringify(data),now(),id,r.version]));}
  if(a==='revise'&&r.number){const newId=crypto.randomUUID();await e.DB.batch([q(e,'INSERT INTO surat(id,owner,data,created_at,updated_at) VALUES(?,?,?,?,?)',newId,u.id,JSON.stringify({...r.data,notes:('Revisi atas '+r.number+'\n'+r.data.notes).slice(0,2000)}),now(),now()),history(e,newId,u,'revision_of:'+id,1)]);return json(await row(e,newId,u));}
  if(a==='reserve-rapp'){
@@ -70,10 +74,12 @@ export async function lettersApi(req,e,url,u,{payload}){
    const suffix='/YG/'+r.data.kind+'/'+roman[Number(r.data.date.slice(5,7))-1]+'/'+r.data.date.slice(0,4);
    // D1 batch is one serializable transaction. Allocation and UNIQUE checks occur inside SQL.
    const next="COALESCE(reserved_sequence,(SELECT MAX(n)+1 FROM (SELECT COALESCE(MAX(sequence),0) AS n FROM surat UNION ALL SELECT COALESCE(MAX(sequence),0) FROM surat_register UNION ALL SELECT MAX(sequence) FROM surat_references)))";
-   await change(e,r,u,'allocate','UPDATE surat SET sequence='+next+',number=('+next+")||?,docx_key=?,pdf_key=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status='approved' AND number IS NULL AND NOT EXISTS(SELECT 1 FROM surat_register WHERE sequence=surat.reserved_sequence)",[suffix,'surat/'+id+'/final.docx','surat/'+id+'/final.pdf',now(),id,r.version]);
+   await change(e,r,u,'allocate','UPDATE surat SET sequence='+next+',number=('+next+")||?,docx_key=?,pdf_key=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status='approved' AND number IS NULL AND EXISTS(SELECT 1 FROM surat_settings WHERE id=1 AND verified=1) AND NOT EXISTS(SELECT 1 FROM surat_register WHERE sequence=surat.reserved_sequence)",[suffix,'surat/'+id+'/final.docx','surat/'+id+'/final.pdf',now(),id,r.version]);
   }
   const allocated=await row(e,id,u),docs=await documents(e,{...allocated,status:'issued'});
-  await e.MEDIA.put(allocated.docx_key,docs.docx,{httpMetadata:{contentType:mime('docx')}});await e.MEDIA.put(allocated.pdf_key,docs.pdf,{httpMetadata:{contentType:mime('pdf')}});
+  // Create-only objects: overlapping retries must never replace an archived rendition.
+  await e.MEDIA.put(allocated.docx_key,docs.docx,{httpMetadata:{contentType:mime('docx')},onlyIf:{etagDoesNotMatch:'*'}});await e.MEDIA.put(allocated.pdf_key,docs.pdf,{httpMetadata:{contentType:mime('pdf')},onlyIf:{etagDoesNotMatch:'*'}});
+  if(!await e.MEDIA.get(allocated.docx_key)||!await e.MEDIA.get(allocated.pdf_key))fail(503,'Arsip belum lengkap. Muat ulang lalu lanjutkan penerbitan.');
   return json(await change(e,allocated,u,'issue',"UPDATE surat SET status='issued',issued_at=?,updated_at=?,version=version+1 WHERE id=? AND version=? AND status='approved'",[now(),now(),id,allocated.version]));
  }
  const transitions={submit:['draft','review'],approve:['review','approved'],return:['review','draft'],cancel:[r.status,'cancelled']};const t=transitions[a];
@@ -82,4 +88,4 @@ export async function lettersApi(req,e,url,u,{payload}){
 }
 function mime(a){return a==='pdf'?'application/pdf':'application/vnd.openxmlformats-officedocument.wordprocessingml.document';}
 function download(body,name,type){return new Response(body,{headers:{'Content-Type':type,'Content-Disposition':'attachment; filename="'+name+'"','Cache-Control':'private, no-store'}});}
-async function documents(e,r){const logo=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!logo.ok)fail(503,'Logo asli belum tersedia.');return letterDocuments(r,new Uint8Array(await logo.arrayBuffer()));}
+async function documents(e,r){const logo=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/yayasan-gambut-logo.png'));if(!logo.ok)fail(503,'Logo asli belum tersedia.');const head=await e.ASSETS.fetch(new Request(e.APP_ORIGIN+'/brand/surat-letterhead.png'));if(!head.ok)fail(503,'Kop surat belum tersedia.');return letterDocuments(r,new Uint8Array(await logo.arrayBuffer()),new Uint8Array(await head.arrayBuffer()));}
