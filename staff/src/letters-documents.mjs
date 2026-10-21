@@ -27,7 +27,7 @@ function bankTable(rows){const cell=(value,width)=>`<w:tc><w:tcPr><w:tcW w:w="${
  return `<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(side=>`<w:${side} w:val="nil"/>`).join('')}</w:tblBorders></w:tblPr><w:tblGrid><w:gridCol w:w="2400"/><w:gridCol w:w="200"/><w:gridCol w:w="6426"/></w:tblGrid>${rows.map(row=>`<w:tr><w:trPr><w:cantSplit/></w:trPr>${cell(row.label,2400)}${cell(':',200)}${cell(row.value,6426)}</w:tr>`).join('')}</w:tbl>`;
 }
 function formalBody(r){const d=r.data,parts=[];
- if(r.status!=='issued')parts.push(formalP('DRAFT — BELUM TERBIT',{bold:true,after:120}));
+ if(r.status!=='issued')parts.push(formalP('DRAFT - BELUM TERBIT',{bold:true,after:120}));
  parts.push(formalP(`Nomor Surat\t: ${r.number||'Belum dialokasikan'}\t${letterDate(d.date)}`,{metadata:true,keep:true}),formalP(`Perihal\t: ${d.subject}`,{metadata:true,keep:true}),formalP(`Lampiran\t: ${d.attachments||'-'}`,{metadata:true,after:300,keep:true}));
  const recipient=['Kepada Yth.',d.recipient,d.institution,d.address||'Di tempat'].filter(Boolean);
  recipient.forEach((t,i)=>parts.push(formalP(t,{keep:true,after:i===recipient.length-1?180:0})));
@@ -52,7 +52,7 @@ export async function letterPdf(r,logoBytes,letterhead,signatureBytes){
  function room(height){if(y-height<50)start();}
  function wrap(value,available=width){const out=[];let line='';for(const word of safe(value).split(/ +/)){if(line&&font.widthOfTextAtSize(line+' '+word,size)>available){out.push(line);line='';}if(font.widthOfTextAtSize(word,size)>available){if(line){out.push(line);line='';}for(const ch of word){if(font.widthOfTextAtSize(line+ch,size)>available){out.push(line);line='';}line+=ch;}}else line+=(line?' ':'')+word;}out.push(line);return out;}
  function paragraph(value,justify=false,x=left,available=width){const lines=wrap(value,available);lines.forEach((line,i)=>{room(leading);const words=line.split(' ');if(justify&&i<lines.length-1&&words.length>1){const gap=(available-words.reduce((sum,w)=>sum+font.widthOfTextAtSize(w,size),0))/(words.length-1);let at=x;for(const w of words){text(w,at,y);at+=font.widthOfTextAtSize(w,size)+gap;}}else text(line,x,y);y-=leading;});}
- start();if(r.status!=='issued'){paragraph('DRAFT — BELUM TERBIT');y-=6;}
+ start();if(r.status!=='issued'){paragraph('DRAFT - BELUM TERBIT');y-=6;}
  const date=letterDate(r.data.date);text('Nomor Surat',left,y);text(': '+(r.number||'Belum dialokasikan'),147,y);text(date,right-font.widthOfTextAtSize(date,size),y);y-=leading;
  for(const [label,value] of [['Perihal',r.data.subject],['Lampiran',r.data.attachments||'-']]){text(label,left,y);paragraph(': '+value,false,147,right-147);}y-=15;
  const recipient=['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean);for(const line of recipient)paragraph(line);y-=10;
