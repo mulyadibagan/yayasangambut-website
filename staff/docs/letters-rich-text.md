@@ -34,3 +34,21 @@ sumber dan bukan hasil peninjauan substansi hukum/perpajakan.
 
 Aturan tanda tangan tetap: Word untuk tanda tangan/stempel basah; PDF draft
 tanpa tanda tangan; PDF terbit memakai aset privat sesuai alur yang sudah ada.
+
+## Versi arsip pernyataan
+
+Jenis PNY memakai versi format `statement-v1`. Tombol pembaruan format hanya
+membuat rendition tambahan lewat penulisan R2 create-only. Data asli, nomor,
+versi persetujuan, waktu terbit, serta kunci objek final pada `surat_annual`
+tidak diubah. Arsip Drive setiap layout memakai ID berbeda; tautan versi lama
+tetap ditampilkan. Pengulangan pembaruan mengembalikan versi yang sudah ada.
+
+Untuk PNY plain text, proyeksi presentasi membentuk tabel identitas tiga kolom
+dan daftar bernomor, mengatur jarak paragraf, serta mengapit judul/nomor dan
+penutup sesuai format pernyataan. Pemeriksaan kesamaan teks mengabaikan hanya
+spasi/tab/baris; perubahan redaksi ditolak. `renditionData` hanya proyeksi untuk
+pratinjau, sedangkan `data` tetap sumber asli. Rich text yang sudah disunting
+pengguna dipertahankan. Format RAPP/SKR tetap `formal-v3`.
+
+253 tes lulus termasuk pembaruan rendition, idempotensi, izin Direktur,
+pelestarian sumber/arsip lama, dan tidak adanya alokasi atau penerbitan ulang.
