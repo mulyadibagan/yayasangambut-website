@@ -115,6 +115,38 @@ test('new letter types share annual numbering and keep their code in the issued 
 });
 import {cleanDocument,documentHtml,documentText,plainDocument,para} from '../public/letter-content.js';
 import {letterTemplates} from '../src/letter-templates.mjs';
+import {statementData,STATEMENT_LAYOUT} from '../src/letters-statement.mjs';
+
+test('statement rendition preserves source wording and constructs native identities and lists',()=>{
+ const source={...sample,kind:'PNY',subject:'Surat Pernyataan Non-PKP',body:'Yang bertanda tangan di bawah ini :\n\nNama\t\t: Mulyadi\nJabatan : Direktur\nLembaga : YAYASAN GAMBUT\nAlamat : Jalan Gulama No. 8\n\nDengan ini menyatakan bahwa kami bukan PKP, Karena :\n\n1. Pernyataan pertama.\n2. Rujukan (PMK No. 197/PMK.03/2013).\n\nDemikian surat ini dibuat.'};
+ const original=structuredClone(source),data=statementData(source);
+ assert.deepEqual(source,original);assert.equal(data.subject,'SURAT PERNYATAAN NON-PKP');
+ assert.equal(documentText(data.bodyDoc).replace(/\s+/g,' '),source.body.replace(/\s+/g,' '));
+ assert.equal(data.bodyDoc.blocks[1].type,'table');assert.equal(data.bodyDoc.blocks[1].border,'none');assert.equal(data.bodyDoc.blocks[1].rows[0].length,3);
+ assert.equal(data.bodyDoc.blocks[3].type,'list');assert.equal(data.bodyDoc.blocks[3].items.length,2);
+ assert.equal(statementData(sample),sample);
+ const rich={...source,bodyFormat:'rich-v1',bodyDoc:{version:1,blocks:[{...para('Teks pilihan pengguna'),runs:[{text:'Teks pilihan pengguna',underline:true}]}]}};
+ assert.deepEqual(statementData(rich).bodyDoc,cleanDocument(rich.bodyDoc));
+});
+
+test('issued legacy statement adds a create-only archive version without changing issuance or old files',async()=>{
+ const {env,db,files}=await setup(),id=crypto.randomUUID(),data={...sample,kind:'PNY',subject:'Surat Pernyataan Non-PKP',body:'Yang bertanda tangan di bawah ini :\n\nNama : Mulyadi\nJabatan : Direktur\n\n1. Redaksi asli.\n2. Tetap utuh.'};
+ db.prepare("INSERT INTO surat_annual(id,owner,data,number_year,status,sequence,number,version,created_at,updated_at,issued_at,docx_key,pdf_key) VALUES(?,?,?,2026,'issued',66,'66/YG/PNY/X/2026',7,'created','issued','issued','old.docx','old.pdf')").run(id,'m',JSON.stringify(data));
+ db.prepare('INSERT INTO surat_renditions VALUES(?,?,?,?,?,?)').run(id,'formal-v3','old.docx','old.pdf','m','old');
+ for(const format of ['docx','pdf']){files.set('old.'+format,new Uint8Array([1,2,3]));db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(id,'formal-v3',format,'old-'+format,'https://drive.google.com/file/d/old-'+format+'/view','old');}
+ db.prepare('INSERT INTO surat_annual_history VALUES(?,?,?,?,?,?)').run(crypto.randomUUID(),id,'m','issue',7,'issued');
+ const before=db.prepare('SELECT * FROM surat_annual WHERE id=?').get(id);let record=await (await call(env,'/'+id)).json();assert.equal(record.formatAvailable,true);
+ assert.equal((await call(env,'/'+id+'/format','r','POST',{version:7})).status,403);
+ record=await action(env,record,'format');assert.equal(record.layout,STATEMENT_LAYOUT);assert.equal(record.formatAvailable,false);assert.equal(record.previousArchives.length,2);
+ assert.deepEqual(record.data,data);assert.equal(record.renditionData.bodyFormat,'rich-v1');assert.equal(record.number,'66/YG/PNY/X/2026');
+ assert.deepEqual(db.prepare('SELECT * FROM surat_annual WHERE id=?').get(id),before);
+ const newDocx=files.get(record.docx_key),newPdf=files.get(record.pdf_key);assert(Buffer.from(newDocx).toString().includes('<w:tbl>'));assert(Buffer.from(newDocx).toString().includes('<w:numPr>'));assert.equal((await PDFDocument.load(newPdf)).getPageCount(),1);
+ record=await action(env,record,'format');assert.deepEqual(files.get(record.docx_key),newDocx);assert.deepEqual(files.get(record.pdf_key),newPdf);
+ assert.deepEqual(files.get('old.docx'),new Uint8Array([1,2,3]));assert.deepEqual(files.get('old.pdf'),new Uint8Array([1,2,3]));
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_annual').get().n,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_renditions').get().n,2);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='allocate'").get().n,0);assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='format_statement-v1'").get().n,1);
+ const xlsx=Buffer.from(await (await call(env,'/register?format=xlsx')).arrayBuffer()).toString();assert(xlsx.includes('66/YG/PNY/X/2026'));
+});
 
 test('rich document round-trips through save/reopen; editor text is derived on server',async()=>{
  const {env}=await setup();const bodyDoc={version:1,blocks:[{...para('Format aman',{align:'center',indent:1,space:12}),runs:[{text:'Format ',bold:true},{text:'aman',italic:true,underline:true}]},{type:'list',ordered:true,start:3,items:[para('Butir pertama'),para('Butir berikutnya')]},{type:'table',border:'none',widths:[25,3,72],rows:[[[para('Nama')],[para(':')],[para('Mulyadi')]]]}]};
