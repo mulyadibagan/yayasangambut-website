@@ -1,3 +1,5 @@
+import {cleanDocument,documentText} from '../public/letter-content.js';
+import {letterTemplates} from './letter-templates.mjs';
 import {fail,now} from './core.mjs';
 import {letterDocuments,registerXlsx,LETTER_LAYOUT,SIGNATURE_KEY} from './letters-documents.mjs';
 import {letterDrive} from './letters-drive.mjs';
@@ -10,10 +12,11 @@ const q=(e,s,...a)=>e.DB.prepare(s).bind(...a);
 const json=x=>Response.json(x);
 export const roman=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
 export function letterInput(v){
- const data={};for(const [key,max] of Object.entries({date:10,kind:12,subject:240,recipient:200,institution:240,address:1000,body:18000,attachments:1000,signer:100,notes:2000})){
+ const data={};let rich=null;if(v.bodyFormat!==undefined&&v.bodyFormat!=='rich-v1')fail(400,'Format isi tidak didukung.');if(v.bodyDoc!==undefined&&v.bodyFormat!=='rich-v1')fail(400,'Dokumen terstruktur harus memakai penanda format.');if(v.bodyFormat==='rich-v1'){try{rich=cleanDocument(v.bodyDoc);v={...v,body:documentText(rich)};}catch(error){fail(400,error.message);}}for(const [key,max] of Object.entries({date:10,kind:12,subject:240,recipient:200,institution:240,address:1000,body:18000,attachments:1000,signer:100,notes:2000})){
   if(typeof v[key]!=='string'||v[key].length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v[key]))fail(400,'Isian surat tidak valid: '+key);data[key]=v[key].trim();
  }
  if(!/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!Number.isFinite(Date.parse(data.date))||new Date(data.date).toISOString().slice(0,10)!==data.date||!isLetterKind(data.kind)||!data.subject||!data.body||data.signer!=='Mulyadi, Direktur Yayasan Gambut')fail(400,'Periksa tanggal, jenis, perihal, isi, dan penandatangan.');
+ if(rich){data.bodyFormat='rich-v1';data.bodyDoc=rich;}if(data.kind==='PNY'){if(v.statementPlace!==undefined&&(typeof v.statementPlace!=='string'||v.statementPlace.length>120||/[\u0000-\u001f]/.test(v.statementPlace)))fail(400,'Tempat penandatanganan tidak valid.');data.statementPlace=v.statementPlace?.trim()||'Pekanbaru';}
  return data;
 }
 const decode=r=>({...r,data:JSON.parse(r.data)});
@@ -30,8 +33,9 @@ export async function lettersApi(...args){try{return await handleLetters(...args
 async function handleLetters(req,e,url,u,{payload}){
  if(!letterAccess(u))fail(403,'Administrasi surat hanya untuk empat akun berwenang.');
  const p=url.pathname,m=req.method,director=letterDirector(u);
- if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),numbering:await numberingState(e,Number(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'}).slice(0,4))),director,types:letterTypes,references:(await q(e,'SELECT * FROM surat_references').all()).results});
+ if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),numbering:await numberingState(e,Number(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'}).slice(0,4))),director,types:letterTypes,templates:letterTemplates.map(({id,name})=>({id,name})),references:(await q(e,'SELECT * FROM surat_references').all()).results});
  if(p==='/api/surat/numbering/start'&&m==='POST'){if(!director)fail(403,'Hanya Direktur dapat menetapkan titik awal.');return json(await activateNumbering(e,u,await payload(req)));}
+ if(p.startsWith('/api/surat/templates/')&&m==='GET'){const template=letterTemplates.find(t=>p==='/api/surat/templates/'+t.id);if(!template)fail(404,'Template tidak ditemukan.');return json({...template,bodyDoc:cleanDocument(template.bodyDoc)});}
  if(p==='/api/surat/register'&&m==='GET'){
   const rows=(await q(e,'SELECT * FROM surat_annual '+(director?'':'WHERE owner=? ')+'ORDER BY created_at DESC',...(director?[]:[u.id])).all()).results.map(decode);
   const historical=director?(await q(e,'SELECT * FROM surat_annual_register ORDER BY sequence').all()).results.map(decode):[];
@@ -82,7 +86,7 @@ async function handleLetters(req,e,url,u,{payload}){
   return json(await row(e,id,u));
  }
  if(a==='drive'){if(!director)fail(403,'Hanya Direktur dapat menyalin arsip ke Drive.');return json(await letterDrive(e,r,u));}
- if(m==='PUT'&&!a){if(r.status!=='draft'||r.number)fail(409,'Kembalikan ke draf sebelum menyunting.');const data=letterInput(b);return json(await change(e,r,u,'edit','UPDATE surat_annual SET data=?,number_year=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status=\'draft\' AND number IS NULL',[JSON.stringify(data),Number(data.date.slice(0,4)),now(),id,r.version]));}
+ if(m==='PUT'&&!a){if(r.status!=='draft'||r.number)fail(409,'Kembalikan ke draf sebelum menyunting.');if(r.data.bodyFormat==='rich-v1'&&b.bodyFormat!=='rich-v1')fail(409,'Surat memakai editor berformat. Muat ulang sebelum menyunting agar format tidak hilang.');const data=letterInput(b);return json(await change(e,r,u,'edit','UPDATE surat_annual SET data=?,number_year=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status=\'draft\' AND number IS NULL',[JSON.stringify(data),Number(data.date.slice(0,4)),now(),id,r.version]));}
  if(a==='revise'&&r.number){const newId=crypto.randomUUID();await e.DB.batch([q(e,'INSERT INTO surat_annual(id,owner,data,number_year,created_at,updated_at) VALUES(?,?,?,?,?,?)',newId,u.id,JSON.stringify({...r.data,notes:('Revisi atas '+r.number+'\n'+r.data.notes).slice(0,2000)}),r.number_year,now(),now()),history(e,newId,u,'revision_of:'+id,1)]);return json(await row(e,newId,u));}
  if(a==='reserve-rapp'){
   if(!director)fail(403,'Hanya Direktur.');if(r.number||r.data.kind!=='SKR'||r.data.date!=='2026-10-21'||r.data.institution!=='PT Riau Andalan Pulp and Paper'||r.status!=='approved'||b.referenceVerified!==true)fail(409,'Periksa dokumen RAPP asli dan persetujuannya sebelum reservasi.');
