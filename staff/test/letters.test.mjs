@@ -113,3 +113,48 @@ test('new letter types share annual numbering and keep their code in the issued 
  const {env}=await setup();await historical(env,65);let expected=66;
  for(const kind of ['PMH','PBT','PNG','KUA','REK','PNY']){const r=await action(env,await approve(env,await create(env,'m',{...sample,kind})),'issue');assert.equal(r.sequence,expected);assert.equal(r.number,`${expected}/YG/${kind}/X/2026`);expected++;}
 });
+import {cleanDocument,documentHtml,documentText,plainDocument,para} from '../public/letter-content.js';
+import {letterTemplates} from '../src/letter-templates.mjs';
+
+test('rich document round-trips through save/reopen; editor text is derived on server',async()=>{
+ const {env}=await setup();const bodyDoc={version:1,blocks:[{...para('Format aman',{align:'center',indent:1,space:12}),runs:[{text:'Format ',bold:true},{text:'aman',italic:true,underline:true}]},{type:'list',ordered:true,start:3,items:[para('Butir pertama'),para('Butir berikutnya')]},{type:'table',border:'none',widths:[25,3,72],rows:[[[para('Nama')],[para(':')],[para('Mulyadi')]]]}]};
+ let r=await create(env,'r',{...sample,bodyFormat:'rich-v1',bodyDoc,body:'CLIENT TEXT MUST NOT WIN'});assert.equal(r.data.body,documentText(bodyDoc));assert.deepEqual(r.data.bodyDoc,cleanDocument(bodyDoc));
+ let reopened=await (await call(env,'/'+r.id,'r')).json();assert.deepEqual(reopened.data.bodyDoc,r.data.bodyDoc);
+ const changed=structuredClone(bodyDoc);changed.blocks[0].align='right';const save=await call(env,'/'+r.id,'r','PUT',{...sample,bodyFormat:'rich-v1',bodyDoc:changed,version:r.version});assert.equal(save.status,200);r=await save.json();assert.equal(r.data.bodyDoc.blocks[0].align,'right');assert.equal(r.version,2);
+});
+
+test('server allows only document nodes and formatting attributes; legacy text is never HTML',async()=>{
+ const {env}=await setup();const literal='<img src=x onerror=alert(1)><script>alert(2)</script>';
+ const legacy=await create(env,'r',{...sample,body:literal});assert.equal(legacy.data.body,literal);assert.equal(legacy.data.bodyFormat,undefined);assert(!documentHtml(plainDocument(literal)).includes('<img'));assert(documentHtml(plainDocument(literal)).includes('&lt;script&gt;'));
+ const bodyDoc={version:1,blocks:[{...para(literal),align:'expression(alert(1))',indent:999,space:999,onclick:'alert(1)',runs:[{text:literal,bold:true,href:'javascript:alert(1)',style:'background:url(https://evil.example)'}]}]};
+ const r=await create(env,'r',{...sample,bodyFormat:'rich-v1',bodyDoc});assert.equal(r.data.bodyDoc.blocks[0].align,'left');assert.equal(r.data.bodyDoc.blocks[0].indent,4);assert(!JSON.stringify(r.data.bodyDoc).includes('javascript:'));assert(!JSON.stringify(r.data.bodyDoc).includes('background:'));assert(!documentHtml(r.data.bodyDoc).includes('<script'));
+ for(const bad of [{version:1,blocks:[{type:'html',html:literal}]},{version:99,blocks:[]},{version:1,blocks:[para('x'.repeat(18001))]},{version:1,blocks:[{type:'table',rows:[[[para('a')]]]}]}])assert.equal((await call(env,'','r','POST',{...sample,bodyFormat:'rich-v1',bodyDoc:bad})).status,400);
+ assert.equal((await call(env,'','r','POST',{...sample,bodyDoc})).status,400);
+});
+
+test('Non-PKP template retains source text, uses unique PNY, and never allocates numbers',async()=>{
+ const {env,db}=await setup();assert.equal((await call(env,'/templates/non-pkp-v1','x')).status,403);
+ const res=await call(env,'/templates/non-pkp-v1','r');assert.equal(res.status,200);const template=await res.json();assert.equal(template.kind,'PNY');assert.equal(letterTypes.filter(t=>t.code==='PNY').length,1);
+ assert.equal(template.subject,'SURAT PERNYATAAN NON PKP');assert.equal(template.bodyDoc.blocks[1].border,'none');assert.equal(template.bodyDoc.blocks[1].rows.length,4);assert.equal(template.bodyDoc.blocks[3].ordered,true);assert.equal(template.bodyDoc.blocks[3].items.length,2);
+ assert(documentText(template.bodyDoc).includes('PMK No. 197/PMK.03/2013'));assert(documentText(template.bodyDoc).includes('di dukung oleh APRIL Group.'));assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_annual').get().n,0);
+ const draft=await create(env,'r',{...sample,...template,date:'2026-10-22'});assert.equal(draft.number,null);assert.equal(draft.status,'draft');assert.equal(draft.data.statementPlace,'Pekanbaru');assert.equal((await call(env,'/templates/unknown')).status,404);
+});
+
+test('rich export contains native DOCX formatting, numbering and borderless table; issued archives immutable',async()=>{
+ const {env,files,db}=await setup();await historical(env,65);const bodyDoc={version:1,blocks:[{...para('Bold Italic Underline',{align:'right',indent:2,space:12}),runs:[{text:'Bold',bold:true},{text:' Italic',italic:true},{text:' Underline',underline:true}]},{type:'list',ordered:true,start:3,items:[para('Number three'),para('Number four')]},{type:'list',ordered:false,items:[para('Bullet item')]},{type:'table',border:'none',widths:[25,3,72],rows:[[[para('Nama')],[para(':')],[para('Mulyadi')]]]}]};
+ let r=await action(env,await approve(env,await create(env,'m',{...sample,bodyFormat:'rich-v1',bodyDoc})),'issue');assert.equal(r.sequence,66);
+ const docx=Buffer.from(files.get(r.docx_key)).toString('utf8');for(const token of ['<w:b/>','<w:i/>','<w:u w:val="single"/>','<w:numPr>','<w:startOverride w:val="3"/>','<w:numFmt w:val="bullet"/>','<w:tbl>','w:val="nil"','w:val="right"'])assert(docx.includes(token),token);
+ const bytes=files.get(r.pdf_key);assert.equal((await PDFDocument.load(bytes)).getPageCount(),1);assert.equal((await call(env,'/'+r.id,'m','PUT',{...sample,bodyFormat:'rich-v1',bodyDoc,version:r.version})).status,409);r=await action(env,r,'issue');assert.deepEqual(files.get(r.pdf_key),bytes);assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);
+});
+
+test('statement exports omit recipient and greeting, retain title/number/closing, and paginate long rows',async()=>{
+ const logo=readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url)),head=readFileSync(new URL('../public/brand/surat-letterhead.png',import.meta.url));
+ const data=letterInput({...sample,...letterTemplates[0],date:'2026-10-22'});let docs=await letterDocuments({status:'draft',number:null,data},logo,head);const xml=Buffer.from(docs.docx).toString('utf8');assert(xml.includes('SURAT PERNYATAAN NON PKP'));assert(!xml.includes('Kepada Yth.'));assert(!xml.includes('Hormat kami,'));assert(xml.includes('Pekanbaru, 22 Oktober 2026'));assert.equal((await PDFDocument.load(docs.pdf)).getPageCount(),1);
+ const long=structuredClone(data);long.bodyDoc.blocks.push({type:'table',border:'grid',widths:[50,50],rows:[[[para('Uji halaman panjang '.repeat(250))],[para('Sel kedua '.repeat(250))]]]});docs=await letterDocuments({status:'draft',number:null,data:long},logo,head);assert((await PDFDocument.load(docs.pdf)).getPageCount()>1);
+});
+
+test('an old plain-text client cannot silently flatten a rich draft',async()=>{
+ const {env}=await setup();const r=await create(env,'r',{...sample,bodyFormat:'rich-v1',bodyDoc:{version:1,blocks:[{...para('Rich draft'),runs:[{text:'Rich draft',bold:true}]}]}});
+ assert.equal((await call(env,'/'+r.id,'r','PUT',{...sample,body:'Flattened by old UI',version:r.version})).status,409);
+ const actual=await (await call(env,'/'+r.id,'r')).json();assert.equal(actual.version,r.version);assert.equal(actual.data.bodyDoc.blocks[0].runs[0].bold,true);
+});
