@@ -14,7 +14,7 @@ function sendPayrollApproval_(payload) {
       !/^Form-Gaji-[0-9-]+-[a-f0-9]{8}\.pdf$/.test(String(payload.approvalPdfFilename))) throw new Error('PDF final tidak valid.');
   const pdfBytes = Utilities.base64Decode(payload.approvalPdfBase64);
   if (pdfBytes.length < 5 || String.fromCharCode.apply(null, pdfBytes.slice(0, 5)) !== '%PDF-' ||
-      sha256Hex_(pdfBytes) !== payload.approvalPdfSha256) throw new Error('Integritas PDF final gagal.');
+      sha256Hex_(pdfBytes).toLowerCase() !== payload.approvalPdfSha256.toLowerCase()) throw new Error('Integritas PDF final gagal.');
   const pdfBlob = Utilities.newBlob(pdfBytes, MimeType.PDF, payload.approvalPdfFilename);
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -33,7 +33,7 @@ function sendPayrollApproval_(payload) {
           if (message.getPlainBody().indexOf(marker) < 0) continue;
           const actual = (message.getTo() + ',' + message.getCc()).toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g) || [];
           if (recipients.every(function(email) { return actual.indexOf(email) >= 0; }) && actual.every(function(email) { return recipients.indexOf(email) >= 0; })) {
-            const attachment = message.getAttachments().find(function(file) { return file.getName() === payload.approvalPdfFilename && sha256Hex_(file.getBytes()) === payload.approvalPdfSha256; });
+            const attachment = message.getAttachments().find(function(file) { return file.getName() === payload.approvalPdfFilename && sha256Hex_(file.getBytes()).toLowerCase() === payload.approvalPdfSha256.toLowerCase(); });
             if (!attachment) continue;
             const state = {attachmentSha256:payload.approvalPdfSha256,fingerprint:fingerprint,messageId:message.getId(),sentAt:new Date().toISOString()};
             properties.setProperty(key, JSON.stringify(state));
