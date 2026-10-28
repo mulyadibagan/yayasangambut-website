@@ -1,5 +1,5 @@
 ---
-name: "Arip"
+name: "Arif Sah Putra"
 position: "Staf Pengembangan Usaha Masyarakat"
 positionEn: "Community Enterprise Development Officer"
 group: "Management & Program Team"
