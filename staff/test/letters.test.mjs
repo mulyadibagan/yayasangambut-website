@@ -101,9 +101,9 @@ test('rendition migration copies existing final formats and Drive URLs exactly',
 });
 
 
-test('all eleven letter types are available through settings and accepted as unnumbered drafts',async()=>{
+test('all thirteen letter types are available through settings and accepted as unnumbered drafts',async()=>{
  const {env,db}=await setup();const settings=await (await call(env,'/settings')).json();
- assert.equal(settings.types.length,11);assert.deepEqual(settings.types,letterTypes);
+ assert.equal(settings.types.length,13);assert.deepEqual(settings.types,letterTypes);
  for(const type of letterTypes){const r=await create(env,'r',{...sample,kind:type.code});assert.equal(r.data.kind,type.code);assert.equal(r.sequence,null);}
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_annual WHERE sequence IS NOT NULL').get().n,0);
  assert.equal((await call(env,'','r','POST',{...sample,kind:'UNKNOWN'})).status,400);
@@ -189,4 +189,17 @@ test('an old plain-text client cannot silently flatten a rich draft',async()=>{
  const {env}=await setup();const r=await create(env,'r',{...sample,bodyFormat:'rich-v1',bodyDoc:{version:1,blocks:[{...para('Rich draft'),runs:[{text:'Rich draft',bold:true}]}]}});
  assert.equal((await call(env,'/'+r.id,'r','PUT',{...sample,body:'Flattened by old UI',version:r.version})).status,409);
  const actual=await (await call(env,'/'+r.id,'r')).json();assert.equal(actual.version,r.version);assert.equal(actual.data.bodyDoc.blocks[0].runs[0].bold,true);
+});
+
+
+test('approved unnumbered letter can return to draft to correct PKS and BAST classification',async()=>{
+ const {env}=await setup();await historical(env,65);
+ for(const kind of ['PKS','BAST']){
+  let r=await approve(env,await create(env,'r',{...sample,kind:'UM'}));
+  assert.equal((await call(env,'/'+r.id+'/return','r','POST',{version:r.version})).status,403);
+  r=await action(env,r,'return');assert.equal(r.status,'draft');assert.equal(r.number,null);
+  const saved=await call(env,'/'+r.id,'r','PUT',{...sample,kind,version:r.version});assert.equal(saved.status,200);r=await saved.json();
+  r=await action(env,await approve(env,r),'issue');assert.match(r.number,new RegExp('/YG/'+kind+'/'));
+  assert.equal((await call(env,'/'+r.id+'/return','m','POST',{version:r.version})).status,409);
+ }
 });
