@@ -118,7 +118,7 @@ async function handleLetters(req,e,url,u,{payload}){
   await q(e,'INSERT OR IGNORE INTO surat_renditions VALUES(?,?,?,?,?,?)',id,layoutFor(issued),issued.docx_key,issued.pdf_key,u.id,now()).run();
   return json(await row(e,id,u));
  }
- const transitions={submit:['draft','review'],approve:['review','approved'],return:['review','draft'],cancel:[r.status,'cancelled']};const t=transitions[a];
+ const transitions={submit:['draft','review'],approve:['review','approved'],return:[r.status==='approved'?'approved':'review','draft'],cancel:[r.status,'cancelled']};const t=transitions[a];
  if(!t||r.status!==t[0]||r.status==='cancelled'||(r.number&&a!=='cancel'))fail(409,'Perubahan status tidak diizinkan.');if(['approve','return','cancel'].includes(a)&&!director)fail(403,'Hanya Direktur.');
  return json(await change(e,r,u,a,'UPDATE surat_annual SET status=?,approved_by=?,version=version+1,updated_at=? WHERE id=? AND version=? AND status=?',[t[1],a==='approve'?u.id:r.approved_by,now(),id,r.version,r.status]));
 }
