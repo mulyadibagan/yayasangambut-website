@@ -6,7 +6,7 @@ import {layoutFor,statementData,STATEMENT_LAYOUT} from './letters-statement.mjs'
 import {letterDrive} from './letters-drive.mjs';
 import {letterTypes,isLetterKind} from './letters-types.mjs';
 import {activateNumbering,numberingState} from './letters-numbering.mjs';
-const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org']);
+const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org','utara@yayasangambut.org']);
 export const letterAccess=u=>!!u&&!u.disabled&&accounts.has(u.email);
 export const letterDirector=u=>letterAccess(u)&&u.email==='mulyadi@yayasangambut.org'&&u.role==='admin';
 const q=(e,s,...a)=>e.DB.prepare(s).bind(...a);
@@ -32,7 +32,7 @@ async function withArchives(e,records){
 async function change(e,r,u,action,sql,args){const result=await e.DB.batch([q(e,sql,...args),q(e,'INSERT INTO surat_annual_history SELECT ?,id,?,?,version,? FROM surat_annual WHERE id=? AND version=? AND changes()>0',crypto.randomUUID(),u.id,action,now(),r.id,r.version+1)]);if(!result[0].meta.changes)fail(409,'Surat telah berubah. Muat ulang.');return row(e,r.id,u);}
 export async function lettersApi(...args){try{return await handleLetters(...args);}catch(e){if(/UNIQUE constraint failed/.test(String(e?.message)))fail(409,'Nomor atau reservasi sudah tercatat. Muat ulang register.');throw e;}}
 async function handleLetters(req,e,url,u,{payload}){
- if(!letterAccess(u))fail(403,'Administrasi surat hanya untuk empat akun berwenang.');
+ if(!letterAccess(u))fail(403,'Administrasi surat hanya untuk akun berwenang.');
  const p=url.pathname,m=req.method,director=letterDirector(u);
  if(p==='/api/surat/settings'&&m==='GET')return json({...(await q(e,'SELECT * FROM surat_settings WHERE id=1').first()),numbering:await numberingState(e,Number(new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'}).slice(0,4))),director,types:letterTypes,templates:letterTemplates.map(({id,name})=>({id,name})),references:(await q(e,'SELECT * FROM surat_references').all()).results});
  if(p==='/api/surat/numbering/start'&&m==='POST'){if(!director)fail(403,'Hanya Direktur dapat menetapkan titik awal.');return json(await activateNumbering(e,u,await payload(req)));}
