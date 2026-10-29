@@ -5,6 +5,7 @@ import {letterDocuments,registerXlsx,SIGNATURE_KEY} from './letters-documents.mj
 import {layoutFor,statementData,STATEMENT_LAYOUT} from './letters-statement.mjs';
 import {letterDrive} from './letters-drive.mjs';
 import {letterTypes,isLetterKind} from './letters-types.mjs';
+import {correctLetterNumber} from './letters-correction.mjs';
 import {activateNumbering,numberingState} from './letters-numbering.mjs';
 const accounts=new Set(['mulyadi@yayasangambut.org','rienaprasiddha@yayasangambut.org','zamharier@yayasangambut.org','rajaalpian@yayasangambut.org','utara@yayasangambut.org']);
 export const letterAccess=u=>!!u&&!u.disabled&&accounts.has(u.email);
@@ -63,7 +64,7 @@ async function handleLetters(req,e,url,u,{payload}){
  if(p==='/api/surat'&&m==='POST'){
   const data=letterInput(await payload(req)),id=crypto.randomUUID(),t=now();await e.DB.batch([q(e,'INSERT INTO surat_annual(id,owner,data,number_year,created_at,updated_at) VALUES(?,?,?,?,?,?)',id,u.id,JSON.stringify(data),Number(data.date.slice(0,4)),t,t),history(e,id,u,'create',1)]);return Response.json(await row(e,id,u),{status:201});
  }
- const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise|drive|format))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
+ const match=p.match(/^\/api\/surat\/([a-f0-9-]+)(?:\/(submit|approve|return|cancel|issue|history|docx|pdf|reserve-rapp|revise|drive|format|renumber))?$/);if(!match)fail(404,'Rute surat tidak ditemukan.');
  const [,id,a]=match,r=await row(e,id,u);
  if(m==='GET'&&!a)return json(r);
  if(m==='GET'&&a==='history')return json((await q(e,'SELECT * FROM surat_annual_history WHERE surat_id=? ORDER BY created_at,id',id).all()).results);
@@ -72,6 +73,7 @@ async function handleLetters(req,e,url,u,{payload}){
   const docs=await documents(e,r);return download(docs[a],'DRAFT_'+id+'.'+a,mime(a));
  }
  if(!['POST','PUT'].includes(m))fail(405,'Metode tidak didukung.');const b=await payload(req);if(b.version!==r.version)fail(409,'Versi surat telah berubah.');
+ if(a==='renumber'){if(!director)fail(403,'Hanya Direktur dapat mengoreksi penomoran.');const corrected=await correctLetterNumber(e,u,r,b,documents);return json(await row(e,corrected.id,u));}
  if(a==='format'){
   if(!director)fail(403,'Hanya Direktur dapat memperbarui format arsip.');
   if(r.status!=='issued')fail(409,'Hanya arsip surat terbit dapat diperbarui formatnya.');

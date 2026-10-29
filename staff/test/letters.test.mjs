@@ -10,7 +10,7 @@ import {letterInput} from '../src/letters.mjs';
 import {letterDocuments,bankField} from '../src/letters-documents.mjs';
 const origin='https://staff.yayasangambut.org';
 const sample={date:'2026-10-21',kind:'SKR',subject:'Surat Keterangan Rekening Bank',recipient:'',institution:'PT Riau Andalan Pulp and Paper',address:'',body:'Yayasan Gambut menerangkan rekening bank organisasi berikut.\nPemilik: Yayasan Gambut\nBank: Bank Mandiri\nCabang: KCP Tangerang Bintaro\nNomor rekening: 1640003188440\nAlamat cabang: Jl. Jend. Sudirman A1-03, Tangerang Selatan\nDemikian keterangan ini disampaikan.',attachments:'',signer:'Mulyadi, Direktur Yayasan Gambut',notes:''};
-async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0030_letters.sql','0031_letters_annual.sql','0032_letters_layout.sql','0033_letters_renditions.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0030_letters.sql','0031_letters_annual.sql','0032_letters_layout.sql','0033_letters_renditions.sql','0034_letters_number_correction.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  let queue=Promise.resolve();const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};}};},async batch(stmts){const execute=async()=>{db.exec('BEGIN');try{const out=[];for(const s of stmts)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}};const result=queue.then(execute);queue=result.catch(()=>{});return result;}};
  const files=new Map(),logo=readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url)),env={APP_ORIGIN:origin,GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',ADMIN_EMAIL:'mulyadi@yayasangambut.org',DB,ASSETS:{fetch:async req=>new Response(req.url.endsWith('surat-letterhead.png')?readFileSync(new URL('../public/brand/surat-letterhead.png',import.meta.url)):logo)},MEDIA:{async put(k,b){files.set(k,b);},async get(k){const b=k==='surat-assets/ttd-yayasan-gambut.png'?logo:files.get(k);return b?{body:b,arrayBuffer:async()=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength)}:null;}}};
  for(const [id,email,role] of [['m','mulyadi','admin'],['r','rienaprasiddha','staff'],['z','zamharier','editor'],['a','rajaalpian','staff'],['n','utara','staff'],['x','other','admin']]){await DB.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').bind(id,email+'@yayasangambut.org',id,role,'2026-10-21','2026-10-21').run();await DB.prepare('INSERT INTO sessions VALUES(?,?,?)').bind(await sha(id),id,Date.now()+600000).run();}return {db,env,files};}
@@ -214,4 +214,34 @@ test('Ainul can draft and submit own letters but cannot approve, issue, or read 
  assert.equal((await worker.fetch(request('/surat','n'),env)).status,200);
  db.exec("UPDATE users SET disabled=1 WHERE id='n'");
  assert.equal((await call(env,'','n','POST',sample)).status,401);
+});
+
+
+test('Director corrects 70 to 68, preserves old files and snapshots, releases cancelled tail and next is 69',async()=>{
+ const {env,db,files}=await setup();await historical(env,65);
+ for(let n=66;n<=69;n++){let old=await action(env,await approve(env,await create(env)),'issue');assert.equal(old.sequence,n);if(n>=68)await action(env,old,'cancel');}
+ let r=await action(env,await approve(env,await create(env,'r',{...sample,kind:'PKS'})),'issue');assert.equal(r.sequence,70);
+ const original=files.get(r.pdf_key),oldKey=r.pdf_key;
+ assert.equal((await call(env,'/'+r.id+'/renumber','r','POST',{version:r.version,sequence:68,reason:'Koreksi urutan sesuai instruksi Direktur.',confirmCorrection:true})).status,403);
+ const result=await call(env,'/'+r.id+'/renumber','m','POST',{version:r.version,sequence:68,reason:'Koreksi urutan sesuai instruksi Direktur.',confirmCorrection:true});assert.equal(result.status,200,await result.clone().text());r=await result.json();
+ assert.equal(r.number,'68/YG/PKS/X/2026');assert.equal(r.status,'issued');assert.equal(r.data.kind,'PKS');assert.deepEqual(files.get(oldKey),original);assert.notEqual(r.pdf_key,oldKey);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_number_corrections WHERE completed=1').get().n,3);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual WHERE status='cancelled' AND sequence IS NULL").get().n,2);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual WHERE sequence IN (66,67) AND status='issued'").get().n,2);
+ assert(Buffer.from(files.get(r.docx_key)).toString().includes('68/YG/PKS/X/2026'));
+ const next=await action(env,await approve(env,await create(env,'r',{...sample,kind:'BAST'})),'issue');assert.equal(next.number,'69/YG/BAST/X/2026');
+ assert.throws(()=>db.prepare('UPDATE surat_annual SET number=? WHERE id=?').run('9/YG/PKS/X/2026',r.id));
+ assert.throws(()=>db.prepare("UPDATE surat_number_corrections SET reason='changed'").run());
+ assert.throws(()=>db.prepare('DELETE FROM surat_number_corrections').run());
+});
+
+test('number correction rejects live or historical collisions and leaves register unchanged on archive failure',async()=>{
+ const {env,db}=await setup();await historical(env,65);const one=await action(env,await approve(env,await create(env)),'issue');let two=await action(env,await approve(env,await create(env)),'issue');
+ const input={version:two.version,sequence:66,reason:'Koreksi nomor sesuai instruksi Direktur.',confirmCorrection:true};
+ assert.equal((await call(env,'/'+two.id+'/renumber','m','POST',input)).status,409);
+ assert.equal((await call(env,'/'+two.id+'/renumber','m','POST',{...input,sequence:65})).status,409);
+ await action(env,one,'cancel');const put=env.MEDIA.put;env.MEDIA.put=async()=>{throw Error('Archive unavailable');};
+ assert.equal((await call(env,'/'+two.id+'/renumber','m','POST',input)).status,500);env.MEDIA.put=put;
+ assert.equal(db.prepare('SELECT number FROM surat_annual WHERE id=?').get(two.id).number,two.number);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_number_corrections').get().n,0);
 });
