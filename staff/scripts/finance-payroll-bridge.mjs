@@ -1,3 +1,4 @@
+import {applyAdditionalSalaryList} from './finance-salary-list.mjs';
 import {staffNames} from '../src/payroll-identity.mjs';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
@@ -35,6 +36,7 @@ export async function applyPayrollBridge(root,referenceProfiles){
  if(!labelPattern.test(salary))throw Error('Team salary name display anchor missing.');
  const displayNames='const fullStaffNames: Record<string,string> = '+JSON.stringify(staffNames)+';\nconst staffLabel = (name: string) => fullStaffNames[name] || name;';
  await writeFile(resolve(root,'app/salary-balance-enhancer.tsx'),salary.replace(labelPattern,()=>displayNames));
+ await applyAdditionalSalaryList(root);
  await mkdir(resolve(root,'app/api/payroll-source'),{recursive:true});
  await writeFile(resolve(root,'app/api/payroll-source/route.ts'),`import policy from '../../payroll-policy.json';
 import profiles from '../../payroll-profiles.json';
