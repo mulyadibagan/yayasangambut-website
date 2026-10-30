@@ -1,4 +1,5 @@
 import {cbaRoute} from './kups-cba.mjs';
+import {activitiesRoute} from './kups-activities.mjs';
 import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
 import {saveClosingReconciliation} from './kups-reconciliation.mjs';
 import {balancesAt,entireReport} from './kups-reporting.mjs';
@@ -52,6 +53,7 @@ export async function finance(req,env,url){
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
+ if(path.startsWith('/activities'))return await activitiesRoute(req,env,url,{path,method,q,g,u,access,json,body});
  if(path.startsWith('/cba'))return await cbaRoute(req,env,url,{path,method,q,g,u,group,access,json,body,requireAdmin,write,audit});
  if(path==='/balances'&&method==='GET'){
   const date=url.searchParams.get('date'),exclude=url.searchParams.get('exclude')||'';
@@ -124,4 +126,5 @@ export async function finance(req,env,url){
  return json({error},conflict?409:e.status||500);
  }
 }
+
 
