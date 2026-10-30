@@ -1,3 +1,4 @@
+import {staffTerms,applyStaffTerms} from './payroll-staff.mjs';
 import {canonicalStaffName,displayStaffName,staffDescription} from './payroll-identity.mjs';
 import {fail} from './core.mjs';
 export const staffKey=name=>'staff:'+canonicalStaffName(name).toLowerCase().replace(/\s+/g,'-');
@@ -9,14 +10,14 @@ export function dateKey(value){
 }
 export function validDate(value){if(typeof value!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(value)||Number.isNaN(Date.parse(value))||new Date(value).toISOString().slice(0,10)!==value)fail(400,'Tanggal tidak valid.');return value;}
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
-export async function payrollSource(env,u){
+export async function payrollSource(env,u,period=today().slice(0,7)){
  if(!env.FINANCE)fail(503,'Sumber alokasi gaji belum tersambung.');
  const r=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+'/finance/api/payroll-source',{headers:{'x-yg-finance-user':u.email,'oai-authenticated-user-email':u.email,'oai-authenticated-user-id':u.id}}));
  if(!r.ok)fail(503,'Data alokasi gaji belum dapat dimuat. Coba kembali.');const data=await r.json();
- if(!data.policy||!Array.isArray(data.rows)||!Array.isArray(data.entries)||!data.bank?.account||!Number.isFinite(data.bank.closing)||!data.asOf)fail(503,'Sumber alokasi gaji belum lengkap.');return data;
+ if(!data.policy||!Array.isArray(data.rows)||!Array.isArray(data.entries)||!data.bank?.account||!Number.isFinite(data.bank.closing)||!data.asOf)fail(503,'Sumber alokasi gaji belum lengkap.');return applyStaffTerms(data,await staffTerms(env),period);
 }
 function baseStaff(source){
- const result=new Map();for(const [name,p] of Object.entries(source.policy))result.set(staffKey(name),{id:staffKey(name),name:displayStaffName(name),active:p.active,monthlySalary:p.monthlySalary,opening:0,allocation:0,paid:0,usage:0,position:0,sources:[]});
+ const result=new Map();for(const [name,p] of Object.entries(source.policy))result.set(staffKey(name),{id:staffKey(name),name:displayStaffName(name),active:p.active,monthlySalary:p.monthlySalary,effectiveMonth:p.effectiveMonth,fundingSource:p.fundingSource,fundingStatus:p.fundingStatus,notes:p.notes,opening:0,allocation:0,paid:0,usage:0,position:0,sources:[]});
  const sourceYear=Number(source.asOf.slice(0,4));
  for(const r of source.rows){if(Number(r.year)!==sourceYear||dateKey(r.expenseDate)>source.asOf)continue;const id=staffKey(r.staff),s=result.get(id)||{id,name:displayStaffName(r.staff),active:false,monthlySalary:null,opening:0,allocation:0,paid:0,usage:0,position:0,sources:[]};s.opening+=Number(r.carryForward||0);s.allocation+=Number(r.claimAmount||0);s.paid+=Number(r.paidAmount||0);s.usage+=Number(r.usageAmount||0);if(r.claimAmount||r.carryForward)s.sources.push({id:r.savingId,program:r.project,amount:Number(r.claimAmount||r.carryForward),url:r.sourceUrl||''});result.set(id,s);}
  for(const r of result.values())r.position=r.opening+r.allocation-r.paid-r.usage;return result;
@@ -60,11 +61,11 @@ export async function payrollReport(env,u,source){
 }
 export async function payrollDefaults(env,u,period){
  if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period||''))fail(400,'Periode gaji tidak valid.');
- const source=await payrollSource(env,u),report=await payrollReport(env,u,source);
+ const source=await payrollSource(env,u,period),report=await payrollReport(env,u,source);
  const previous=(await q(env,'SELECT items FROM yg_payroll_requests WHERE cancelled_at IS NULL ORDER BY created_at DESC LIMIT 100').all()).results,known=new Map();
  for(const r of previous)for(const item of JSON.parse(r.items)){const id=item.staff_id||staffKey(item.name);if(!known.has(id))known.set(id,item);}
  const items=report.staff.filter(s=>s.active&&Number.isSafeInteger(s.monthlySalary)&&s.monthlySalary>0).map(s=>{
-  const profile=source.profiles?.profiles?.[canonicalStaffName(s.name)]||{},old={...profile,...(known.get(s.id)||{})};return {staff_id:s.id,name:s.name,program:'Saving gaji',budget_code:old.budget_code||'',description:staffDescription(old.description,s.name),bank:old.bank||profile.bank||'',account:old.account||profile.account||'',account_name:old.account_name||profile.account_name||s.name,remarks:old.remarks||'',base:s.monthlySalary,allowance:0,deduction:0,net:s.monthlySalary,allocation_snapshot:{asOf:source.asOf,position:s.position,monthlySalary:s.monthlySalary,source_ids:s.sources.map(x=>x.id)}};
+  const profile=source.profiles?.profiles?.[canonicalStaffName(s.name)]||{},old={...profile,...(known.get(s.id)||{})};return {staff_id:s.id,name:s.name,program:s.fundingSource||'Saving gaji',budget_code:old.budget_code||'',description:staffDescription(old.description,s.name),bank:old.bank||profile.bank||'',account:old.account||profile.account||'',account_name:old.account_name||profile.account_name||s.name,remarks:old.remarks||'',base:s.monthlySalary,allowance:0,deduction:0,net:s.monthlySalary,allocation_snapshot:{asOf:source.asOf,position:s.position,monthlySalary:s.monthlySalary,source_ids:s.sources.map(x=>x.id)}};
  });
  if(!items.length)fail(503,'Kebijakan gaji staf aktif belum tersedia.');
  return {items,sourceAsOf:source.asOf,sourceMode:source.mode,sourceUrl:source.sourceUrl,bankAccount:source.bank.account,form_meta:{date:today(),applicant:displayStaffName(source.profiles?.applicant||u.name),title:source.profiles?.title||'Bendahara/Tenaga Teknis',purpose:'Pembayaran Gaji Pengurus YG '+new Date(period+'-01T12:00:00+07:00').toLocaleDateString('id-ID',{month:'long',year:'numeric',timeZone:'Asia/Jakarta'}),place:source.profiles?.place||'Tangerang Selatan',number:'',allocation_as_of:source.asOf,adjustment_note:''},warnings:period<source.asOf.slice(0,7)?['Periode lebih lama dari kebijakan saat ini. Periksa nominal sebelum diajukan.']:[]};

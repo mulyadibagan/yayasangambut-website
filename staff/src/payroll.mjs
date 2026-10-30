@@ -1,3 +1,4 @@
+import {staffTerms,saveStaffTerm,staffTermsPage} from './payroll-staff.mjs';
 import {documentSignature,signatureDataUrl} from './document-signature.mjs';
 import {savePayrollPdf,pdfHash} from './payroll-pdf.mjs';
 import {payrollReviewPage} from './payroll-review.mjs';
@@ -39,7 +40,7 @@ async function detail(env,id){const notification=await payrollNotificationStatus
 async function formMeta(env,u,input,data,id,old={}){
  if(!input)return old;
  const meta={number:text(input.number||old.number||'GJ-'+id.slice(0,8).toUpperCase()+'/YG-Bnd/'+data.period.slice(5)+'/'+data.period.slice(0,4),100,true),date:validDate(input.date),applicant:text(input.applicant,160,true),title:text(input.title,160,true),purpose:text(input.purpose,500,true),place:text(input.place||'',160),adjustment_note:text(input.adjustment_note||'',2000)};
- const source=await payrollSource(env,u);meta.allocation_as_of=source.asOf;meta.policy_snapshot={};const report=await payrollReport(env,u,source);
+ const source=await payrollSource(env,u,data.period);meta.allocation_as_of=source.asOf;meta.policy_snapshot={};const report=await payrollReport(env,u,source);
  for(const i of data.items){const policy=source.policy[canonicalStaffName(i.name)];if(!policy?.active||!Number.isSafeInteger(policy.monthlySalary))fail(400,'Penerima harus sesuai daftar staf aktif pada alokasi gaji. Muat ulang sumber alokasi.');meta.policy_snapshot[i.staff_id]={monthlySalary:policy.monthlySalary};const allocation=report.staff.find(s=>s.id===i.staff_id);i.allocation_snapshot={asOf:source.asOf,monthlySalary:policy.monthlySalary,position:allocation?.position??null,source_ids:allocation?.sources.map(s=>s.id)||[]};if(i.net!==policy.monthlySalary&&!meta.adjustment_note)fail(400,'Isi alasan penyesuaian jika nominal berbeda dari kebijakan gaji.');}
  return meta;
 }
@@ -58,6 +59,9 @@ export async function payrollRoute(req,env,u,ctx){
  }
  if(path==='/finance/payroll/guide'&&req.method==='GET')return new Response(payrollGuide(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  const prefix='/finance/payroll/api';
+ if(path==='/finance/payroll/staff'&&req.method==='GET')return new Response(staffTermsPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
+ if(path===prefix+'/staff-terms'&&req.method==='GET')return Response.json({director:financeOwner(u),rows:await staffTerms(env)});
+ if(path===prefix+'/staff-terms'&&req.method==='POST'){if(!financeOwner(u))fail(403,'Hanya Direktur dapat menetapkan data gaji.');return Response.json(await saveStaffTerm(env,u,await input(req)),{status:201});}
  if(path===prefix+'/email-service'&&req.method==='GET')return Response.json(await payrollEmailService(env));
  if(path==='/finance/payroll/report'&&req.method==='GET')return new Response(payrollReportPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix+'/defaults'&&req.method==='GET')return Response.json(await payrollDefaults(env,u,url.searchParams.get('period')));
