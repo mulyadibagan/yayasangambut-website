@@ -11,11 +11,29 @@ function fixture(){
  db.exec(readFileSync(new URL('../migrations/0005_webgis_sso.sql',import.meta.url),'utf8'));db.exec(readFileSync(new URL('../migrations/0006_kups_finance.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/0007_kups_accounts_documents.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/0029_kups_closing_reconciliation.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/0038_kups_harvest_sales.sql',import.meta.url),'utf8'));
  db.exec("INSERT INTO webgis_access VALUES('member@gmail.com','kups-finance',0)");
  const adapter={prepare(sql){let args=[];const wrapper={bind(...v){args=v;return wrapper;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};return wrapper;},async batch(statements){db.exec('BEGIN');try{const result=[];for(const s of statements)result.push(await s.run());db.exec('COMMIT');return result;}catch(e){db.exec('ROLLBACK');throw e;}}};return {db,env:{DB:adapter}};
 }
 async function auth(f,user='u'){const raw='yg-google-'+user;await f.env.DB.prepare('INSERT INTO webgis_sessions VALUES(?,?,?,?,?)').bind(await sha(raw),user,user==='u'?'webgis-staff':'kups-finance',user==='u'?'admin':'kups',Date.now()+100000).run();return raw;}
 const tx=(extra={})=>({date:'2026-08-10',kind:'income',category:extra.kind==='expense'?'Biaya lainnya':'Penjualan nanas',description:'Nanas',amount:10000,...extra});
+test('harvest sales and partial payments share the ledger and reject retries and duplicate references',async()=>{
+ const f=fixture(),raw=await auth(f);await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:100000,version:1});
+ const d={request_id:crypto.randomUUID(),date:'2026-10-31',kind:'income',category:'Penjualan nanas',description:'Nota panen',counterparty:'Pembeli uji',total_amount:20000,amount:0,quantity:10,unit:'buah',unit_price:2000,activity:'DAYUN-HARVEST:2026-10-30:bagus',source_ref:'DAYUN-SALE:TEST-001'};
+ const created=await call(f,raw,'/documents','POST',d);assert.equal(created.status,201);
+ assert.equal((await call(f,raw,'/documents','POST',d)).data.reused,true);
+ assert.equal((await call(f,raw,'/documents','POST',{...d,request_id:crypto.randomUUID()})).status,409);
+ assert.equal((await call(f,raw,'/ledger?month=2026-10')).data.summary.income,0);
+ const pay={request_id:crypto.randomUUID(),date:'2026-10-31',amount:5000,account:'cash',source_ref:'DAYUN-PAY:TEST-001',evidence_id:''},path='/documents/'+created.data.id+'/payment';
+ assert.equal((await call(f,raw,path,'POST',pay)).status,201);
+ assert.equal((await call(f,raw,path,'POST',pay)).data.reused,true);
+ assert.equal((await call(f,raw,path,'POST',{...pay,request_id:crypto.randomUUID()})).status,409);
+ assert.equal((await call(f,raw,path,'POST',{...pay,request_id:crypto.randomUUID(),source_ref:'DAYUN-PAY:TEST-002',account:'bank',amount:15000})).status,201);
+ assert.equal((await call(f,raw,path,'POST',{...pay,request_id:crypto.randomUUID(),source_ref:'DAYUN-PAY:TEST-003',amount:1})).status,409);
+ const report=(await call(f,raw,'/report')).data;assert.equal(report.documents.length,1);assert.equal(report.rows.length,2);assert.equal(report.summary.income,20000);
+ const ledger=(await call(f,raw,'/ledger?month=2026-10')).data;assert.equal(ledger.accounts.find(a=>a.id==='cash').income,5000);assert.equal(ledger.accounts.find(a=>a.id==='bank').income,15000);assert.equal(ledger.outstanding.receivable,0);
+ assert.equal((await call(f,raw,'/documents','POST',{...d,source_ref:'DAYUN-SALE:TEST-004',request_id:crypto.randomUUID(),quantity:11})).status,400);
+});
 async function call(f,raw,path,method='GET',b){const url=new URL('https://staff.yayasangambut.org/api/kups'+path);url.searchParams.set('group',g);const req=new Request(url,{method,headers:{Origin:'https://webgisyg.id',Authorization:'Bearer '+raw,'Content-Type':'application/json'},...(b?{body:JSON.stringify(b)}:{})});const r=await finance(req,f.env,url);return {status:r.status,data:await r.json()};}
 
 test('closing reconciliation preserves openings, transactions, account mapping and open periods',async()=>{
