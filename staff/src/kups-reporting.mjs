@@ -17,5 +17,6 @@ export async function entireReport(env,q,g){
  const rows=(await q(env,'SELECT * FROM kups_transactions WHERE group_id=? AND deleted_at IS NULL ORDER BY date,created_at,id',g).all()).results;
  const transfers=(await q(env,'SELECT * FROM kups_transfers WHERE group_id=? AND deleted_at IS NULL ORDER BY date,created_at,id',g).all()).results;
  const summary={income:0,expense:0};for(const r of rows)summary[r.kind]+=r.amount;
- return {rows,transfers,summary};
+ const documents=(await q(env,'SELECT * FROM kups_documents WHERE group_id=? AND deleted_at IS NULL ORDER BY date,created_at,id',g).all()).results;
+ return {rows,transfers,summary,documents};
 }

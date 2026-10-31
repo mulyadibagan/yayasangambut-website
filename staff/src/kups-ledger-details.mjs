@@ -1,3 +1,4 @@
+import {validateHarvestSale,validateHarvestPayment} from './kups-harvest-validation.mjs';
 import {fail,now,sha} from './core.mjs';
 export const categories={income:['Penjualan nanas','Penjualan hortikultura','Penjualan produk olahan','Modal / dukungan','Pemasukan lainnya'],expense:['Bibit & bahan budidaya','Pupuk & Ethrel','Upah','Transportasi & BBM','Alat & pemeliharaan','Biaya lainnya']};
 const text=(v,max)=>{if(typeof v!=='string'||v.length>max)fail(400,'Isi teks yang valid.');return v.trim();};
@@ -13,9 +14,9 @@ export function validateDocument(b){
  if((p.category.startsWith('Penjualan ')||p.category==='Upah')&&p.unit_price!==null&&p.unit_price<=0)fail(400,'Harga atau tarif harus lebih dari nol jika diisi.');
  if(p.category==='Penjualan nanas'&&p.unit&&!['buah','kg'].includes(p.unit))fail(400,'Satuan penjualan nanas harus buah atau kg.');
  if(p.category==='Upah'&&p.unit&&p.unit!=='hari')fail(400,'Satuan upah harus hari jika rincian diisi.');
- return p;
+ validateHarvestSale(p);return p;
 }
-function payment(b,d){const p={date:b.date,amount:amount(b.amount),account:account(b.account),evidence_id:text(b.evidence_id||'',80),source_ref:text(b.source_ref||'',120)};if(!date(p.date)||p.date<d.date)fail(400,'Tanggal pembayaran tidak boleh mendahului transaksi.');return p;}
+function payment(b,d){const p={date:b.date,amount:amount(b.amount),account:account(b.account),evidence_id:text(b.evidence_id||'',80),source_ref:text(b.source_ref||'',120)};validateHarvestPayment(d,p);if(!date(p.date)||p.date<d.date)fail(400,'Tanggal pembayaran tidak boleh mendahului transaksi.');return p;}
 const paymentStatement=(env,q,u,g,d,p,id)=>q(env,'INSERT INTO kups_transactions(id,group_id,date,kind,category,description,amount,quantity,unit,unit_price,object_id,evidence_id,source_ref,created_by,updated_by,created_at,updated_at,account,counterparty,document_id,product,activity) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,g,p.date,d.kind,d.category,d.description,p.amount,null,'',null,d.object_id,p.evidence_id,p.source_ref,u.email,u.email,now(),now(),p.account,d.counterparty,d.id,d.product,d.activity);
 export async function detailsRoute(req,env,url,c){
  const {u,g,group,write,requireAdmin,json,body,q,audit,verifyEvidence}=c,path=url.pathname.replace('/api/kups',''),method=req.method;
