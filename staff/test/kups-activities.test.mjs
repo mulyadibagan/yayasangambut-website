@@ -52,3 +52,12 @@ test('attendance confirmation migration refuses a changed or mismatched roster',
  assert.equal(f.db.prepare("SELECT version FROM kups_activities WHERE id='dayun-sensus-20261031'").get().version,2);
  assert.equal(f.db.prepare("SELECT count(*) AS n FROM kups_activity_audit").get().n,0);
 });
+
+test('30 October harvest records only the confirmed attendee and never duplicates on retry',()=>{
+ const f=fixture(),sql=readFileSync(new URL('../migrations/0039_dayun_panen_30_attendance.sql',import.meta.url),'utf8');
+ f.db.exec(sql);f.db.exec(sql);
+ const rows=f.db.prepare("SELECT * FROM kups_activities WHERE id='dayun-panen-20261030'").all();
+ assert.equal(rows.length,1);const p=JSON.parse(rows[0].payload);
+ assert.equal(p.participants.length,1);assert.equal(p.participants[0].name,'Yurmayenti');assert.equal(p.participants[0].status,'present');
+ assert.equal(f.db.prepare("SELECT count(*) AS n FROM kups_activity_audit WHERE target='dayun-panen-20261030'").get().n,1);
+});
