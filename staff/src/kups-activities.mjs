@@ -24,6 +24,16 @@ function publicRecord(row,u,manage){
  const p=JSON.parse(row.payload);
  return {id:row.id,version:row.version,...p,source_ref:row.source_ref,updated_at:row.updated_at,participants:p.participants.map(r=>({...r,email:manage||r.email===u.email?r.email:'',self:r.email===u.email}))};
 }
+// Public access is limited to the Dayun agenda and never exposes participant emails or private notes.
+export async function publicActivities(req,env,url,{q,json}){
+ if(req.method!=='GET'||url.pathname!=='/api/kups/activities'||url.searchParams.get('group')!=='dayun-rimba-sejahtera')return null;
+ const rows=(await q(env,'SELECT * FROM kups_activities WHERE group_id=? ORDER BY event_date DESC,id','dayun-rimba-sejahtera').all()).results;
+ return json({public:true,user:null,canManage:false,events:rows.map(row=>{
+  const p=JSON.parse(row.payload);
+  return {id:row.id,version:row.version,title:p.title,date:p.date,time:p.time,kind:p.kind,location:p.location,notes:p.notes,result:p.result,source_ref:row.source_ref,updated_at:row.updated_at,participants:p.participants.map(r=>({name:r.name,status:r.status}))};
+ })});
+}
+
 export async function activitiesRoute(req,env,url,c){
  const {path,method,q,g,u,access,json,body}=c;
  if(!path.startsWith('/activities'))return null;

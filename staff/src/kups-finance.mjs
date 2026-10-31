@@ -1,5 +1,5 @@
 import {cbaRoute} from './kups-cba.mjs';
-import {activitiesRoute} from './kups-activities.mjs';
+import {activitiesRoute,publicActivities} from './kups-activities.mjs';
 import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
 import {saveClosingReconciliation} from './kups-reconciliation.mjs';
 import {balancesAt,entireReport} from './kups-reporting.mjs';
@@ -42,6 +42,7 @@ export async function finance(req,env,url){
  if(req.headers.get('Origin')!==origin)return json({error:'Alamat aplikasi tidak diizinkan.'},403);
  try{
  const raw=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
+ if(!raw){const publicResponse=await publicActivities(req,env,url,{q,json});if(publicResponse)return publicResponse;}
  const u=await validateWebgisSession(env,raw);if(!u)fail(401,'Silakan masuk dengan Google.');
  if(!['webgis-staff','kups-finance'].includes(u.scope))fail(403,'Akses tidak diizinkan.');
  const path=url.pathname.replace('/api/kups',''),method=req.method;
