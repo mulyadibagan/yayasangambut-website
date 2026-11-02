@@ -12,7 +12,7 @@ const origin='https://staff.yayasangambut.org',path='/finance/payroll/api';
 const sample={period:'2026-10',notes:'Contoh pengujian, bukan gaji nyata.',items:[{name:'Penerima uji',program:'Program uji',bank:'Bank uji',account:'001234',base:5000000,allowance:500000,deduction:100000}]};
 async function setup(){
  const db=new DatabaseSync(':memory:');
- for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql','0024_payroll_documents_cancellation.sql','0037_payroll_staff_terms.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql','0024_payroll_documents_cancellation.sql','0037_payroll_staff_terms.sql','0040_payroll_staff_funding_amendments.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',PAYROLL_FINANCE_EMAIL:'rienaprasiddha@yayasangambut.org'};
  for(const [id,email,role] of [['finance',env.PAYROLL_FINANCE_EMAIL,'staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-19','2026-10-19');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+60000);}
@@ -251,4 +251,20 @@ test('Director records future recurring salary terms privately without changing 
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_requests').get().n,0);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_payments').get().n,0);
  assert.throws(()=>db.prepare('DELETE FROM yg_payroll_staff_terms').run());
  await call(env,'/staff-terms','director','POST',{...term,name:'Invalid',monthlySalary:-1},400);
+});
+
+test('funding amendments preserve salary history and affect future defaults without changing cash',async()=>{
+ const {env,db}=await setup();bindSource(env);
+ const term={name:'Funding test',monthlySalary:3000000,effectiveMonth:'2026-11',fundingSource:'Unspecified'};
+ await call(env,'/staff-terms','director','POST',term,201);
+ const original=db.prepare('SELECT * FROM yg_payroll_staff_terms').get();
+ db.prepare('INSERT INTO yg_payroll_staff_funding_amendments(term_id,funding_source,reason,actor,created_at) VALUES(?,?,?,?,?)').run(original.id,'Program A','Confirmed funding','director','2026-11-02');
+ db.prepare('INSERT INTO yg_payroll_staff_funding_amendments(term_id,funding_source,reason,actor,created_at) VALUES(?,?,?,?,?)').run(original.id,'Program B','Corrected funding','director','2026-11-02');
+ const list=await call(env,'/staff-terms','finance');assert.equal(list.rows[0].funding_source,'Program B');
+ const nov=await call(env,'/defaults?period=2026-11','finance');assert.equal(nov.items.find(i=>i.name===term.name).program,'Program B');
+ const oct=await call(env,'/defaults?period=2026-10','finance');assert(!oct.items.some(i=>i.name===term.name));
+ const report=await call(env,'/report','director');assert.equal(report.bankBalance,20000000);assert.equal(report.generalSaving,11000000);
+ assert.deepEqual(db.prepare('SELECT * FROM yg_payroll_staff_terms').get(),original);
+ assert.throws(()=>db.exec("UPDATE yg_payroll_staff_funding_amendments SET funding_source='Changed'"));
+ assert.throws(()=>db.exec('DELETE FROM yg_payroll_staff_funding_amendments'));
 });
