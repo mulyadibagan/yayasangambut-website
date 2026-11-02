@@ -1,7 +1,7 @@
 import {fail,now} from './core.mjs';
 import {canonicalStaffName,displayStaffName} from './payroll-identity.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
-export async function staffTerms(env){return (await q(env,'SELECT * FROM yg_payroll_staff_terms ORDER BY effective_month,name').all()).results;}
+export async function staffTerms(env){return (await q(env,'SELECT t.id,t.staff_key,t.name,t.monthly_salary,t.effective_month,t.notes,t.actor,t.created_at,COALESCE((SELECT a.funding_source FROM yg_payroll_staff_funding_amendments a WHERE a.term_id=t.id ORDER BY a.id DESC LIMIT 1),t.funding_source) AS funding_source FROM yg_payroll_staff_terms t ORDER BY effective_month,name').all()).results;}
 export function salaryTermInput(b){
  const name=displayStaffName(b?.name),salary=b?.monthlySalary,period=b?.effectiveMonth,source=b?.fundingSource,notes=b?.notes||'';
  if(typeof b?.name!=='string'||!name||name.length>160||!Number.isSafeInteger(salary)||salary<=0||salary>10000000000||typeof period!=='string'||!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period)||typeof source!=='string'||!source.trim()||source.length>200||typeof notes!=='string'||notes.length>1000)fail(400,'Periksa nama, gaji, bulan mulai, dan sumber pendanaan.');
