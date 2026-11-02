@@ -77,27 +77,19 @@ await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
 run('npm',['run','build']);
-// Preserve the archived request-count check while separately verifying newly
-// generated salary records from authorized bank additions.
-const addedPayroll=(bankUpdates[0].results.length?JSON.parse(bankUpdates[0].results[0].setting_value):[])
- .filter(u=>u.row.debit>0 && /\bgaji\b/i.test(u.row.description))
- .map(u=>({amount:u.row.debit}));
-if(addedPayroll.length){
- const testPath=root+'/migration-test.mjs';
- let testSource=await readFile(testPath,'utf8');
- const countCheck=/assert\.equal\(body\.requests\.length,\s*(\d+)\)/g;
- const matches=[...testSource.matchAll(countCheck)];
- if(matches.length!==1)throw Error('Archived request-count assertion anchor changed.');
- const expected=Number(matches[0][1]);
- const replacement='const expectedPayroll='+JSON.stringify(addedPayroll)+';'
-  +'assert.equal(new Set(body.requests.map(r=>r.id)).size,body.requests.length);'
-  +'for(const expected of expectedPayroll){const rows=body.requests.filter(r=>r.type==="GAJI" && Number(r.amount)===expected.amount);assert.equal(rows.length,1);assert.equal(rows[0].type,"GAJI");assert.equal(Number(rows[0].amount),expected.amount);}'
-  +'assert.equal(body.requests.filter(r=>!expectedPayroll.some(p=>r.type==="GAJI" && Number(r.amount)===p.amount)).length,'+expected+')';
- testSource=testSource.replace(countCheck,()=>replacement);
- await writeFile(testPath,testSource);
-}
+// Keep diagnostic records inside the existing private database, never public logs.
+const diagnosticTestPath=root+'/migration-test.mjs';
+const diagnosticOriginalTest=await readFile(diagnosticTestPath,'utf8');
+const diagnosticAnchor=/assert\.equal\(body\.requests\.length,\s*\d+\)/;
+if(!diagnosticAnchor.test(diagnosticOriginalTest))throw Error('Migration diagnostic anchor changed.');
+await writeFile(diagnosticTestPath,diagnosticOriginalTest.replace(diagnosticAnchor,match=>
+ 'await (await import("node:fs/promises")).writeFile("migration-diagnostics.json",JSON.stringify(body.requests.map(r=>({id:r.id,type:r.type,amount:r.amount,bankDate:r.bankDate,code:r.code}))));'+match));
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0)throw Error('Private finance integration checks failed.');
+if(checked.status!==0){
+ const diagnostic={requests:JSON.parse(await readFile(root+'/migration-diagnostics.json','utf8')),baseline:tables.finance_requests?.rows.map(r=>({id:r.id,type:r.type,amount:r.amount})),test:diagnosticOriginalTest,requestSource:await readFile(root+'/app/api/requests/route.ts','utf8')};
+ await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['migration_diagnostic_v1',JSON.stringify(diagnostic)]);
+ throw Error('Private finance integration checks failed; diagnostic details retained in the private database.');
+}
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
