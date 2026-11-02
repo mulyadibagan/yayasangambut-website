@@ -1,6 +1,6 @@
 // Finance source and historical data are encrypted at rest in this public repository.
 // Decrypt only on the protected production runner; never copy into public website assets.
-import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,copyFile,readdir} from 'node:fs/promises';
 import {createDecipheriv,createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
@@ -56,7 +56,9 @@ if(!old[0].results.length){
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
  console.log('Finance database tables verified; uploaded files will be verified through the private Worker binding.');
 }else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
-const donationPolicy=await import(pathToFileURL(resolve(root,'app/donation-policy.ts')).href);
+const policyFiles=(await readdir(resolve(root,'app'))).filter(name=>/^donation-policy\.(?:[cm]?js|tsx?)$/.test(name));
+if(policyFiles.length!==1)throw Error('Donation policy module is missing or ambiguous.');
+const donationPolicy=await import(pathToFileURL(resolve(root,'app',policyFiles[0])).href);
 const originalBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href)).bankStatement2026;
 const originalDonationIds=new Set(donationPolicy.compileDonationRecords(originalBank.mutations).map(r=>r.id));
 const bankUpdates=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['bank_statement_updates_v1']);
