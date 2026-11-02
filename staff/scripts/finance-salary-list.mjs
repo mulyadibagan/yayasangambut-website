@@ -1,28 +1,32 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
+
 export function integrateAdditionalSalaryRows(source){
- if(source.includes('<AdditionalSalaryRows '))return source;
- const heading=source.indexOf('Posisi gaji per staf'),body=source.indexOf('<tbody',heading),end=source.indexOf('>',body);
- if(heading<0||body<0||end<0)throw Error('Salary staff table insertion point missing.');
- const updated=source.slice(0,end+1)+'<AdditionalSalaryRows existingNames={Object.keys(STAFF_POLICY).map(staffLabel)} />'+source.slice(end+1);
- const declaration="import AdditionalSalaryRows from './additional-salary-rows';\n";
- const directive=/^\s*(['"])use client\1;?/;
- return directive.test(updated)?updated.replace(directive,match=>match+'\n'+declaration):declaration+updated;
+ if(source.includes('const [effectiveSalaryStaff'))return source;
+ source=source.replace(/import AdditionalSalaryRows from ['"]\.\/additional-salary-rows['"];?\s*/g,'').replace(/<AdditionalSalaryRows existingNames=\{Object\.keys\(STAFF_POLICY\)\.map\(staffLabel\)\} \/>/g,'');
+ const once=(from,to)=>{if(source.split(from).length!==2)throw Error('Effective salary integration anchor changed.');source=source.replace(from,()=>to);};
+ once('import { useMemo } from "react";','import { useEffect, useMemo, useState } from "react";');
+ const hook=[
+ '  const [effectiveSalaryStaff,setEffectiveSalaryStaff]=useState<any[]>([]);',
+ '  const [effectiveSalaryError,setEffectiveSalaryError]=useState("");',
+ '  const policyMonth=new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Jakarta"}).slice(0,7);',
+ '  useEffect(()=>{const controller=new AbortController();fetch("/finance/payroll/api/report",{cache:"no-store",signal:controller.signal}).then(async response=>{if(!response.ok)throw Error("Ketentuan gaji aktif belum dapat dimuat.");return response.json();}).then(data=>{if(!Array.isArray(data.staff))throw Error("Ketentuan gaji aktif tidak lengkap.");setEffectiveSalaryStaff(data.staff);}).catch(error=>{if(error.name!=="AbortError")setEffectiveSalaryError(error.message);});return()=>controller.abort();},[]);',
+ '  const canonicalSalaryName=(name:string)=>Object.keys(STAFF_POLICY).find(key=>key.toLowerCase()===name.toLowerCase()||staffLabel(key).toLowerCase()===name.toLowerCase())||name;',
+ '  const effectivePolicy=(staff:string)=>{const base=policyFor(staff),live=effectiveSalaryStaff.find(row=>canonicalSalaryName(row.name)===staff);if(!live)return base;const start=live.effectiveMonth?new Date(live.effectiveMonth+"-01T12:00:00+07:00").toLocaleDateString("id-ID",{month:"long",year:"numeric",timeZone:"Asia/Jakarta"}):"";return {...base,active:!!live.active,monthlySalary:live.monthlySalary,label:start?(live.active?"Staf aktif · ":"Mulai ")+start:base.label};};',
+ ].join('\n');
+ once('  const view = useMemo(() => {',hook+'\n  const view = useMemo(() => {');
+ once('const names = [...new Set(rows.map((row) => row.staff))]', 'const names = [...new Set([...rows.map((row) => row.staff), ...effectiveSalaryStaff.map((row) => canonicalSalaryName(row.name))])]');
+ once('const policy = policyFor(staff);','const policy = effectivePolicy(staff);');
+ once('const projectedMonthlyPayroll = totals.reduce((sum, row) => sum + (row.monthlySalary ?? 0), 0);','const projectedMonthlyPayroll = currentMonthlyPayroll;');
+ once('}, [savingData, year]);','}, [savingData, year, effectiveSalaryStaff]);');
+ source=source.replace(/(?:Proyeksi|Kebutuhan) 5 orang \/ bulan/g,'Kebutuhan {view.activeStaff} orang / bulan');
+ source=source.replace(/<small>(?:Termasuk asumsi Ainul Rp3\.500\.000|Seluruh staf sudah aktif)<\/small>/g,'<small>Ketentuan berlaku {policyMonth}</small>');
+ source=source.replace('{view.activeStaff} aktif + 1 calon','{view.activeStaff} aktif').replace('{idr(view.projectedMonthlyPayroll)}*','{idr(view.projectedMonthlyPayroll)}');
+ once('    <PendingStaffAllocation />','    <PendingStaffAllocation />\n    <p className="salary-footnote">Kebutuhan dan simulasi memakai ketentuan gaji aktif bulan {policyMonth}; saldo tetap mengikuti tanggal rekonsiliasi bank di atas.</p>\n    {effectiveSalaryError&&<p role="alert">{effectiveSalaryError} Total kebutuhan staf tambahan belum dapat dipastikan.</p>}');
+ return source;
 }
+
 export async function applyAdditionalSalaryList(root){
  const file=resolve(root,'app/salary-balance-enhancer.tsx');
  await writeFile(file,integrateAdditionalSalaryRows(await readFile(file,'utf8')));
- await writeFile(resolve(root,'app/additional-salary-rows.tsx'),`'use client';
-import {useEffect,useState} from 'react';
-export default function AdditionalSalaryRows({existingNames}:{existingNames:string[]}){
- const [rows,setRows]=useState<any[]>([]),[error,setError]=useState('');
- useEffect(()=>{const controller=new AbortController();fetch('/finance/payroll/api/report',{cache:'no-store',signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Data staf tambahan belum dapat dimuat.');return r.json();}).then(d=>setRows(d.staff||[])).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();},[]);
- const money=(n:number|null)=>n===null?'Perlu rekonsiliasi':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
- if(error)return <tr><td colSpan={11} role="status">{error}</td></tr>;
- return <>{rows.filter(s=>s.effectiveMonth&&!existingNames.some(n=>n.toLowerCase()===s.name.toLowerCase())).map(s=>{
- const start=new Date(s.effectiveMonth+'-01T12:00:00+07:00').toLocaleDateString('id-ID',{month:'long',year:'numeric',timeZone:'Asia/Jakarta'});
- const position=s.position;
- return <tr key={s.id}><th>{s.name}</th><td className="salary-status-cell"><span className={s.active?'salary-status-chip is-active':'salary-status-chip'}>{s.active?'Staf aktif · ':'Mulai '}{start}</span></td><td>{money(s.monthlySalary)}</td><td>{money(s.opening)}</td><td>{s.allocation===0?money(0):'Lihat rincian'}</td><td>{s.allocation===0?money(0):'Lihat rincian'}</td><td><b>{money(s.opening+s.allocation)}</b></td><td>{money(s.paid)}</td><td className={position>0?'salary-positive':''}><b>{money(position===null?null:Math.max(0,position))}</b></td><td className={position<0?'salary-negative':''}><b>{money(position===null?null:Math.max(0,-position))}</b></td><td className="salary-runway">{position===null?'Perlu rekonsiliasi':(Math.max(0,position)/s.monthlySalary).toLocaleString('id-ID',{maximumFractionDigits:1})+' bulan'}</td></tr>;
- })}</>;
-}`);
 }
