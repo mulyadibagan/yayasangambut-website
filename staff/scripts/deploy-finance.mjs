@@ -78,7 +78,12 @@ await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
 run('npm',['run','build']);
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0)throw Error('Private finance integration checks failed.');
+if(checked.status!==0){
+ const lines=(await readFile(root+'/migration-test.mjs','utf8')).split('\n');
+ // Log only test structure, with all literal strings and numeric values removed.
+ for(let i=27;i<33;i++)console.log('Migration test structure '+(i+1)+': '+(lines[i]||'').replace(/(['"`])(?:\\.|(?!\1).)*?\1/g,'"[redacted]"').replace(/\b\d+(?:\.\d+)?\b/g,'N'));
+ throw Error('Private finance integration checks failed.');
+}
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
