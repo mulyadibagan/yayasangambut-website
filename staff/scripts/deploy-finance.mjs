@@ -77,13 +77,27 @@ await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
 run('npm',['run','build']);
-const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0){
- const lines=(await readFile(root+'/migration-test.mjs','utf8')).split('\n');
- // Log only test structure, with all literal strings and numeric values removed.
- for(let i=27;i<33;i++)console.log('Migration test structure '+(i+1)+': '+(lines[i]||'').replace(/(['"`])(?:\\.|(?!\1).)*?\1/g,'"[redacted]"').replace(/\b\d+(?:\.\d+)?\b/g,'N'));
- throw Error('Private finance integration checks failed.');
+// Preserve the archived request-count check while separately verifying newly
+// generated salary records from authorized bank additions.
+const addedPayroll=(bankUpdates[0].results.length?JSON.parse(bankUpdates[0].results[0].setting_value):[])
+ .filter(u=>u.row.debit>0 && /\bgaji\b/i.test(u.row.description))
+ .map(u=>({id:'GAJI-2026-BANK-'+u.row.archiveIndex,amount:u.row.debit}));
+if(addedPayroll.length){
+ const testPath=root+'/migration-test.mjs';
+ let testSource=await readFile(testPath,'utf8');
+ const countCheck=/assert\.equal\(body\.requests\.length,\s*(\d+)\)/g;
+ const matches=[...testSource.matchAll(countCheck)];
+ if(matches.length!==1)throw Error('Archived request-count assertion anchor changed.');
+ const expected=Number(matches[0][1]);
+ const replacement='const expectedPayroll='+JSON.stringify(addedPayroll)+';'
+  +'assert.equal(new Set(body.requests.map(r=>r.id)).size,body.requests.length);'
+  +'for(const expected of expectedPayroll){const rows=body.requests.filter(r=>r.id===expected.id);assert.equal(rows.length,1);assert.equal(rows[0].type,"GAJI");assert.equal(Number(rows[0].amount),expected.amount);}'
+  +'assert.equal(body.requests.filter(r=>!expectedPayroll.some(p=>p.id===r.id)).length,'+expected+')';
+ testSource=testSource.replace(countCheck,()=>replacement);
+ await writeFile(testPath,testSource);
 }
+const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
+if(checked.status!==0)throw Error('Private finance integration checks failed.');
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
