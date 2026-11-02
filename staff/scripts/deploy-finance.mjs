@@ -4,6 +4,7 @@ import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
 import {createDecipheriv,createHash} from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
 import {applyPrivateBankUpdates} from './finance-bank-updates.mjs';
 import {applyPrivateSourceUpdates} from './finance-private-source-updates.mjs';
 import {applyPrivateReconciliationUpdates} from './finance-reconciliation-updates.mjs';
@@ -55,6 +56,9 @@ if(!old[0].results.length){
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
  console.log('Finance database tables verified; uploaded files will be verified through the private Worker binding.');
 }else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
+const donationPolicy=await import(pathToFileURL(resolve(root,'app/donation-policy.ts')).href);
+const originalBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href)).bankStatement2026;
+const originalDonationIds=new Set(donationPolicy.compileDonationRecords(originalBank.mutations).map(r=>r.id));
 const bankUpdates=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['bank_statement_updates_v1']);
 if(bankUpdates[0].results.length){
  let updates;try{updates=JSON.parse(bankUpdates[0].results[0].setting_value);}catch{throw Error('Invalid private bank update configuration.');}
@@ -77,19 +81,24 @@ await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
 run('npm',['run','build']);
-// Keep diagnostic records inside the existing private database, never public logs.
-const diagnosticTestPath=root+'/migration-test.mjs';
-const diagnosticOriginalTest=await readFile(diagnosticTestPath,'utf8');
-const diagnosticAnchor=/assert\.equal\(body\.requests\.length,\s*\d+\)/;
-if(!diagnosticAnchor.test(diagnosticOriginalTest))throw Error('Migration diagnostic anchor changed.');
-await writeFile(diagnosticTestPath,diagnosticOriginalTest.replace(diagnosticAnchor,match=>
- 'await (await import("node:fs/promises")).writeFile("migration-diagnostics.json",JSON.stringify(body.requests.map(r=>({id:r.id,type:r.type,amount:r.amount,bankDate:r.bankDate,code:r.code}))));'+match));
-const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0){
- const diagnostic={requests:JSON.parse(await readFile(root+'/migration-diagnostics.json','utf8')),baseline:tables.finance_requests?.rows.map(r=>({id:r.id,type:r.type,amount:r.amount})),test:diagnosticOriginalTest,requestSource:await readFile(root+'/app/api/requests/route.ts','utf8')};
- await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['migration_diagnostic_v1',JSON.stringify(diagnostic)]);
- throw Error('Private finance integration checks failed; diagnostic details retained in the private database.');
+// Verify new bank-derived donation archives independently of the fixed historical fixture.
+const updatedBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href+'?verified-updates')).bankStatement2026;
+const addedDonations=donationPolicy.compileDonationRecords(updatedBank.mutations)
+ .filter(r=>!originalDonationIds.has(r.id)).map(r=>({id:r.id,type:r.type,amount:r.amount}));
+if(addedDonations.length){
+ const testPath=root+'/migration-test.mjs';
+ let testSource=await readFile(testPath,'utf8');
+ const countCheck=/assert\.equal\(body\.requests\.length,\s*(\d+)\)/g;
+ const matches=[...testSource.matchAll(countCheck)];
+ if(matches.length!==1)throw Error('Archived request-count assertion anchor changed.');
+ const replacement='const expectedDonations='+JSON.stringify(addedDonations)+';'
+  +'assert.equal(new Set(body.requests.map(r=>r.id)).size,body.requests.length);'
+  +'for(const expected of expectedDonations){const rows=body.requests.filter(r=>r.id===expected.id);assert.equal(rows.length,1);assert.equal(rows[0].type,expected.type);assert.equal(Number(rows[0].amount),expected.amount);}'
+  +'assert.equal(body.requests.filter(r=>!expectedDonations.some(p=>p.id===r.id)).length,'+Number(matches[0][1])+')';
+ await writeFile(testPath,testSource.replace(countCheck,()=>replacement));
 }
+const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
+if(checked.status!==0)throw Error('Private finance integration checks failed.');
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
