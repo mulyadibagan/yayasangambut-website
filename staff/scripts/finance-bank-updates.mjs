@@ -15,7 +15,7 @@ export function reconcileBankUpdates(bank, snapshot, updates){
   const r=u.row;
   if(!r||!Number.isInteger(r.archiveIndex)||typeof r.postedAt!=='string'||typeof r.description!=='string'||typeof r.reference!=='string'||![r.debit,r.credit,r.balance].every(n=>Number.isFinite(n)&&n>=0)||!(r.debit>0 ^ r.credit>0)||!Array.isArray(u.allocations)||!u.allocations.length)fail();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(u.asOf)||typeof u.period!=='string'||typeof u.source!=='string'||typeof u.note!=='string')fail();
-  if(u.allocations.some(a=>!(a.bucket==='STAFF_PENDING'||s.projects.some(p=>p.key===a.bucket))||!Number.isFinite(a.amount))||u.allocations.reduce((n,a)=>n+cents(a.amount),0)!==cents(r.credit)-cents(r.debit))fail();
+  if(u.allocations.some(a=>!(['STAFF_PENDING','YG'].includes(a.bucket)||s.projects.some(p=>p.key===a.bucket))||!Number.isFinite(a.amount))||u.allocations.reduce((n,a)=>n+cents(a.amount),0)!==cents(r.credit)-cents(r.debit))fail();
   if(new Set(u.allocations.map(a=>a.bucket)).size!==u.allocations.length)fail();
   if(r.evidence?.some(e=>typeof e.label!=='string'||!/^https:\/\/(drive|docs)\.google\.com\//.test(e.url)))fail();
   const matches=b.mutations.filter(x=>identity(x)===identity(r));
@@ -30,6 +30,10 @@ export function reconcileBankUpdates(bank, snapshot, updates){
   for(const a of u.allocations){
    if(a.bucket==='STAFF_PENDING'){
     s.pendingStaffCash=(cents(s.pendingStaffCash)+cents(a.amount))/100;
+    continue;
+   }
+   if(a.bucket==='YG'){
+    s.ygCash=(cents(s.ygCash)+cents(a.amount))/100;
     continue;
    }
    const p=s.projects.find(p=>p.key===a.bucket);
@@ -52,7 +56,7 @@ export function reconcileBankUpdates(bank, snapshot, updates){
    if(Number.isInteger(p.bankTransactionCount))p.bankTransactionCount++;
   }
   s.bankDebit=(cents(s.bankDebit)+cents(r.debit))/100;s.bankCredit=(cents(s.bankCredit)+cents(r.credit))/100;
-  s.projectCash=(cents(s.projectCash)+u.allocations.filter(a=>a.bucket!=='STAFF_PENDING').reduce((n,a)=>n+cents(a.amount),0))/100;
+  s.projectCash=(cents(s.projectCash)+u.allocations.filter(a=>!['STAFF_PENDING','YG'].includes(a.bucket)).reduce((n,a)=>n+cents(a.amount),0))/100;
   s.calculated=(cents(s.calculated)+cents(r.credit)-cents(r.debit))/100;
   s.bankClosing=r.balance;s.transactionCount=s.entries.length;s.difference=(cents(s.bankClosing)-cents(s.calculated))/100;
   if(s.difference!==0||cents(s.bankOpening)+cents(s.bankCredit)-cents(s.bankDebit)!==cents(s.bankClosing))fail();
