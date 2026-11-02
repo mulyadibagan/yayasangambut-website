@@ -23,10 +23,12 @@ test('effective live staff contribute once to monthly payroll and 13-month reser
  const source=integrateAdditionalSalaryRows(fixture);
  assert.equal(integrateAdditionalSalaryRows(source),source);
  const executable=stripTypeScriptTypes(source).replace('import { useEffect, useMemo, useState } from "react";','const useMemo=f=>f(),useEffect=()=>{},useState=()=>[live,()=>{}];');
- const calculate=new Function('live',executable+';return panel({rows:[{staff:"Alpha"},{staff:"Alpha"},{staff:"Beta"}]},2026);');
+ const calculate=new Function('live','year',executable+';return panel({rows:[{staff:"Alpha"},{staff:"Alpha"},{staff:"Beta"}]},year);');
  const base=[{name:'Alpha',active:true,monthlySalary:10},{name:'Beta',active:true,monthlySalary:20}];
  const pending=[{name:'Gamma',active:false,monthlySalary:6,effectiveMonth:'2026-11'},{name:'Delta',active:false,monthlySalary:3,effectiveMonth:'2026-11'}];
- const before=calculate([...base,...pending]);assert.equal(before.monthlyPayroll,30);assert.equal(before.targetNeed,390);
- const after=calculate([...base,...pending.map(s=>({...s,active:true}))]);assert.equal(after.totals.length,4);assert.equal(after.monthlyPayroll,39);assert.equal(after.targetNeed,507);
+ const year=Number(new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,4));
+ const before=calculate([...base,...pending],year);assert.equal(before.monthlyPayroll,30);assert.equal(before.targetNeed,390);
+ const after=calculate([...base,...pending.map(s=>({...s,active:true}))],year);assert.equal(after.totals.length,4);assert.equal(after.monthlyPayroll,39);assert.equal(after.targetNeed,507);
+ const historical=calculate([...base,...pending.map(s=>({...s,active:true}))],year-1);assert.equal(historical.totals.length,2);assert.equal(historical.targetNeed,390);
  assert.throws(()=>integrateAdditionalSalaryRows('unrelated'),/anchor changed/);
 });
