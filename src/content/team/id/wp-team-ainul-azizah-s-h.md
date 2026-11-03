@@ -1,7 +1,7 @@
 ---
 name: "Ainul Azizah, S.H."
-position: "Administrasi dan Keuangan"
-positionEn: "Administration and Finance"
+position: "Support Program and Communications Staff"
+positionEn: "Support Program and Communications Staff"
 group: "Management & Program Team"
 photo: "/team/ainul-azizah.jpeg"
 language: id
