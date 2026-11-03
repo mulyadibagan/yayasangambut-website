@@ -19,7 +19,7 @@ const branches=[
 <BaseLayout title={title+' — Yayasan Gambut'} description={id?'Struktur pelaporan dan koordinasi tim inti Yayasan Gambut.':'Reporting and coordination structure of the Yayasan Gambut core team.'}>
 <section class="org-page"><div class="container">
 <a class="back" href={id?'/id/tentang-kami/#tim':'/en/about/#tim'}>{id?'← Kembali ke Tim YG':'← Back to the YG team'}</a>
-<header class="org-heading"><p class="eyebrow">YAYASAN GAMBUT</p><h1>{title}</h1><p>{id?'Jalur pelaporan dan koordinasi pelaksanaan program.':'Reporting lines and coordination for program delivery.'}</p></header>
+<header class="org-heading"><p class="eyebrow">YAYASAN GAMBUT</p><h1>{title}</h1></header>
 <div class="org-chart" aria-label={title}>
  <div class="director"><TeamPerson member={person('Mulyadi')} lang={lang} director/></div>
  <div class="leadership">
@@ -35,7 +35,7 @@ const branches=[
 </div></section>
 </BaseLayout>
 <style>
-.org-page{background:#f5f7f2;padding:2rem 0 4rem}.back{display:inline-flex;align-items:center;min-height:44px;color:#225f49;font-size:.9rem;font-weight:700;text-decoration:none}.back:hover{text-decoration:underline}.org-heading{margin:1.8rem 0 2.5rem}.org-heading h1{font-size:clamp(2rem,4vw,3rem);margin:.6rem 0}.org-heading>p:last-child{color:var(--muted);max-width:45rem}
+.org-page{background:#f5f7f2;padding:2rem 0 4rem}.back{display:inline-flex;align-items:center;min-height:44px;color:#225f49;font-size:.9rem;font-weight:700;text-decoration:none}.back:hover{text-decoration:underline}.org-heading{margin:1.8rem 0 2.5rem}.org-heading h1{font-size:clamp(2rem,4vw,3rem);margin:.6rem 0}
 .org-chart{--connector:#91af9e}.director{width:min(100%,23rem);margin:auto;position:relative;padding-bottom:2rem}.director:after{content:'';position:absolute;left:50%;bottom:0;height:2rem;border-left:2px solid var(--connector)}
 .leadership{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;max-width:62rem;margin:0 auto;position:relative}.leadership:before{content:'';position:absolute;top:0;left:calc(16.6667% - .33rem);right:calc(16.6667% - .33rem);border-top:2px solid var(--connector)}.leader{position:relative;padding-top:2rem}.leader:before{content:'';position:absolute;height:2rem;left:50%;top:0;border-left:2px solid var(--connector)}.leader :global(.person){height:100%}
 .program-team{position:relative;padding-top:2.5rem}.program-team:before{content:'';position:absolute;left:50%;top:0;height:2.5rem;border-left:2px solid var(--connector)}
