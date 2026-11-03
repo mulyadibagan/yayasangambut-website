@@ -30,3 +30,10 @@ export function documentHtml(doc){
  const p=(p,tag='p')=>`<${tag} data-align="${p.align}" data-indent="${p.indent}" data-space="${p.space}">${p.runs.map(r=>{let t=escapeText(r.text).replaceAll('\n','<br>');if(r.underline)t='<u>'+t+'</u>';if(r.italic)t='<em>'+t+'</em>';if(r.bold)t='<strong>'+t+'</strong>';return t;}).join('')||'<br>'}</${tag}>`;
  return cleanDocument(doc).blocks.map(b=>b.type==='paragraph'?p(b):b.type==='list'?`<${b.ordered?'ol':'ul'}${b.ordered?` start="${b.start}"`:''}>${b.items.map(i=>p(i,'li')).join('')}</${b.ordered?'ol':'ul'}>`:`<table data-border="${b.border}"><colgroup>${b.widths.map(w=>`<col width="${w.toFixed(3)}%">`).join('')}</colgroup><tbody>${b.rows.map(row=>'<tr>'+row.map(cell=>'<td>'+cell.map(c=>p(c)).join('')+'</td>').join('')+'</tr>').join('')}</tbody></table>`).join('');
 }
+
+export function taskDocument(data){
+ if(data.bodyFormat==='rich-v1')return cleanDocument(data.bodyDoc);
+ const lines=String(data.body||'').split('\n'),blocks=[],field=line=>line.match(/^(Nama|Jabatan|Hari\s*\/\s*Tanggal|Hari|Tanggal|Waktu|Tempat)\s*:\s*(.*)$/i);
+ for(let i=0;i<lines.length;i++){if(field(lines[i])){const rows=[];while(i<lines.length&&field(lines[i])){const m=field(lines[i]);rows.push([[para(m[1],{space:6,runs:[{text:m[1],bold:/^(Nama|Jabatan)$/i.test(m[1])}]})],[para(':',{space:6})],[para(m[2],{space:6})]]);i++;}i--;blocks.push({type:'table',border:'none',widths:[23,2,75],rows});}else blocks.push(para(lines[i],{align:lines[i]?'justify':'left',space:6}));}
+ return cleanDocument({version:1,blocks});
+}

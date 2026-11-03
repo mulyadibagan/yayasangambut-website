@@ -1,6 +1,6 @@
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
-import {cleanDocument,plainDocument,escapeText} from '../public/letter-content.js';
-const content=r=>r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
+import {cleanDocument,plainDocument,escapeText,taskDocument} from '../public/letter-content.js';
+const content=r=>r.data.kind==='SPT'?taskDocument(r.data):r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
 const xml=escapeText;
 export function richWord(r,dateLabel){
  let num=0;const numbering=[];
@@ -14,7 +14,8 @@ export function richWord(r,dateLabel){
   return `<w:tbl><w:tblPr><w:tblW w:w="9026" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${border}</w:tblBorders><w:tblCellMar>${['top','left','bottom','right'].map(side=>`<w:${side} w:w="${b.border==='none'?0:60}" w:type="dxa"/>`).join('')}</w:tblCellMar></w:tblPr><w:tblGrid>${widths.map(w=>`<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${b.rows.map(row=>'<w:tr>'+row.map((cell,i)=>`<w:tc><w:tcPr><w:tcW w:w="${widths[i]}" w:type="dxa"/><w:vAlign w:val="top"/></w:tcPr>${cell.map(c=>p(c)).join('')}</w:tc>`).join('')+'</w:tr>').join('')}</w:tbl>`;
  }
  let body=r.status==='issued'?'':simple('DRAFT - BELUM TERBIT',{runs:[{text:'DRAFT - BELUM TERBIT',bold:true}]});
- if(r.data.kind==='PNY')body+=simple(r.data.subject,{align:'center',space:6,runs:[{text:r.data.subject,bold:true}]},{size:26,keep:true})+simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12},{keep:true});
+ if(r.data.kind==='SPT')body+=simple(dateLabel(r.data.date),{align:'right',space:0},{keep:true})+simple('SURAT PERINTAH TUGAS',{align:'center',space:0,runs:[{text:'SURAT PERINTAH TUGAS',bold:true}]},{keep:true})+simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:18},{keep:true});
+ else if(r.data.kind==='PNY')body+=simple(r.data.subject,{align:'center',space:6,runs:[{text:r.data.subject,bold:true}]},{size:26,keep:true})+simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12},{keep:true});
  else{body+=simple(`Nomor Surat\t: ${r.number||'Belum dialokasikan'}\t${dateLabel(r.data.date)}`,{space:0},{tabs:true,keep:true})+simple('Perihal\t: '+r.data.subject,{space:0},{tabs:true,keep:true})+simple('Lampiran\t: '+(r.data.attachments||'-'),{space:15},{tabs:true,keep:true});for(const t of ['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean))body+=simple(t,{space:0},{keep:true});body+=simple('',{space:10});}
  body+=content(r).blocks.map(block).join('');
  const statement=r.data.kind==='PNY',align=statement?'right':'left';
@@ -50,7 +51,8 @@ export async function richPdf(r,logoBytes,letterhead,signatureBytes,dateLabel){
   }y-=6;
  }
  start();if(r.status!=='issued')simple('DRAFT - BELUM TERBIT',{runs:[{text:'DRAFT - BELUM TERBIT',bold:true}]});
- if(r.data.kind==='PNY'){simple(r.data.subject,{align:'center',fontSize:13,runs:[{text:r.data.subject,bold:true}],space:6});simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12});}
+ if(r.data.kind==='SPT'){simple(dateLabel(r.data.date),{align:'right',space:0});simple('SURAT PERINTAH TUGAS',{align:'center',runs:[{text:'SURAT PERINTAH TUGAS',bold:true}],space:0});simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:18});}
+ else if(r.data.kind==='PNY'){simple(r.data.subject,{align:'center',fontSize:13,runs:[{text:r.data.subject,bold:true}],space:6});simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12});}
  else{const date=dateLabel(r.data.date);page.drawText(date,{x:right-fonts.normal.widthOfTextAtSize(date,size),y:y-size,size,font:fonts.normal});simple('Nomor Surat: '+(r.number||'Belum dialokasikan'),{space:0},{available:width-115});simple('Perihal: '+r.data.subject,{space:0});simple('Lampiran: '+(r.data.attachments||'-'),{space:15});for(const t of ['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean))simple(t,{space:0});y-=10;}
  for(const b of content(r).blocks){if(b.type==='paragraph')paragraph(b);else if(b.type==='list')b.items.forEach((item,i)=>paragraph(item,{marker:b.ordered?(b.start+i)+'.':'\u2022'}));else table(b);}
  const statement=r.data.kind==='PNY',x=statement?right-225:left,w=statement?225:width,closing=statement?`${r.data.statementPlace||'Pekanbaru'}, ${dateLabel(r.data.date)}`:'Hormat kami,';ensure(10+lines({runs:[{text:closing}]},w).length*leading+84+leading*2);y-=10;
