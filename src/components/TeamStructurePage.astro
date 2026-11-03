@@ -1,0 +1,54 @@
+---
+import {getCollection} from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import TeamPerson from './TeamPerson.astro';
+import type {Lang} from '../data/site';
+const {lang}=Astro.props as {lang:Lang};
+const id=lang==='id';
+const team=await getCollection('team',({data})=>data.language==='id'&&data.status==='published'&&data.group==='Management & Program Team');
+const person=(name:string)=>{const m=team.find(m=>m.data.name.startsWith(name));if(!m)throw new Error('Missing structure member: '+name);return m;};
+const title=id?'Struktur Tim Inti':'Core Team Structure';
+const branches=[
+ {names:['Riandra Hamdani'],children:['Ainul Azizah'],label:id?'Program dan komunikasi':'Program and communications'},
+ {names:['Zamharir'],children:['Rasid Jul Siregar'],label:id?'Data dan GIS':'Data and GIS'},
+ {names:['Arif Sah Putra'],children:[],label:id?'Usaha masyarakat':'Community enterprise'},
+ {names:['Raja Alpian','Hendrizal'],children:[],label:id?'Tim lapangan':'Field team'},
+ {names:['Khamidi Setyo Budi'],children:[],label:id?'Multimedia':'Multimedia',direct:true},
+];
+---
+<BaseLayout title={title+' — Yayasan Gambut'} description={id?'Struktur pelaporan dan koordinasi tim inti Yayasan Gambut.':'Reporting and coordination structure of the Yayasan Gambut core team.'}>
+<section class="org-page"><div class="container">
+<a class="back" href={id?'/id/tentang-kami/#tim':'/en/about/#tim'}>{id?'← Kembali ke Tim YG':'← Back to the YG team'}</a>
+<header class="org-heading"><p class="eyebrow">YAYASAN GAMBUT</p><h1>{title}</h1><p>{id?'Jalur pelaporan dan koordinasi pelaksanaan program.':'Reporting lines and coordination for program delivery.'}</p></header>
+<div class="org-chart" aria-label={title}>
+ <div class="director"><TeamPerson member={person('Mulyadi')} lang={lang} director/></div>
+ <div class="leadership">
+  {['Warsito','Rafi Merbamas','Ir. Riena'].map(name=><div class="leader"><TeamPerson member={person(name)} lang={lang}/></div>)}
+ </div>
+ <section class="program-team" aria-labelledby="program-team-heading">
+  <h2 id="program-team-heading">{id?'Pelaksanaan program':'Program delivery'}<small>{id?'Melapor kepada Manajer Program — Rafi Merbamas':'Reports to the Program Manager — Rafi Merbamas'}</small></h2>
+  <div class="branches">{branches.map(b=><section class="branch">
+   <h3>{b.label}</h3><div class="branch-people">{b.names.map(name=><TeamPerson member={person(name)} lang={lang}/>)}</div>
+   {b.children.length>0&&<details open class="reports"><summary>{id?'Staf yang dikoordinasikan':'Reporting staff'}</summary><div>{b.children.map(name=><TeamPerson member={person(name)} lang={lang}/>)}</div></details>}
+   {b.direct&&<p class="direct-note">{id?'Arahan langsung dari Direktur untuk multimedia dan dokumentasi kelembagaan.':'Direct guidance from the Director for multimedia and organisational documentation.'}</p>}
+  </section>)}</div>
+ </section>
+</div>
+<aside class="org-notes" aria-label={id?'Keterangan struktur':'Structure notes'}>
+ <p><span class="line" aria-hidden="true"></span><strong>{id?'Garis penuh':'Solid line'}</strong> — {id?'jalur pelaporan langsung.':'direct reporting line.'}</p>
+ <p><span class="line dashed" aria-hidden="true"></span><strong>{id?'Arahan langsung Direktur':'Direct guidance from the Director'}</strong> — {id?'Khamidi menerima arahan langsung untuk multimedia dan dokumentasi kelembagaan, dengan pelaporan harian kepada Rafi.':'Khamidi receives direct guidance for multimedia and organisational documentation, with daily reporting to Rafi.'}</p>
+ <p>{id?'Riandra berkoordinasi dengan Direktur untuk komunikasi kelembagaan dan hubungan media. Riena melapor kepada Direktur dan berkoordinasi dengan seluruh tim untuk anggaran dan pelaporan keuangan.':'Riandra coordinates with the Director on organisational communications and media relations. Riena reports to the Director and coordinates budgets and financial reporting across the team.'}</p>
+</aside>
+</div></section>
+</BaseLayout>
+<style>
+.org-page{background:#f5f7f2;padding:2rem 0 4rem}.back{display:inline-flex;align-items:center;min-height:44px;color:#225f49;font-size:.9rem;font-weight:700;text-decoration:none}.back:hover{text-decoration:underline}.org-heading{margin:1.8rem 0 2.5rem}.org-heading h1{font-size:clamp(2rem,4vw,3rem);margin:.6rem 0}.org-heading>p:last-child{color:var(--muted);max-width:45rem}
+.org-chart{--connector:#91af9e}.director{width:min(100%,23rem);margin:auto;position:relative;padding-bottom:2rem}.director:after{content:'';position:absolute;left:50%;bottom:0;height:2rem;border-left:2px solid var(--connector)}
+.leadership{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;max-width:62rem;margin:0 auto;position:relative}.leadership:before{content:'';position:absolute;top:0;left:calc(16.6667% - .33rem);right:calc(16.6667% - .33rem);border-top:2px solid var(--connector)}.leader{position:relative;padding-top:2rem}.leader:before{content:'';position:absolute;height:2rem;left:50%;top:0;border-left:2px solid var(--connector)}.leader :global(.person){height:100%}
+.program-team{position:relative;padding-top:2.5rem}.program-team:before{content:'';position:absolute;left:50%;top:0;height:2.5rem;border-left:2px solid var(--connector)}.program-team>h2{text-align:center;margin:0 auto 1.8rem;font-size:1rem;line-height:1.5;background:#e8f0e8;border:1px solid #ccdccc;border-radius:.75rem;padding:.8rem 1rem;max-width:32rem;position:relative}.program-team>h2 small{display:block;font:400 .8rem/1.5 sans-serif;color:#496353;margin:.2rem 0 0}
+.branches{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem;position:relative}.branches:before{content:'';position:absolute;top:-1rem;left:10%;right:10%;border-top:2px solid var(--connector)}.program-team>h2:after{content:'';position:absolute;top:100%;height:.8rem;left:50%;border-left:2px solid var(--connector)}.branch{position:relative;min-width:0;padding-top:1rem}.branch:before{content:'';position:absolute;top:-1rem;left:50%;height:2rem;border-left:2px solid var(--connector)}.branch>h3{font:700 .73rem/1.5 sans-serif;letter-spacing:.03em;text-transform:uppercase;text-align:center;color:#446451;margin:0 0 .7rem;min-height:2.3rem}.branch :global(.person){flex-direction:column;text-align:center;padding:.9rem .7rem;gap:.5rem}.branch :global(.person h2){font-size:.92rem}.branch :global(.person p){font-size:.75rem}.branch-people{display:grid;gap:.8rem}
+.reports{margin:0 .3rem;padding-top:1.2rem;position:relative}.reports:before{content:'';position:absolute;left:50%;top:0;height:1.2rem;border-left:2px solid var(--connector)}.reports summary{font-size:.72rem;color:#496353;cursor:pointer;min-height:44px;padding:.45rem .25rem;text-align:center}.reports>div{display:grid;gap:.8rem}.direct-note{font-size:.75rem;line-height:1.6;color:#486759;padding:.8rem;border:1px dashed #729783;border-radius:.7rem}
+.org-notes{max-width:65rem;margin:2.5rem auto 0;background:white;border:1px solid #dce6da;border-radius:1rem;padding:1.2rem 1.5rem;font-size:.85rem;color:#486153;line-height:1.7}.org-notes p{margin:.4rem 0 1rem}.org-notes p:last-child{margin-bottom:0}.line{display:inline-block;vertical-align:middle;width:1.8rem;border-top:2px solid #729783;margin-right:.4rem}.line.dashed{border-top-style:dashed}
+@media(max-width:1099px){.leadership{gap:1rem}.branches{grid-template-columns:1fr;gap:1.3rem}.branches:before,.branch:before,.program-team>h2:after{display:none}.branch{padding:0 0 0 1rem;border-left:2px solid var(--connector)}.branch>h3{text-align:left;min-height:0}.branch :global(.person){flex-direction:row;text-align:left;padding:1rem;gap:.8rem}.reports{margin:0 0 0 1rem;padding:1rem 0 0 1rem;border-left:2px solid var(--connector)}.reports:before{display:none}.reports summary{text-align:left}.direct-note{max-width:40rem}.program-team>h2{margin-bottom:1.5rem}}
+@media(max-width:639px){.org-page{padding-top:1rem}.org-heading{margin:1.2rem 0 2rem}.leadership{grid-template-columns:1fr;border-left:2px solid var(--connector);padding-left:1rem;gap:1rem}.leadership:before,.leader:before{display:none}.leader{padding:0}.director{padding-bottom:1rem;margin-left:0}.director:after{left:0;height:1rem}.program-team{padding-top:1.5rem}.program-team:before{display:none}.program-team>h2{text-align:left}.org-notes{padding:1rem}.branch :global(.person h2){font-size:1rem}}
+</style>

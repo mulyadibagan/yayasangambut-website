@@ -1,0 +1,14 @@
+---
+const {member,lang,director=false}=Astro.props;
+---
+<article class:list={['person',{director}]}>
+{member.data.photo&&<img src={member.data.photo} width="64" height="64" loading="lazy" decoding="async" alt=""/>}
+<div><h2>{member.data.name}</h2><p>{lang==='en'?(member.data.positionEn??member.data.position):member.data.position}</p></div>
+</article>
+<style>
+.person{display:flex;align-items:center;gap:.8rem;background:white;border:1px solid #cadbcf;border-radius:1rem;padding:1rem;min-width:0}
+.person img{width:3.3rem;height:3.3rem;flex:0 0 3.3rem;object-fit:cover;object-position:top;border-radius:50%;background:#edf2e9}
+.person img[src="/team/arip.jpeg"]{object-position:50% 40%}
+.person h2{font:700 1rem/1.4 var(--serif);margin:0;overflow-wrap:anywhere}.person p{font-size:.78rem;line-height:1.5;margin:.3rem 0 0;color:#486759}.person div{min-width:0}
+.person.director{background:#155d47;border-color:#155d47;color:white}.person.director p{color:#e0eee5}
+</style>

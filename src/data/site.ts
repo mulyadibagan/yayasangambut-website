@@ -13,6 +13,7 @@ export const routeMap = {
 } as const;
 
 export const pagePairs: Record<string, string> = {
+  '/id/struktur-tim-inti/': '/en/core-team-structure/', '/en/core-team-structure/': '/id/struktur-tim-inti/',
   '/id/cerita/dari-lumpur-teluk-piyai-pesisir-tumbuh-harapan-untuk-pesisir-974fc5a7/': '/en/field-stories/hope-takes-root-in-teluk-piyai-pesisir/', '/en/field-stories/hope-takes-root-in-teluk-piyai-pesisir/': '/id/cerita/dari-lumpur-teluk-piyai-pesisir-tumbuh-harapan-untuk-pesisir-974fc5a7/',
   ...Object.fromEntries(regulations.flatMap(r => [[`/id/pengetahuan/peraturan/${r.id}/`, `/en/knowledge/regulations/${r.id}/`], [`/en/knowledge/regulations/${r.id}/`, `/id/pengetahuan/peraturan/${r.id}/`]])),
   '/id/pengetahuan/': '/en/knowledge/', '/en/knowledge/': '/id/pengetahuan/',
