@@ -1,4 +1,4 @@
-import {readFile,writeFile,copyFile,mkdir} from 'node:fs/promises';
+import {readFile,writeFile,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 
 const replace=(source,from,to)=>{if(source.includes(to))return source;if(source.split(from).length!==2)throw Error('Finance review display source drift');return source.replace(from,()=>to);};
@@ -9,9 +9,6 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  }
  await writeFile(resolve(root,'app/finance-document-links.json'),JSON.stringify(documents));
  const read=async file=>(await readFile(resolve(root,file),'utf8')).replace(/\r\n/g,'\n');
- await mkdir(resolve(root,'app/bank-source'),{recursive:true});
- await copyFile(new URL('./finance-bank-source-page.tsx',import.meta.url),resolve(root,'app/bank-source/page.tsx'));
- await copyFile(new URL('./finance-bank-source.mjs',import.meta.url),resolve(root,'app/finance-bank-source.js'));
  let receiptCss=await read('app/project-receipt-cluster.css');
  receiptCss=replace(receiptCss,'grid-template-columns: 105px minmax(0, 1fr) auto;','grid-template-columns: minmax(0, 1fr);');
  receiptCss=receiptCss.replace('text-align: right;','text-align: left;').replace('grid-column: 2 / -1;','grid-column: auto;');
@@ -20,15 +17,9 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  receipt=replace(receipt,'import source from',`import documentLinks from './finance-document-links.json';\nimport {receiptStatement} from './finance-review-display.js';\nimport source from`);
  receipt=replace(receipt,'evidenceUrl: row.evidence?.[0]?.url,','evidenceUrl: receiptStatement(row),');
  receipt=receipt.replace('receiptStatement(row),','receiptStatement(row,documentLinks.receipts),');
- receipt=replace(receipt,"import {receiptStatement}","import {bankSourceHref} from './finance-bank-source.js';\nimport {receiptStatement}");
- receipt=replace(receipt,'<strong>{money(receipt.amount)}</strong>','<strong>{money(receipt.amount)}</strong>\n                  {year===2026&&<a href={bankSourceHref(receipt)} target="_blank" rel="noreferrer">Sumber mutasi Finance ↗</a>}');
  receipt=replace(receipt,'Bukti ↗',"{documentLinks.receipts.some(link=>link.reference===receipt.reference&&link.date===receipt.date&&link.amount===receipt.amount)?'Bukti transfer ↗':'Mutasi bank ↗'}");
  receipt=replace(receipt,'<small>{receipt.reference}</small>','<small>Mutasi bank belum tertaut · {receipt.reference}</small>');
  let dossier=await read('app/project-dossier.tsx');
- let dashboard=await read('app/finance-archive-dashboard.tsx');
- dashboard=replace(dashboard,'const sourceUrl = statementUrl || bankStatement2026.sourceUrl;','const sourceUrl = statementUrl;');
- dashboard=replace(dashboard,'if (!links.length) return <div className="bank-source-evidence">','if (!links.length && !sourceUrl) return <div className="bank-source-evidence"><small>Sumber: register mutasi Finance yang diperbarui pengguna</small></div>;\n  if (!links.length) return <div className="bank-source-evidence">');
- await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),dashboard);
  dossier=replace(dossier,"import {useState}","import {reportSummary} from './finance-review-display.js';\nimport {useState}");
  dossier=replace(dossier,"import {reportSummary}","import documentLinks from './finance-document-links.json';\nimport {reportSummary}");
  dossier=replace(dossier,'return [...(record.evidenceFiles||[]),...(email?.files||[])]',"return [...(documentLinks.records.find(item=>item.id===record.id)?.files||[]),...(record.evidenceFiles||[]),...(email?.files||[])]");
