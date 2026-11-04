@@ -22,3 +22,12 @@ test('workplan month follows reporting cutoff, including year rollover',()=>{
  assert.equal(timelineMonth('2026-10-31'),5);
  assert.equal(timelineMonth('2027-02-28'),9);
 });
+test('private receipt proof requires exact transaction identity and never edits the ledger',()=>{
+ const row={reference:'bank-ref',postedAt:'14 Sep 2026 09:08:18',credit:100,balance:200};
+ const proof={reference:row.reference,date:row.postedAt,amount:100,files:[{url:'https://drive.google.com/file/d/proof/view'}]};
+ const before=structuredClone(row);
+ assert.equal(receiptStatement(row,[proof]),proof.files[0].url);
+ for(const mismatch of [{reference:'other'},{date:'other'},{amount:101}])assert.equal(receiptStatement(row,[{...proof,...mismatch}]),undefined);
+ assert.throws(()=>receiptStatement(row,[proof,proof]),/Ambiguous/);
+ assert.deepEqual(row,before);
+});
