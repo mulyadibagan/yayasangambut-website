@@ -9,6 +9,10 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  }
  await writeFile(resolve(root,'app/finance-document-links.json'),JSON.stringify(documents));
  const read=async file=>(await readFile(resolve(root,file),'utf8')).replace(/\r\n/g,'\n');
+ let receiptCss=await read('app/project-receipt-cluster.css');
+ receiptCss=replace(receiptCss,'grid-template-columns: 105px minmax(0, 1fr) auto;','grid-template-columns: minmax(0, 1fr);');
+ receiptCss=receiptCss.replace('text-align: right;','text-align: left;').replace('grid-column: 2 / -1;','grid-column: auto;');
+ await writeFile(resolve(root,'app/project-receipt-cluster.css'),receiptCss);
  let receipt=await read('app/project-receipt-cluster-panel.tsx');
  receipt=replace(receipt,'import source from',`import documentLinks from './finance-document-links.json';\nimport {receiptStatement} from './finance-review-display.js';\nimport source from`);
  receipt=replace(receipt,'evidenceUrl: row.evidence?.[0]?.url,','evidenceUrl: receiptStatement(row),');
