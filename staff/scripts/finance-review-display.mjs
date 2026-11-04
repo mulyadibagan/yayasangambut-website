@@ -21,6 +21,7 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  dossier=replace(dossier,'return [...(record.evidenceFiles||[]),...(email?.files||[])]',"return [...(documentLinks.records.find(item=>item.id===record.id)?.files||[]),...(record.evidenceFiles||[]),...(email?.files||[])]");
  const packageStart=dossier.indexOf('function PpcfDocumentPackage('),packageEnd=dossier.indexOf('const restorationEvidence=',packageStart);
  let generic=dossier.slice(packageStart,packageEnd).replace('PpcfDocumentPackage','MaEarthDocumentPackage').replace('const fallbackReceipt=ppcfReceiptByCode[row.code];','const fallbackReceipt=undefined;');
+ generic=generic.replace('<div className="aramco-document-panel ppcf-document-panel">','<div className="aramco-document-panel ppcf-document-panel" style={{minWidth:420}}>');
  generic=generic.replace('<h4>UM</h4>','<h4>UM</h4>{umFiles.filter(file=>!/\\.xls[xm]?$/i.test(file.name)).map(file=><a key={file.url} href={file.url} target="_blank" rel="noopener noreferrer">{file.name} ↗</a>)}');
  dossier=dossier.slice(0,packageEnd)+generic+dossier.slice(packageEnd);
  dossier=replace(dossier,"const showActivityDocuments=p.key==='PPCF'||p.key==='PENABULU'||isRestoration;","const showActivityDocuments=p.key==='PPCF'||p.key==='PENABULU'||p.key==='MAEARTH'||isRestoration;");
