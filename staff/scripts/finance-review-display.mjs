@@ -20,6 +20,10 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  receipt=replace(receipt,'Bukti ↗',"{documentLinks.receipts.some(link=>link.reference===receipt.reference&&link.date===receipt.date&&link.amount===receipt.amount)?'Bukti transfer ↗':'Mutasi bank ↗'}");
  receipt=replace(receipt,'<small>{receipt.reference}</small>','<small>Mutasi bank belum tertaut · {receipt.reference}</small>');
  let dossier=await read('app/project-dossier.tsx');
+ let dashboard=await read('app/finance-archive-dashboard.tsx');
+ dashboard=replace(dashboard,'const sourceUrl = statementUrl || bankStatement2026.sourceUrl;','const sourceUrl = statementUrl;');
+ dashboard=replace(dashboard,'if (!links.length) return <div className="bank-source-evidence">','if (!links.length && !sourceUrl) return <div className="bank-source-evidence"><small>Rekening koran asli periode transaksi belum tertaut</small></div>;\n  if (!links.length) return <div className="bank-source-evidence">');
+ await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),dashboard);
  dossier=replace(dossier,"import {useState}","import {reportSummary} from './finance-review-display.js';\nimport {useState}");
  dossier=replace(dossier,"import {reportSummary}","import documentLinks from './finance-document-links.json';\nimport {reportSummary}");
  dossier=replace(dossier,'return [...(record.evidenceFiles||[]),...(email?.files||[])]',"return [...(documentLinks.records.find(item=>item.id===record.id)?.files||[]),...(record.evidenceFiles||[]),...(email?.files||[])]");
