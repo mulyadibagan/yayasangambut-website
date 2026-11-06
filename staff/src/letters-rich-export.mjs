@@ -1,6 +1,7 @@
+import {isMou,mouDocument} from '../public/letter-mou.js';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {cleanDocument,plainDocument,escapeText,taskDocument} from '../public/letter-content.js';
-const content=r=>r.data.kind==='SPT'?taskDocument(r.data):r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
+const content=r=>isMou(r.data)?mouDocument(r.data):r.data.kind==='SPT'?taskDocument(r.data):r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
 const xml=escapeText;
 export function richWord(r,dateLabel){
  let num=0;const numbering=[];
@@ -16,11 +17,13 @@ export function richWord(r,dateLabel){
  let body=r.status==='issued'?'':simple('DRAFT - BELUM TERBIT',{runs:[{text:'DRAFT - BELUM TERBIT',bold:true}]});
  if(r.data.kind==='SPT')body+=simple(dateLabel(r.data.date),{align:'right',space:0},{keep:true})+simple('SURAT PERINTAH TUGAS',{align:'center',space:0,runs:[{text:'SURAT PERINTAH TUGAS',bold:true}]},{keep:true})+simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:18},{keep:true});
  else if(r.data.kind==='PNY')body+=simple(r.data.subject,{align:'center',space:6,runs:[{text:r.data.subject,bold:true}]},{size:26,keep:true})+simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12},{keep:true});
+ else if(isMou(r.data)){}
  else{body+=simple(`Nomor Surat\t: ${r.number||'Belum dialokasikan'}\t${dateLabel(r.data.date)}`,{space:0},{tabs:true,keep:true})+simple('Perihal\t: '+r.data.subject,{space:0},{tabs:true,keep:true})+simple('Lampiran\t: '+(r.data.attachments||'-'),{space:15},{tabs:true,keep:true});for(const t of ['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean))body+=simple(t,{space:0},{keep:true});body+=simple('',{space:10});}
  body+=content(r).blocks.map(block).join('');
  const statement=r.data.kind==='PNY',align=statement?'right':'left';
- body+=simple(statement?`${r.data.statementPlace||'Pekanbaru'}, ${dateLabel(r.data.date)}`:'Hormat kami,',{align,space:70},{before:180,keep:true});
+ if(!isMou(r.data)){body+=simple(statement?`${r.data.statementPlace||'Pekanbaru'}, ${dateLabel(r.data.date)}`:'Hormat kami,',{align,space:70},{before:180,keep:true});
  body+=simple('Mulyadi',{align,runs:[{text:'Mulyadi',bold:true}],space:0},{keep:true})+simple('Direktur Yayasan Gambut',{align,space:0});
+ }
  const abstract=(id,ordered)=>`<w:abstractNum w:abstractNumId="${id}"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="${ordered?'decimal':'bullet'}"/><w:lvlText w:val="${ordered?'%1.':'&#8226;'}"/><w:lvlJc w:val="left"/><w:pPr><w:tabs><w:tab w:val="num" w:pos="360"/></w:tabs><w:ind w:left="360" w:hanging="360"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/></w:rPr></w:lvl></w:abstractNum>`;
  return {body,numbering:`<?xml version="1.0"?><w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${abstract(0,true)+abstract(1,false)+numbering.join('')}</w:numbering>`};
 }
@@ -53,11 +56,13 @@ export async function richPdf(r,logoBytes,letterhead,signatureBytes,dateLabel){
  start();if(r.status!=='issued')simple('DRAFT - BELUM TERBIT',{runs:[{text:'DRAFT - BELUM TERBIT',bold:true}]});
  if(r.data.kind==='SPT'){simple(dateLabel(r.data.date),{align:'right',space:0});simple('SURAT PERINTAH TUGAS',{align:'center',runs:[{text:'SURAT PERINTAH TUGAS',bold:true}],space:0});simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:18});}
  else if(r.data.kind==='PNY'){simple(r.data.subject,{align:'center',fontSize:13,runs:[{text:r.data.subject,bold:true}],space:6});simple('Nomor: '+(r.number||'Belum dialokasikan'),{align:'center',space:12});}
+ else if(isMou(r.data)){}
  else{const date=dateLabel(r.data.date);page.drawText(date,{x:right-fonts.normal.widthOfTextAtSize(date,size),y:y-size,size,font:fonts.normal});simple('Nomor Surat: '+(r.number||'Belum dialokasikan'),{space:0},{available:width-115});simple('Perihal: '+r.data.subject,{space:0});simple('Lampiran: '+(r.data.attachments||'-'),{space:15});for(const t of ['Kepada Yth.',r.data.recipient,r.data.institution,r.data.address||'Di tempat'].filter(Boolean))simple(t,{space:0});y-=10;}
  for(const b of content(r).blocks){if(b.type==='paragraph')paragraph(b);else if(b.type==='list')b.items.forEach((item,i)=>paragraph(item,{marker:b.ordered?(b.start+i)+'.':'\u2022'}));else table(b);}
- const statement=r.data.kind==='PNY',x=statement?right-225:left,w=statement?225:width,closing=statement?`${r.data.statementPlace||'Pekanbaru'}, ${dateLabel(r.data.date)}`:'Hormat kami,';ensure(10+lines({runs:[{text:closing}]},w).length*leading+84+leading*2);y-=10;
+ if(!isMou(r.data)){const statement=r.data.kind==='PNY',x=statement?right-225:left,w=statement?225:width,closing=statement?`${r.data.statementPlace||'Pekanbaru'}, ${dateLabel(r.data.date)}`:'Hormat kami,';ensure(10+lines({runs:[{text:closing}]},w).length*leading+84+leading*2);y-=10;
  simple(closing,{align:statement?'right':'left',space:0},{x,available:w});
  if(signature)page.drawImage(signature,{x:statement?right-105:left-6,y:y-88,width:105,height:105});y-=84;
  simple('Mulyadi',{align:statement?'right':'left',space:0,runs:[{text:'Mulyadi',bold:true}]},{x,available:w});simple('Direktur Yayasan Gambut',{align:statement?'right':'left',space:0},{x,available:w});
+ }
  doc.setTitle(r.data.subject);doc.setAuthor('Yayasan Gambut');return doc.save();
 }

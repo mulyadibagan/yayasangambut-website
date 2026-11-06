@@ -10,6 +10,7 @@ export const letterTypes=Object.freeze([
  {code:'KUA',label:'Surat Kuasa'},
  {code:'REK',label:'Surat Rekomendasi'},
  {code:'PNY',label:'Surat Pernyataan'},
+ {code:'MOU',label:'Nota Kesepahaman'},
  {code:'PKS',label:'Perjanjian Kerja Sama'},
  {code:'BAST',label:'Berita Acara Serah Terima'},
  {code:'UM',label:'Surat Umum'}
