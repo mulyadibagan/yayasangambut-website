@@ -1,5 +1,6 @@
 import {lettersApi,letterAccess} from './letters.mjs';
 import {teamSizesApi,teamSizesAccess} from './team-sizes.mjs';
+import {timesheetApi,syncTeamTimesheets} from './timesheets.mjs';
 import {syncInvoiceDrive} from './invoice-drive.mjs';
 import {sendPayrollNotifications} from './payroll-notifications.mjs';
 import {signatureRoute} from './document-signature.mjs';
@@ -153,6 +154,7 @@ async function analytics(env,days,site='website'){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
+  if(path==='/api/timesheets'||path.startsWith('/api/timesheets/'))return timesheetApi(req,env,url,u,{payload});
   if(path==='/api/surat'||path.startsWith('/api/surat/'))return lettersApi(req,env,url,u,{payload});
   if(path==='/api/team-sizes'||path.startsWith('/api/team-sizes/'))return teamSizesApi(req,env,url,u,{payload});
   if(path==='/api/calendar'||path.startsWith('/api/calendar/'))return calendarApi(req,env,url,u);
@@ -299,7 +301,7 @@ async function route(req,env,ctx){
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
   return env.ASSETS.fetch(req);
 }
-export default {async scheduled(event,env,ctx){ctx.waitUntil(syncInvoiceDrive(env));ctx.waitUntil(syncCalendars(env));ctx.waitUntil(sendPayrollNotifications(env));},async fetch(req,env,ctx){
+export default {async scheduled(event,env,ctx){ctx.waitUntil(syncInvoiceDrive(env));ctx.waitUntil(syncCalendars(env));ctx.waitUntil(sendPayrollNotifications(env));ctx.waitUntil(syncTeamTimesheets(env));},async fetch(req,env,ctx){
   let r;try{r=await route(req,env,ctx);}catch(e){r=json({error:e instanceof HttpError?e.message:'Layanan sementara tidak tersedia. Coba kembali atau hubungi administrator.'},e instanceof HttpError?e.status:500);}
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(new URL(req.url).pathname==='/finance'||new URL(req.url).pathname.startsWith('/finance/'))out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://drive.google.com https://lh3.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://docs.google.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; frame-src 'self' blob: https://drive.google.com https://docs.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
