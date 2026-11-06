@@ -12,7 +12,7 @@ const origin='https://staff.yayasangambut.org',path='/finance/payroll/api';
 const sample={period:'2026-10',notes:'Contoh pengujian, bukan gaji nyata.',items:[{name:'Penerima uji',program:'Program uji',bank:'Bank uji',account:'001234',base:5000000,allowance:500000,deduction:100000}]};
 async function setup(){
  const db=new DatabaseSync(':memory:');
- for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql','0024_payroll_documents_cancellation.sql','0037_payroll_staff_terms.sql','0040_payroll_staff_funding_amendments.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
+ for(const f of ['0001_initial.sql','0005_webgis_sso.sql','0021_payroll_requests.sql','0022_payroll_payments.sql','0023_payroll_review_notifications.sql','0024_payroll_documents_cancellation.sql','0037_payroll_staff_terms.sql','0040_payroll_staff_funding_amendments.sql','0042_payroll_staff_bank.sql'])db.exec(readFileSync(new URL('../migrations/'+f,import.meta.url),'utf8'));
  const DB={prepare(sql){let args=[];return {bind(...a){args=a;return this;},async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){const r=db.prepare(sql).run(...args);return {meta:{changes:Number(r.changes)}};}};},async batch(statements){db.exec('BEGIN');try{const out=[];for(const s of statements)out.push(await s.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}};
  const env={DB,APP_ORIGIN:origin,GOOGLE_CLIENT_ID:'test',GOOGLE_CLIENT_SECRET:'test',GOOGLE_WORKSPACE_DOMAIN:'yayasangambut.org',PAYROLL_FINANCE_EMAIL:'rienaprasiddha@yayasangambut.org'};
  for(const [id,email,role] of [['finance',env.PAYROLL_FINANCE_EMAIL,'staff'],['director','mulyadi@yayasangambut.org','admin'],['other','other@yayasangambut.org','admin']]){db.prepare('INSERT INTO users VALUES(?,?,?,?,0,?,?)').run(id,email,id,role,'2026-10-19','2026-10-19');db.prepare('INSERT INTO sessions VALUES(?,?,?)').run(await sha(id),id,Date.now()+60000);}
@@ -23,6 +23,25 @@ async function setup(){
 const request=(suffix='',user='finance',method='GET',data)=>new Request(origin+path+suffix,{method,headers:{Cookie:'__Host-yg-session='+user,Origin:origin,'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})});
 async function call(env,suffix='',user='finance',method='GET',data,status=200){const r=await worker.fetch(request(suffix,user,method,data),env);assert.equal(r.status,status,await r.clone().text());return r.json();}
 const create=env=>call(env,'','finance','POST',sample,201);
+
+test('director updates staff bank defaults privately with audit, conflict checks and no changes to old requests',async()=>{
+ const {env,db}=await setup();bindSource(env);
+ const old=await create(env),rowBefore=db.prepare('SELECT * FROM yg_payroll_requests WHERE id=?').get(old.id);
+ const bank={name:'Penerima uji',bank:'Bank pengujian',account:'000-12-345678',account_name:'Pemilik uji',version:0};
+ await call(env,'/staff-bank?name=Penerima%20uji','other','GET',null,403);
+ await call(env,'/staff-bank','finance','POST',bank,403);
+ assert.equal((await call(env,'/staff-bank?name=Penerima%20uji','director')).record,null);
+ const saved=await call(env,'/staff-bank','director','POST',bank);assert.equal(saved.record.account,'00012345678');assert.equal(saved.record.version,1);
+ const read=await call(env,'/staff-bank?name=Penerima%20uji','finance');assert.equal(read.record.account_name,'Pemilik uji');
+ const defaults=await call(env,'/defaults?period=2026-11','finance');const item=defaults.items.find(i=>i.name==='Penerima uji');assert.equal(item.bank,bank.bank);assert.equal(item.account,'00012345678');assert.equal(item.account_name,bank.account_name);assert.equal(item.net,5400000);
+ assert.deepEqual(db.prepare('SELECT * FROM yg_payroll_requests WHERE id=?').get(old.id),rowBefore);assert.equal((await call(env,'/'+old.id)).items[0].account,'001234');
+ await call(env,'/staff-bank','director','POST',bank,409);
+ await call(env,'/staff-bank','director','POST',{...bank,version:1});assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_staff_bank_history').get().n,1);
+ await call(env,'/staff-bank','director','POST',{...bank,version:1,account:'987654321'});assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_staff_bank_history').get().n,2);
+ for(const account of ['123','123<script>','1234/5678'])await call(env,'/staff-bank','director','POST',{...bank,account,version:2},400);
+ const evil=request('/staff-bank','director','POST',{...bank,version:2});evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,env)).status,403);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_requests').get().n,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_payments').get().n,0);
+});
 test('designated Finance reaches the full dashboard but cannot approve payroll',async()=>{
  const {env,db}=await setup();
  assert.equal((await worker.fetch(new Request(origin+path),env)).status,401);

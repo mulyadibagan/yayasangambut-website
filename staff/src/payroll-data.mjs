@@ -1,3 +1,4 @@
+import {staffBanks,bankStaffKey,recipientBank} from './payroll-staff-bank.mjs';
 import {staffTerms,applyStaffTerms} from './payroll-staff.mjs';
 import {canonicalStaffName,displayStaffName,staffDescription} from './payroll-identity.mjs';
 import {fail} from './core.mjs';
@@ -64,8 +65,9 @@ export async function payrollDefaults(env,u,period){
  const source=await payrollSource(env,u,period),report=await payrollReport(env,u,source);
  const previous=(await q(env,'SELECT items FROM yg_payroll_requests WHERE cancelled_at IS NULL ORDER BY created_at DESC LIMIT 100').all()).results,known=new Map();
  for(const r of previous)for(const item of JSON.parse(r.items)){const id=item.staff_id||staffKey(item.name);if(!known.has(id))known.set(id,item);}
+ const banks=new Map((await staffBanks(env)).map(b=>[b.staff_key,b]));
  const items=report.staff.filter(s=>s.active&&Number.isSafeInteger(s.monthlySalary)&&s.monthlySalary>0).map(s=>{
-  const profile=source.profiles?.profiles?.[canonicalStaffName(s.name)]||{},old={...profile,...(known.get(s.id)||{})};return {staff_id:s.id,name:s.name,program:s.fundingSource||'Saving gaji',budget_code:old.budget_code||'',description:staffDescription(old.description,s.name),bank:old.bank||profile.bank||'',account:old.account||profile.account||'',account_name:old.account_name||profile.account_name||s.name,remarks:old.remarks||'',base:s.monthlySalary,allowance:0,deduction:0,net:s.monthlySalary,allocation_snapshot:{asOf:source.asOf,position:s.position,monthlySalary:s.monthlySalary,source_ids:s.sources.map(x=>x.id)}};
+  const profile=source.profiles?.profiles?.[canonicalStaffName(s.name)]||{},old={...profile,...(known.get(s.id)||{})};return {staff_id:s.id,name:s.name,program:s.fundingSource||'Saving gaji',budget_code:old.budget_code||'',description:staffDescription(old.description,s.name),...recipientBank(banks.get(bankStaffKey(s.name)),old,profile,s.name),remarks:old.remarks||'',base:s.monthlySalary,allowance:0,deduction:0,net:s.monthlySalary,allocation_snapshot:{asOf:source.asOf,position:s.position,monthlySalary:s.monthlySalary,source_ids:s.sources.map(x=>x.id)}};
  });
  if(!items.length)fail(503,'Kebijakan gaji staf aktif belum tersedia.');
  return {items,sourceAsOf:source.asOf,sourceMode:source.mode,sourceUrl:source.sourceUrl,bankAccount:source.bank.account,form_meta:{date:today(),applicant:displayStaffName(source.profiles?.applicant||u.name),title:source.profiles?.title||'Bendahara/Tenaga Teknis',purpose:'Pembayaran Gaji Pengurus YG '+new Date(period+'-01T12:00:00+07:00').toLocaleDateString('id-ID',{month:'long',year:'numeric',timeZone:'Asia/Jakarta'}),place:source.profiles?.place||'Tangerang Selatan',number:'',allocation_as_of:source.asOf,adjustment_note:''},warnings:period<source.asOf.slice(0,7)?['Periode lebih lama dari kebijakan saat ini. Periksa nominal sebelum diajukan.']:[]};
