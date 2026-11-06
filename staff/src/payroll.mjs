@@ -1,3 +1,4 @@
+import {staffBank,saveStaffBank} from './payroll-staff-bank.mjs';
 import {staffTerms,saveStaffTerm,staffTermsPage} from './payroll-staff.mjs';
 import {documentSignature,signatureDataUrl} from './document-signature.mjs';
 import {savePayrollPdf,pdfHash} from './payroll-pdf.mjs';
@@ -62,6 +63,8 @@ export async function payrollRoute(req,env,u,ctx){
  if(path==='/finance/payroll/staff'&&req.method==='GET')return new Response(staffTermsPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix+'/staff-terms'&&req.method==='GET')return Response.json({director:financeOwner(u),rows:await staffTerms(env)});
  if(path===prefix+'/staff-terms'&&req.method==='POST'){if(!financeOwner(u))fail(403,'Hanya Direktur dapat menetapkan data gaji.');return Response.json(await saveStaffTerm(env,u,await input(req)),{status:201});}
+ if(path===prefix+'/staff-bank'&&req.method==='GET')return Response.json({record:await staffBank(env,url.searchParams.get('name'))});
+ if(path===prefix+'/staff-bank'&&req.method==='POST'){if(!financeOwner(u))fail(403,'Hanya Direktur dapat memperbarui rekening staf.');return Response.json({record:await saveStaffBank(env,u,await input(req))});}
  if(path===prefix+'/email-service'&&req.method==='GET')return Response.json(await payrollEmailService(env));
  if(path==='/finance/payroll/report'&&req.method==='GET')return new Response(payrollReportPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
  if(path===prefix+'/defaults'&&req.method==='GET')return Response.json(await payrollDefaults(env,u,url.searchParams.get('period')));
