@@ -74,7 +74,7 @@ export async function syncTimesheet(env,user){
    if(!response.ok)fail(response.status===412?409:502,'Penyimpanan Excel belum berhasil (HTTP '+response.status+'). Cadangan file asli tersedia.');const saved=await response.json();if(saved.md5Checksum!==md5(result.bytes))fail(502,'Isi Excel tersimpan belum dapat diverifikasi. Periksa file sebelum mencoba lagi.');
   }
   await q(env,"UPDATE team_timesheet_files SET managed_json=?,last_synced=?,last_error='' WHERE user_id=? AND lock_until=?",JSON.stringify(result.managed),now(),user,lease).run();
-  return {changedCells:result.changes,sources:sources.length,outside:result.outside,unresolved:result.unresolved,sheets:result.sheets,url:'https://drive.google.com/file/d/'+config.file_id+'/view'};
+  return {changedCells:result.changes,sources:sources.length,outside:result.outside,skippedManual:result.skippedManual,unresolved:result.unresolved,sheets:result.sheets,url:'https://drive.google.com/file/d/'+config.file_id+'/view'};
  }catch(e){await q(env,'UPDATE team_timesheet_files SET last_error=? WHERE user_id=? AND lock_until=?',String(e.message||'Sinkronisasi belum berhasil.').slice(0,500),user,lease).run();if(!(e instanceof HttpError))fail(409,String(e.message||'Sinkronisasi belum berhasil.').slice(0,500));throw e;}finally{await q(env,'UPDATE team_timesheet_files SET lock_until=0 WHERE user_id=? AND lock_until=?',user,lease).run();}
 }
 export async function syncTeamTimesheets(env){
