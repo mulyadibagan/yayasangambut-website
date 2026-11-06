@@ -1,10 +1,12 @@
 import {cleanDocument,plainDocument,para} from './letter-content.js';
 export const isMou=data=>data.kind==='MOU'||data.kind==='PKS'&&/^nota\s+kesepahaman\b/i.test(data.subject||'');
-export function mouDocument(data){
+export function mouDocument(data,number){
  const source=data.bodyFormat==='rich-v1'?cleanDocument(data.bodyDoc):plainDocument(data.body||'');
  const text=p=>p.runs.map(r=>r.text).join('');
  const blocks=source.blocks.map(b=>{
-  if(b.type!=='paragraph')return b;const value=text(b).trim();
+  if(b.type!=='paragraph')return b;
+  if(number&&/^Nomor Yayasan Gambut:/i.test(text(b).trim()))b={...b,runs:[{text:text(b).replace(/^(\s*Nomor Yayasan Gambut:\s*)(?:\[[^\]]*\]|Belum dialokasikan|\S+)/i,(_,label)=>label+number)}]};
+  const value=text(b).trim();
   if(/^(NOTA KESEPAHAMAN$|ANTARA |TENTANG |Nomor Yayasan Gambut:|PASAL \d+)/i.test(value))return {...b,align:'center',space:6,runs:b.runs.map(r=>({...r,bold:!/^Nomor /i.test(value)}))};
   return {...b,align:value?'justify':'left',space:6};
  });
