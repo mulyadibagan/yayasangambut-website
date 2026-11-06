@@ -103,7 +103,7 @@ test('rendition migration copies existing final formats and Drive URLs exactly',
 
 test('all thirteen letter types are available through settings and accepted as unnumbered drafts',async()=>{
  const {env,db}=await setup();const settings=await (await call(env,'/settings')).json();
- assert.equal(settings.types.length,13);assert.deepEqual(settings.types,letterTypes);
+ assert.equal(settings.types.length,14);assert.deepEqual(settings.types,letterTypes);
  for(const type of letterTypes){const r=await create(env,'r',{...sample,kind:type.code});assert.equal(r.data.kind,type.code);assert.equal(r.sequence,null);}
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_annual WHERE sequence IS NOT NULL').get().n,0);
  assert.equal((await call(env,'','r','POST',{...sample,kind:'UNKNOWN'})).status,400);
