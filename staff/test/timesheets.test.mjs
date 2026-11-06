@@ -61,7 +61,7 @@ test('database prevents duplicate daily program entries and concurrent excess ho
  assert.throws(()=>add.run('one','2026-11-01','Other',1,'Work','one','now'),/24 jam/);assert.throws(()=>add.run('one','2026-11-01','JPIK',8,'Work','one','now'),/UNIQUE/);
  assert.throws(()=>db.prepare('UPDATE team_timesheet_days SET hours=9 WHERE program=?').run('JPIK'),/24 jam/);
 });
-test('connected Drive sync backs up original bytes, uses conditional writes, verifies checksum and is retry-safe',async t=>{
+for(const driveVersion of ['v3','v2'])test('connected Drive sync backs up original bytes, uses conditional writes, verifies checksum and is retry-safe '+driveVersion,async t=>{
  const {env,db}=setup();env.GOOGLE_CLIENT_SECRET='test-secret';env.AGENDA_DRIVE_ROOT_ID='root-folder-123456';
  db.exec('CREATE TABLE agenda_drive_connection(id INTEGER PRIMARY KEY,user_id TEXT,email TEXT,refresh_token TEXT,root_id TEXT,folder_id TEXT,status TEXT,updated_at TEXT)');
  db.prepare('INSERT INTO agenda_drive_connection VALUES(1,?,?,?,?,?,?,?)').run('director','director@example.test',await sealToken(env,'agenda-drive:director','refresh'),env.AGENDA_DRIVE_ROOT_ID,'archive-folder','connected','now');
@@ -72,9 +72,10 @@ test('connected Drive sync backs up original bytes, uses conditional writes, ver
  globalThis.fetch=async (input,init={})=>{
   const url=String(input);if(url==='https://oauth2.googleapis.com/token')return Response.json({access_token:'access'});
   if(url.includes('/files/archive-folder?'))return Response.json({mimeType:'application/vnd.google-apps.folder',capabilities:{canAddChildren:true},parents:[env.AGENDA_DRIVE_ROOT_ID]});
-  if(url.includes('/upload/drive/v3/files/abcdefghijklmnop')){assert.equal(init.headers['If-Match'],'"version"');assert.ok(backup);writes++;file=init.body;return Response.json({id:'abcdefghijklmnop',md5Checksum:hash(file)});}
+  if(url.includes('/upload/drive/'+driveVersion+'/files/abcdefghijklmnop')){assert.equal(init.method,driveVersion==='v2'?'PUT':'PATCH');assert.equal(init.headers['If-Match'],'"version"');assert.ok(backup);writes++;file=init.body;return Response.json({id:'abcdefghijklmnop',md5Checksum:hash(file)});}
   if(url.includes('/files/abcdefghijklmnop?alt=media'))return new Response(file);
-  if(url.includes('/files/abcdefghijklmnop?'))return Response.json({id:'abcdefghijklmnop',name:'Person.xlsm',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12',size:file.length,md5Checksum:hash(file),version:String(writes),capabilities:{canEdit:true}},{headers:{etag:'"version"'}});
+  if(url.includes('/drive/v2/files/abcdefghijklmnop?'))return Response.json({etag:'"version"',md5Checksum:hash(file),version:String(writes)});
+  if(url.includes('/files/abcdefghijklmnop?'))return Response.json({id:'abcdefghijklmnop',name:'Person.xlsm',mimeType:'application/vnd.ms-excel.sheet.macroEnabled.12',size:file.length,md5Checksum:hash(file),version:String(writes),capabilities:{canEdit:true}},{headers:driveVersion==='v3'?{etag:'"version"'}:{}});
   throw Error('Unexpected network request');
  };
  const actor={id:'director',email:'director@example.test',role:'admin'},url=new URL('https://staff.test/api/timesheets/connect?staff=one');
