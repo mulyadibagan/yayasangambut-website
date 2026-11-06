@@ -7,19 +7,30 @@ import {translateBatch} from './translation.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const mime='application/vnd.ms-excel.sheet.macroEnabled.12';
 const md5=bytes=>createHash('md5').update(bytes).digest('hex');
+export function adoptSourceActivities(book,sources,managed){
+ const result={...managed},strip=value=>String(value).split('\n').map(line=>line.replace(/^\[[^\]]*\]\s*/,'').trim()).filter(Boolean).sort().join('\n');
+ for(const sheet of book.sheets)for(const [date,row] of sheet.dates){const key=sheet.path+'|B'+row,cell=sheet.cells.get('B'+row),expected=[...new Set(sources.filter(s=>s.date===date).map(s=>s.title+(s.program?' · '+s.program:'')))].join('\n');if(!(key in result)&&expected&&cell&&!cell.formula&&strip(cell.value)===strip(expected))result[key]=cell.value;}
+ return result;
+}
 export async function englishTimesheetText(env,sources,entries){
  const texts=[...new Set([...sources.map(s=>s.title.replace(/^\[[^\]]*\]\s*/,'')),...entries.map(e=>e.activity)])];
- const translations=new Map();
+ const translations=new Map(),pending=[];
  for(const text of texts){
   const key='timesheets/english/v1/'+createHash('sha256').update(text).digest('hex')+'.txt',cached=await env.MEDIA?.get?.(key);
   if(cached){translations.set(text,await cached.text());continue;}
+  pending.push({text,key});
+ }
+ while(pending.length){
   if(!env.AI)fail(503,'Terjemahan Inggris timesheet belum tersedia. Excel belum diubah.');
-  const values=await translateBatch(env.AI,[{id:'s0',text}]);translations.set(text,values.s0);
-  await env.MEDIA?.put(key,values.s0,{httpMetadata:{contentType:'text/plain; charset=utf-8'}});
+  const batch=[];let size=0;while(pending.length&&batch.length<25&&(!batch.length||size+pending[0].text.length<=5500)){const item=pending.shift();batch.push(item);size+=item.text.length;}
+  const values=await translateBatch(env.AI,batch.map((item,i)=>({id:'s'+i,text:item.text})));
+  for(const [i,item] of batch.entries()){translations.set(item.text,values['s'+i]);await env.MEDIA?.put(item.key,values['s'+i],{httpMetadata:{contentType:'text/plain; charset=utf-8'}});}
  }
  return {sources:sources.map(s=>({...s,title:s.title.replace(/^(\[[^\]]*\]\s*)?(.*)$/,(_,prefix='',text)=>prefix+translations.get(text))})),entries:entries.map(e=>({...e,activity:translations.get(e.activity)}))};
 }
-const staffList=async env=>(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access a WHERE a.email=users.email AND a.scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
+// Timesheet destinations cover organizational employees, including staff who
+// also use KUPS. This does not change their login scope or portal permissions.
+const staffList=async env=>(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
 export function timesheetFileId(input){const s=String(input||'').trim(),id=/^https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d|spreadsheets\/d)\/([\w-]+)/.exec(s)?.[1]||s;if(!/^[\w-]{15,120}$/.test(id))fail(400,'Masukkan tautan file Excel Drive yang benar.');return id;}
 export function actualInput(input){
  const date=String(input.work_date||''),program=String(input.program||'').trim(),activity=String(input.activity||'').trim(),hours=Number(input.hours),today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
@@ -42,16 +53,24 @@ export async function syncTimesheet(env,user){
  const lease=Date.now()+120000,config=await q(env,'UPDATE team_timesheet_files SET lock_until=?,last_attempt=? WHERE user_id=? AND enabled=1 AND lock_until<? RETURNING *',lease,now(),user,Date.now()).first();if(!config)fail(409,'Timesheet belum dihubungkan atau sedang disinkronkan.');
  try{
   const {access}=await driveAccess(env),original=await workbookFile(access,config.file_id),sources=await sourcesFor(env,user),entries=(await q(env,'SELECT * FROM team_timesheet_days WHERE user_id=? ORDER BY work_date,program',user).all()).results;
-  const english=await englishTimesheetText(env,sources,entries);
-  const result=patchTimesheet(original.bytes,english.sources,english.entries,JSON.parse(config.managed_json));
+  const book=openTimesheet(original.bytes),dates=new Set(book.sheets.flatMap(s=>[...s.dates.keys()])),inside=sources.filter(s=>dates.has(s.date));
+  // Adopt only existing activity text that exactly matches this day's source
+  // descriptions. Any additional manual notes or numeric hours stay protected.
+  const managed=adoptSourceActivities(book,inside,JSON.parse(config.managed_json));
+  const english=await englishTimesheetText(env,inside,entries);
+  const result=patchTimesheet(original.bytes,english.sources,english.entries,managed);result.outside+=sources.length-inside.length;
   if(result.changes){
    if(!env.MEDIA)fail(503,'Penyimpanan cadangan belum tersedia.');
    await env.MEDIA.put('timesheets/backups/'+config.file_id+'/'+original.file.md5Checksum+'.xlsm',original.bytes,{httpMetadata:{contentType:mime}});
    const current=await google(access,'/drive/v3/files/'+encodeURIComponent(config.file_id)+'?supportsAllDrives=true&fields=md5Checksum,version');
    if(current.md5Checksum!==original.file.md5Checksum||current.version!==original.file.version)fail(409,'Excel baru saja diubah. Sinkronisasi ditunda agar isian manual tidak tertimpa.');
-   if(!original.etag)fail(409,'Google belum menyediakan penanda versi untuk pembaruan aman. File asli tidak diubah.');
+   let etag=original.etag,driveVersion='v3';
+   // Drive v2 exposes the file entity tag explicitly. When v3 omits its
+   // header, read and update the same v2 resource with that conditional tag.
+   if(!etag){const v2=await google(access,'/drive/v2/files/'+encodeURIComponent(config.file_id)+'?supportsAllDrives=true&fields=etag,md5Checksum,version');if(v2.md5Checksum!==original.file.md5Checksum||v2.version!==original.file.version)fail(409,'Excel baru saja diubah. Sinkronisasi ditunda agar isian manual tidak tertimpa.');etag=v2.etag;driveVersion='v2';}
+   if(!etag)fail(409,'Google belum menyediakan penanda versi untuk pembaruan aman. File asli tidak diubah.');
    // Conditional write uses the Drive entity tag where supplied, plus the file-version check above.
-   const response=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+encodeURIComponent(config.file_id)+'?uploadType=media&supportsAllDrives=true&fields=id,md5Checksum',{method:'PATCH',headers:{Authorization:'Bearer '+access,'Content-Type':mime,...(original.etag?{'If-Match':original.etag}:{})},body:result.bytes});
+   const response=await fetch('https://www.googleapis.com/upload/drive/'+driveVersion+'/files/'+encodeURIComponent(config.file_id)+'?uploadType=media&supportsAllDrives=true&fields=id,md5Checksum',{method:'PATCH',headers:{Authorization:'Bearer '+access,'Content-Type':mime,'If-Match':etag},body:result.bytes});
    if(!response.ok)fail(response.status===412?409:502,'Penyimpanan Excel belum berhasil. Cadangan file asli tersedia.');const saved=await response.json();if(saved.md5Checksum!==md5(result.bytes))fail(502,'Isi Excel tersimpan belum dapat diverifikasi. Periksa file sebelum mencoba lagi.');
   }
   await q(env,"UPDATE team_timesheet_files SET managed_json=?,last_synced=?,last_error='' WHERE user_id=? AND lock_until=?",JSON.stringify(result.managed),now(),user,lease).run();

@@ -1,3 +1,4 @@
+import {teamPeople} from './team-people.mjs';
 import {agendaAttachmentType} from './agenda-attachment-type.mjs';
 import {fail,now} from './core.mjs';
 import {taskDirector} from './tasks.mjs';
@@ -14,7 +15,7 @@ export function agendaInput(input){
 export async function agendaApi(req,env,url,u,{payload,readLimited}){
  const director=taskDirector(u,env),path=url.pathname,method=req.method;
  if(path==='/api/agendas/drive'||path.startsWith('/api/agendas/drive/'))return driveApi(req,env,url,u);
- const people=(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access WHERE email=users.email AND scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
+ const people=await teamPeople(env);
  const read=async id=>{const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');if(!director&&!member(a,u))fail(403,'Agenda ini tidak termasuk kegiatan Anda.');return a;};
  if(path==='/api/agendas'&&method==='GET'){const all=director&&url.searchParams.get('scope')==='all';const agendas=(await q(env,'SELECT team_agendas.*,users.name AS creatorName FROM team_agendas JOIN users ON users.id=creator '+'WHERE deleted=? '+(all?'':'AND (creator=? OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value=?)) ')+'ORDER BY start_at DESC',Number(url.searchParams.get('trash')==='1'),...(all?[]:[u.id,u.id])).all()).results;return Response.json({director,people,agendas});}
  if(path==='/api/agendas'&&method==='POST'){

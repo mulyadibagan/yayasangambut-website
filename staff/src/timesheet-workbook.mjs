@@ -4,6 +4,7 @@ const decode=s=>String(s).replace(/&#x([\da-f]+);/gi,(_,n)=>String.fromCodePoint
 const escape=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const attr=(s,k)=>decode(new RegExp('(?:^|\\s)'+k+'="([^"]*)"').exec(s)?.[1]||'');
 const texts=s=>[...s.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(m=>decode(m[1])).join('');
+const placeholder=name=>/^nama progr(?:am)?\.?$/i.test(name);
 export const columnName=n=>{let s='';for(;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
 export function openTimesheet(bytes){
  if(bytes.length>4*1024*1024)bad('File timesheet melebihi 4 MB.');let total=0;
@@ -20,13 +21,14 @@ export function openTimesheet(bytes){
    cells.set(ref,{value:type==='s'?strings[+raw]??'':type==='inlineStr'?texts(body):raw,formula:/<f(?:\s|>)/.test(body),style:attr(c[1],'s')});
   }
   if(cells.get('A7')?.value!=='Tanggal'||cells.get('B7')?.value!=='Kegiatan'||cells.get('O7')?.value!=='Total Work')bad('Header template timesheet tidak cocok.');
-  const columns={};for(let i=3;i<=14;i++){const name=cells.get(columnName(i)+'8')?.value.trim();if(name){if(columns[name])bad('Kolom program ganda.');columns[name]=columnName(i);}}
+  const columns={};for(let i=3;i<=14;i++){const name=cells.get(columnName(i)+'8')?.value.trim();if(name&&!placeholder(name)){if(columns[name])bad('Kolom program ganda.');columns[name]=columnName(i);}}
   const dates=new Map();for(const [ref,c] of cells){if(!/^A\d+$/.test(ref)||c.formula||!/^\d+(?:\.0+)?$/.test(c.value)||+c.value<40000)continue;const iso=new Date(Date.UTC(/date1904="(?:1|true)"/.test(book)?1904:1899,/date1904="(?:1|true)"/.test(book)?0:11,/date1904="(?:1|true)"/.test(book)?1:30)+Number(c.value)*86400000).toISOString().slice(0,10);if(dates.has(iso))bad('Tanggal ganda pada template.');dates.set(iso,+ref.slice(1));}
   return {name:attr(m[1],'name'),path,source,cells,columns,dates};
  });
  if(!sheets.length)bad('Lembar timesheet kosong.');return {files,sheets};
 }
 export function programColumn(program,columns){
+ if(!program&&columns.Unallocated)return 'Unallocated';
  if(columns[program])return program;
  if(/april|agroforestri.*dayun/i.test(program)&&columns['APRIL-DAYUN'])return 'APRIL-DAYUN';
  if(/\bjpik\b/i.test(program)&&columns.JPIK)return 'JPIK';return null;
@@ -42,6 +44,9 @@ export function collectTimesheetSources(tasks,agendas){
   row.startMinute=row.date===start.slice(0,10)?minute(start):0;
   row.endMinute=row.date===end.slice(0,10)?minute(end):1440;
   row.defaultHours=!start.includes('T')||!end.includes('T')||start===end||start.slice(11)==='00:00'&&end.slice(11)==='00:00';
+  // A multi-day daytime agenda repeats its working window each calendar day.
+  // Overnight windows still split at midnight rather than becoming 24h shifts.
+  if(start.slice(0,10)!==end.slice(0,10)&&minute(end)>minute(start)){row.startMinute=minute(start);row.endMinute=minute(end);}
  }
  return rows;
 }
@@ -66,6 +71,10 @@ function setCell(xml,ref,value,style){
 }
 export function patchTimesheet(bytes,sources,entries,managed={},today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})){
  const book=openTimesheet(bytes),next={},changes=[];let outside=0;const unresolved=new Set();
+ const canonical=program=>/april|agroforestri.*dayun/i.test(program)?'APRIL-DAYUN':/\bjpik\b/i.test(program)?'JPIK':program?.trim()||'Unallocated';
+ // Use only unused program columns; never rename a real program or a column
+ // containing hours. Missing agenda programs remain explicitly Unallocated.
+ for(const source of sources.filter(s=>s.id.startsWith('agenda:'))){const sheet=book.sheets.find(s=>s.dates.has(source.date));if(!sheet||programColumn(source.program,sheet.columns))continue;const name=canonical(source.program);if(sheet.columns[name])continue;const col=Array.from({length:12},(_,i)=>columnName(i+3)).find(col=>{const header=sheet.cells.get(col+'8');return !header?.formula&&(!header?.value||placeholder(header.value))&&[...sheet.dates.values()].every(row=>{const cell=sheet.cells.get(col+row);return !cell?.formula&&(!cell?.value||Number(cell.value)===0);});});if(!col)bad('Tidak tersedia kolom program kosong untuk '+name);const ref=col+'8',cell=sheet.cells.get(ref),key=sheet.path+'|'+ref;sheet.source=setCell(sheet.source,ref,name,cell?.style);sheet.cells.set(ref,{...cell,value:name});sheet.columns[name]=col;next[key]=name;changes.push(key);}
  const groups=new Map();for(const source of sources){const sheet=book.sheets.find(s=>s.dates.has(source.date));if(!sheet){outside++;continue;}const key=sheet.path+':'+source.date;const group=groups.get(key)||{sheet,date:source.date,sources:[],entries:[]};group.sources.push(source);groups.set(key,group);if(!programColumn(source.program,sheet.columns))unresolved.add(source.program||'Belum ditentukan');}
  for(const entry of entries){const sheet=book.sheets.find(s=>s.dates.has(entry.work_date));if(!sheet)bad('Tanggal aktual tidak tersedia pada template.');if(!sheet.columns[entry.program])bad('Program aktual belum cocok dengan kolom Excel.');const key=sheet.path+':'+entry.work_date,group=groups.get(key)||{sheet,date:entry.work_date,sources:[],entries:[]};group.entries.push(entry);groups.set(key,group);}
  for(const key of Object.keys(managed)){const [path,ref]=key.split('|'),sheet=book.sheets.find(s=>s.path===path);const date=sheet&&[...sheet.dates].find(([,n])=>n===+ref.replace(/^[A-Z]+/,''))?.[0];if(date&&!groups.has(path+':'+date))groups.set(path+':'+date,{sheet,date,sources:[],entries:[]});}
@@ -73,7 +82,7 @@ export function patchTimesheet(bytes,sources,entries,managed={},today=new Date()
  for(const {sheet,date,sources:planned,entries:actual} of groups.values()){
   // Explicit actual entries replace the day's agenda estimate, avoiding double counting.
   const automatic=actual.length?[]:automaticAgendaHours(planned),automaticByProgram=new Map();
-  for(const entry of automatic){const program=programColumn(entry.program,sheet.columns);if(program)automaticByProgram.set(program,(automaticByProgram.get(program)||0)+entry.hours);}
+  for(const entry of automatic){const program=programColumn(entry.program,sheet.columns)||canonical(entry.program);if(sheet.columns[program])automaticByProgram.set(program,(automaticByProgram.get(program)||0)+entry.hours);}
   const row=sheet.dates.get(date),sum=actual.reduce((n,e)=>n+Number(e.hours),0);if(sum>24)bad('Total jam aktual per hari melebihi 24 jam.');
   const pending=planned.filter(s=>!actual.some(e=>e.activity===s.title.replace(/^\[[^\]]*\]\s*/,'')&&e.program===programColumn(s.program,sheet.columns)));
   const descriptions=[...new Set([...actual.map(e=>'[Actual · '+e.program+'] '+e.activity),...pending.map(s=>(s.id.startsWith('agenda:')?s.title.replace(/^\[[^\]]*\]/,date>today?'[Planned]':'[Agenda]'):s.title)+(s.program?' · '+s.program:'')),...automatic.map(e=>'['+(date>today?'Planned hours':'Agenda hours')+' · '+(e.program||'Program mapping required')+'] '+e.hours+' hours')])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');write(sheet,'B'+row,descriptions);

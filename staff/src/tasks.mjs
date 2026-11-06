@@ -1,3 +1,4 @@
+import {teamPeople} from './team-people.mjs';
 import {fail,now,imageType} from './core.mjs';
 const json=(value,status=200)=>Response.json(value,{status});
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
@@ -12,7 +13,7 @@ export function taskInput(input){
  if(!['low','normal','high'].includes(priority)||!Object.hasOwn(statusLabels,status))fail(400,'Prioritas atau status tidak valid.');
  return {title,description,program,location,due_date,priority,status};
 }
-async function people(env){return (await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access a WHERE a.email=users.email AND a.scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;}
+async function people(env){return teamPeople(env);}
 async function assignments(env,input,u,director){
  if(!director){if(input.assignees&&(!Array.isArray(input.assignees)||input.assignees.length!==1||input.assignees[0]!==u.id))fail(403,'Staf hanya dapat membuat tugas untuk dirinya sendiri.');return [u.id];}
  if(!Array.isArray(input.assignees)||!input.assignees.length||input.assignees.length>20||input.assignees.some(id=>typeof id!=='string'))fail(400,'Pilih penanggung jawab tugas.');

@@ -26,7 +26,7 @@ test('automatic agenda hours populate elapsed dates, keep future hours planned, 
 test('plans populate activity only, preserve macros, formulas, styling and unrelated parts; retries do not duplicate',()=>{
  const original=fixture(),sources=collectTimesheetSources([{id:'t1',title:'Prepare',due_date:'2026-11-01',program:'APRIL',status:'todo'}],[{id:'a1',title:'Meeting',start_at:'2026-11-02T08:00',end_at:'2026-11-02T17:00',status:'scheduled',program:'Other'},{id:'a2',title:'Cancelled',start_at:'2026-11-01T08:00',end_at:'2026-11-01T17:00',status:'cancelled'}]);
  const first=patchTimesheet(original,sources,[]),book=openTimesheet(first.bytes),files=unzipSync(first.bytes),before=unzipSync(original);
- assert.match(book.sheets[0].cells.get('B11').value,/\[Agenda\] Meeting/);assert.equal(book.sheets[0].cells.get('C11').value,'');assert.deepEqual(first.unresolved,['Other']);
+ assert.match(book.sheets[0].cells.get('B11').value,/\[Agenda\] Meeting/);assert.equal(book.sheets[0].cells.get('C11').value,'');assert.deepEqual(first.unresolved,[]);assert.equal(book.sheets[0].columns.Other,'E');assert.equal(book.sheets[0].cells.get('E11').value,'9');
  for(const name of ['xl/vbaProject.bin','xl/styles.xml','customXml/item1.xml'])assert.deepEqual(files[name],before[name]);
  assert.match(strFromU8(files['xl/worksheets/sheet1.xml']),/<f>SUM\(C10:N10\)<\/f>/);assert.match(strFromU8(files['xl/workbook.xml']),/fullCalcOnLoad="1"/);
  assert.equal(patchTimesheet(first.bytes,sources,[],first.managed).changes,0);

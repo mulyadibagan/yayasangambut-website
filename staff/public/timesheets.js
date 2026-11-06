@@ -1,5 +1,5 @@
 export function timesheetUI({api,esc,handle,notice}){
- const root=document.querySelector('#timesheets');let staff='',data;
+ const root=document.querySelector('#timesheets');let staff='',data,saving=false;
  const path=suffix=>'/api/timesheets'+suffix+(staff?'?staff='+encodeURIComponent(staff):'');
  async function load(){data=await api(path(''));staff=data.user;render();}
  function render(){
@@ -12,8 +12,8 @@ export function timesheetUI({api,esc,handle,notice}){
   <p>Pengisian ulang tanggal dan program yang sama memperbarui catatan, bukan menambah duplikasi. Data Excel yang diubah manual tidak ditimpa otomatis.</p>`;
   root.querySelector('#timesheet-staff').onchange=handle(async e=>{staff=e.target.value;await load();});
   const result=r=>notice(`Sinkronisasi berhasil: ${r.changedCells} sel diperbarui.${r.outside?' '+r.outside+' sumber di luar periode template dilewati.':''}${r.unresolved?.length?' Program perlu pemetaan: '+r.unresolved.join(', ')+'.':''}`);
-  const connect=root.querySelector('#timesheet-connect');if(connect)connect.onsubmit=handle(async e=>{e.preventDefault();const r=await api(path('/connect'),'POST',{url:new FormData(connect).get('url')});await load();result(r);});
-  const toggle=root.querySelector('#timesheet-toggle');if(toggle){toggle.textContent=data.config.enabled?'Jeda sinkronisasi otomatis':'Aktifkan sinkronisasi otomatis';toggle.onclick=handle(async()=>{await api(path('/enabled'),'POST',{enabled:!data.config.enabled});await load();});} const sync=root.querySelector('#timesheet-sync');if(sync)sync.onclick=handle(async()=>{const r=await api(path('/sync'),'POST',{});await load();result(r);});
+  const connect=root.querySelector('#timesheet-connect');if(connect)connect.onsubmit=handle(async e=>{e.preventDefault();if(saving)return;saving=true;notice('Membaca file dan menerjemahkan agenda…');try{const r=await api(path('/connect'),'POST',{url:new FormData(connect).get('url')});await load();result(r);}catch(error){await load();throw error;}finally{saving=false;}});
+  const toggle=root.querySelector('#timesheet-toggle');if(toggle){toggle.textContent=data.config.enabled?'Jeda sinkronisasi otomatis':'Aktifkan sinkronisasi otomatis';toggle.onclick=handle(async()=>{await api(path('/enabled'),'POST',{enabled:!data.config.enabled});await load();});} const sync=root.querySelector('#timesheet-sync');if(sync)sync.onclick=handle(async()=>{if(saving)return;saving=true;notice('Menyinkronkan agenda dan jam ke Excel…');try{const r=await api(path('/sync'),'POST',{});await load();result(r);}catch(error){await load();throw error;}finally{saving=false;}});
   const actual=root.querySelector('#timesheet-actual');actual.onsubmit=handle(async e=>{e.preventDefault();const fields=Object.fromEntries(new FormData(actual));const r=await api(path('/actual'),'POST',{...fields,hours:Number(fields.hours),confirmed:fields.confirmed==='on'});await load();result(r);});
   root.querySelectorAll('[data-timesheet-source]').forEach(button=>button.onclick=()=>{const source=data.sources[Number(button.dataset.timesheetSource)];actual.elements.work_date.value=source.date;actual.elements.program.value=/april|agroforestri.*dayun/i.test(source.program)?'APRIL-DAYUN':/\bjpik\b/i.test(source.program)?'JPIK':'';actual.elements.activity.value=source.title.replace(/^\[[^\]]*\]\s*/,'');const existing=data.entries.find(e=>e.work_date===source.date&&e.program===actual.elements.program.value);actual.elements.hours.value=existing?.hours||'';actual.elements.confirmed.checked=false;actual.elements.hours.focus();});
  }

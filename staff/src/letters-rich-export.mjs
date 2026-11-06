@@ -1,7 +1,7 @@
 import {isMou,mouDocument} from '../public/letter-mou.js';
 import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {cleanDocument,plainDocument,escapeText,taskDocument} from '../public/letter-content.js';
-const content=r=>isMou(r.data)?mouDocument(r.data):r.data.kind==='SPT'?taskDocument(r.data):r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
+const content=r=>isMou(r.data)?mouDocument(r.data,r.number):r.data.kind==='SPT'?taskDocument(r.data):r.data.bodyFormat==='rich-v1'?cleanDocument(r.data.bodyDoc):plainDocument(r.data.body);
 const xml=escapeText;
 export function richWord(r,dateLabel){
  let num=0;const numbering=[];
