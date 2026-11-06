@@ -11,8 +11,11 @@ export default {async fetch(request,env){
  return Response.json({ok,translations:values},{status:ok?200:502});
  }catch(error){return Response.json({ok:false,error:error.name,status:error.status||502,reason:classify(error.cause||error)},{status:502});}
 }};`);
-await writeFile(config,JSON.stringify({name:'yg-staff-translation-check',main:entry,compatibility_date:'2026-10-01',compatibility_flags:['nodejs_compat'],ai:{binding:'AI',remote:true},account_id:process.env.CLOUDFLARE_ACCOUNT_ID}));
-const child=spawn('./node_modules/.bin/wrangler',['dev','--config',config,'--port','8799','--ip','127.0.0.1'],{stdio:['ignore','pipe','pipe'],env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'}});
+// CI uses an API token rather than an interactive Wrangler OAuth session.
+// Execute the same synthetic translation check in a remote preview Worker;
+// this avoids local remote-binding proxy authentication, not the AI validation.
+await writeFile(config,JSON.stringify({name:'yg-staff-translation-check',main:entry,compatibility_date:'2026-10-01',compatibility_flags:['nodejs_compat'],ai:{binding:'AI'},account_id:process.env.CLOUDFLARE_ACCOUNT_ID}));
+const child=spawn('./node_modules/.bin/wrangler',['dev','--remote','--config',config,'--port','8799','--ip','127.0.0.1'],{stdio:['ignore','pipe','pipe'],env:{...process.env,CI:'true',WRANGLER_SEND_METRICS:'false'}});
 let logs='';child.stdout.on('data',d=>{logs=(logs+d).slice(-6000);});child.stderr.on('data',d=>{logs=(logs+d).slice(-6000);});
 try{
  let result;
