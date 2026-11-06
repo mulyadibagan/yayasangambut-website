@@ -43,7 +43,7 @@ export function collectTimesheetSources(tasks,agendas){
   const minute=value=>Number(value.slice(11,13))*60+Number(value.slice(14,16));
   row.startMinute=row.date===start.slice(0,10)?minute(start):0;
   row.endMinute=row.date===end.slice(0,10)?minute(end):1440;
-  row.defaultHours=!start.includes('T')||!end.includes('T')||start===end||start.slice(11)==='00:00'&&end.slice(11)==='00:00';
+  row.defaultHours=!start.includes('T')||!end.includes('T')||start===end||start.slice(11)===end.slice(11)||start.slice(11)==='00:00'&&end.slice(11)==='00:00';
   // A multi-day daytime agenda repeats its working window each calendar day.
   // Overnight windows still split at midnight rather than becoming 24h shifts.
   if(start.slice(0,10)!==end.slice(0,10)&&minute(end)>minute(start)){row.startMinute=minute(start);row.endMinute=minute(end);}
