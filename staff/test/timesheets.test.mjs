@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
 import {zipSync,unzipSync,strToU8,strFromU8} from 'fflate';
-import {openTimesheet,patchTimesheet,collectTimesheetSources,programColumn} from '../src/timesheet-workbook.mjs';
+import {openTimesheet,patchTimesheet,collectTimesheetSources,programColumn,automaticAgendaHours} from '../src/timesheet-workbook.mjs';
 import {actualInput,timesheetFileId,timesheetApi} from '../src/timesheets.mjs';
 import {sealToken} from '../src/google-calendar.mjs';
 import {createHash} from 'node:crypto';
@@ -14,10 +14,19 @@ function fixture(){return zipSync({
  'xl/worksheets/sheet1.xml':strToU8('<worksheet><sheetData><row r="6"><c r="C6"><f>SUM(C10:C11)/8</f><v>0</v></c><c r="D6"><v>0</v></c></row><row r="7">'+cell('A7','Tanggal')+cell('B7','Kegiatan')+cell('O7','Total Work')+'</row><row r="8">'+cell('C8','APRIL-DAYUN')+cell('D8','JPIK')+'</row><row r="10"><c r="A10"><v>46327</v></c>'+cell('B10','')+'<c r="C10" s="2"/><c r="D10"/><c r="O10"><f>SUM(C10:N10)</f><v>0</v></c></row><row r="11"><c r="A11"><v>46328</v></c>'+cell('B11','')+'<c r="C11"/><c r="D11"/><c r="O11"><v>0</v></c></row></sheetData></worksheet>'),
  'xl/vbaProject.bin':new Uint8Array([1,2,3,4]),'xl/styles.xml':strToU8('<styleSheet/>'),'customXml/item1.xml':strToU8('<original/>')
 });}
+test('automatic agenda hours populate elapsed dates, keep future hours planned, and yield to actual corrections',()=>{
+ const sources=collectTimesheetSources([], [{id:'a',title:'Training',program:'JPIK',start_at:'2026-11-01T08:00',end_at:'2026-11-01T16:00',status:'scheduled'},{id:'b',title:'Meeting',program:'JPIK',start_at:'2026-11-02',end_at:'2026-11-02',status:'scheduled'}]);
+ const first=patchTimesheet(fixture(),sources,[],{},'2026-11-01'),sheet=openTimesheet(first.bytes).sheets[0];
+ assert.equal(sheet.cells.get('D10').value,'8');assert.equal(sheet.cells.get('D11').value,'');assert.match(sheet.cells.get('B11').value,/Planned hours.*8 hours/);
+ assert.equal(patchTimesheet(first.bytes,sources,[],first.managed,'2026-11-01').changes,0);
+ const next=patchTimesheet(first.bytes,sources,[],first.managed,'2026-11-02');assert.equal(openTimesheet(next.bytes).sheets[0].cells.get('D11').value,'8');
+ const corrected=patchTimesheet(next.bytes,sources,[{work_date:'2026-11-01',program:'JPIK',hours:3,activity:'Corrected work'}],next.managed,'2026-11-02');assert.equal(openTimesheet(corrected.bytes).sheets[0].cells.get('D10').value,'3');
+ const cancelled=patchTimesheet(next.bytes,[],[],next.managed,'2026-11-02');assert.equal(openTimesheet(cancelled.bytes).sheets[0].cells.get('D10').value,'0');
+});
 test('plans populate activity only, preserve macros, formulas, styling and unrelated parts; retries do not duplicate',()=>{
  const original=fixture(),sources=collectTimesheetSources([{id:'t1',title:'Prepare',due_date:'2026-11-01',program:'APRIL',status:'todo'}],[{id:'a1',title:'Meeting',start_at:'2026-11-02T08:00',end_at:'2026-11-02T17:00',status:'scheduled',program:'Other'},{id:'a2',title:'Cancelled',start_at:'2026-11-01T08:00',end_at:'2026-11-01T17:00',status:'cancelled'}]);
  const first=patchTimesheet(original,sources,[]),book=openTimesheet(first.bytes),files=unzipSync(first.bytes),before=unzipSync(original);
- assert.match(book.sheets[0].cells.get('B11').value,/\[Rencana\] Meeting/);assert.equal(book.sheets[0].cells.get('C11').value,'');assert.deepEqual(first.unresolved,['Other']);
+ assert.match(book.sheets[0].cells.get('B11').value,/\[Agenda\] Meeting/);assert.equal(book.sheets[0].cells.get('C11').value,'');assert.deepEqual(first.unresolved,['Other']);
  for(const name of ['xl/vbaProject.bin','xl/styles.xml','customXml/item1.xml'])assert.deepEqual(files[name],before[name]);
  assert.match(strFromU8(files['xl/worksheets/sheet1.xml']),/<f>SUM\(C10:N10\)<\/f>/);assert.match(strFromU8(files['xl/workbook.xml']),/fullCalcOnLoad="1"/);
  assert.equal(patchTimesheet(first.bytes,sources,[],first.managed).changes,0);
@@ -58,7 +67,8 @@ test('connected Drive sync backs up original bytes, uses conditional writes, ver
  db.prepare('INSERT INTO agenda_drive_connection VALUES(1,?,?,?,?,?,?,?)').run('director','director@example.test',await sealToken(env,'agenda-drive:director','refresh'),env.AGENDA_DRIVE_ROOT_ID,'archive-folder','connected','now');
  db.prepare('INSERT INTO team_tasks(id,creator,assigned_by,title,description,program,location,assignees,due_date,priority,status,mutation_id,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run('t1','director','director','Task','Notes','APRIL','Place','["one"]','2026-11-01','normal','todo','m1','now','now');
  let file=fixture(),writes=0,backup;const originalFetch=globalThis.fetch;t.after(()=>{globalThis.fetch=originalFetch;});const hash=b=>createHash('md5').update(b).digest('hex');
- env.MEDIA={async put(key,bytes){backup={key,bytes};}};
+ env.AI={async run(model,input){const {segments}=JSON.parse(input.messages[1].content);return {response:{translations:segments}};}};
+ env.MEDIA={async put(key,bytes){if(key.includes('/backups/'))backup={key,bytes};}};
  globalThis.fetch=async (input,init={})=>{
   const url=String(input);if(url==='https://oauth2.googleapis.com/token')return Response.json({access_token:'access'});
   if(url.includes('/files/archive-folder?'))return Response.json({mimeType:'application/vnd.google-apps.folder',capabilities:{canAddChildren:true},parents:[env.AGENDA_DRIVE_ROOT_ID]});

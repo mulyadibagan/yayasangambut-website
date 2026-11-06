@@ -33,9 +33,30 @@ export function programColumn(program,columns){
 }
 export function collectTimesheetSources(tasks,agendas){
  const rows=[];
- for(const t of tasks)rows.push({id:'task:'+t.id,date:t.due_date,program:t.program,title:'[Tenggat tugas · konfirmasi pelaksanaan] '+t.title});
- for(const a of agendas){if(a.status==='cancelled')continue;const start=a.start_at.slice(0,10),end=a.end_at.slice(0,10);let count=0;for(let day=start;day<=end;day=new Date(Date.parse(day+'T00:00:00Z')+86400000).toISOString().slice(0,10)){if(++count>366)bad('Rentang agenda terlalu panjang.');rows.push({id:'agenda:'+a.id,date:day,program:a.program,title:(a.status==='done'?'[Pelaksanaan tercatat · jam belum dikonfirmasi] ':a.status==='ongoing'?'[Berlangsung · jam belum dikonfirmasi] ':'[Rencana] ')+a.title});}}
+ for(const t of tasks)rows.push({id:'task:'+t.id,date:t.due_date,program:t.program,title:'[Task deadline · execution unconfirmed] '+t.title});
+ for(const a of agendas){if(a.status==='cancelled')continue;const start=a.start_at.slice(0,10),end=a.end_at.slice(0,10);let count=0;for(let day=start;day<=end;day=new Date(Date.parse(day+'T00:00:00Z')+86400000).toISOString().slice(0,10)){if(++count>366)bad('Rentang agenda terlalu panjang.');rows.push({id:'agenda:'+a.id,date:day,program:a.program,title:(a.status==='done'?'[Confirmed agenda] ':a.status==='ongoing'?'[Confirmed agenda] ':'[Planned] ')+a.title});}}
+ for(const row of rows){
+  if(!row.id.startsWith('agenda:'))continue;
+  const agenda=agendas.find(a=>'agenda:'+a.id===row.id),start=agenda.start_at,end=agenda.end_at;
+  const minute=value=>Number(value.slice(11,13))*60+Number(value.slice(14,16));
+  row.startMinute=row.date===start.slice(0,10)?minute(start):0;
+  row.endMinute=row.date===end.slice(0,10)?minute(end):1440;
+  row.defaultHours=!start.includes('T')||!end.includes('T')||start===end||start.slice(11)==='00:00'&&end.slice(11)==='00:00';
+ }
  return rows;
+}
+// Allocate each occupied minute once, sharing overlap across its programs.
+// Untimed agendas share only the remainder of an eight-hour daily allowance.
+export function automaticAgendaHours(sources){
+ const agendas=sources.filter(s=>s.id.startsWith('agenda:')),minutes=new Map(),untimed=new Set();let occupied=0;
+ for(const s of agendas)if(s.defaultHours)untimed.add(s.program||'');
+ for(let minute=0;minute<1440;minute++){
+  const programs=[...new Set(agendas.filter(s=>!s.defaultHours&&s.startMinute<=minute&&s.endMinute>minute).map(s=>s.program||''))];
+  if(!programs.length)continue;occupied++;for(const program of programs)minutes.set(program,(minutes.get(program)||0)+1/programs.length);
+ }
+ if(untimed.size)for(const program of untimed)minutes.set(program,(minutes.get(program)||0)+Math.max(0,480-occupied)/untimed.size);
+ let rounded=0;const result=[];for(const [program,value] of [...minutes].sort(([a],[b])=>a.localeCompare(b))){const next=Math.round((rounded+value/60)*100)/100;result.push({program,hours:Math.round((next-rounded)*100)/100});rounded=next;}
+ return result;
 }
 function setCell(xml,ref,value,style){
  const number=typeof value==='number',cell='<c r="'+ref+'"'+(style?' s="'+style+'"':'')+(number?'><v>'+value+'</v>':' t="inlineStr"><is><t xml:space="preserve">'+escape(value)+'</t></is>')+'</c>';
@@ -43,22 +64,25 @@ function setCell(xml,ref,value,style){
  if(re.test(xml))return xml.replace(re,()=>cell);
  const row=ref.replace(/^[A-Z]+/,'');let found=false;xml=xml.replace(new RegExp('(<row\\b(?=[^>]*\\br="'+row+'")[^>]*>)([\\s\\S]*?)(<\\/row>)'),(_,a,b,c)=>{found=true;return a+b+cell+c;});if(!found)bad('Baris tanggal Excel tidak ditemukan.');return xml;
 }
-export function patchTimesheet(bytes,sources,entries,managed={}){
+export function patchTimesheet(bytes,sources,entries,managed={},today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})){
  const book=openTimesheet(bytes),next={},changes=[];let outside=0;const unresolved=new Set();
  const groups=new Map();for(const source of sources){const sheet=book.sheets.find(s=>s.dates.has(source.date));if(!sheet){outside++;continue;}const key=sheet.path+':'+source.date;const group=groups.get(key)||{sheet,date:source.date,sources:[],entries:[]};group.sources.push(source);groups.set(key,group);if(!programColumn(source.program,sheet.columns))unresolved.add(source.program||'Belum ditentukan');}
  for(const entry of entries){const sheet=book.sheets.find(s=>s.dates.has(entry.work_date));if(!sheet)bad('Tanggal aktual tidak tersedia pada template.');if(!sheet.columns[entry.program])bad('Program aktual belum cocok dengan kolom Excel.');const key=sheet.path+':'+entry.work_date,group=groups.get(key)||{sheet,date:entry.work_date,sources:[],entries:[]};group.entries.push(entry);groups.set(key,group);}
  for(const key of Object.keys(managed)){const [path,ref]=key.split('|'),sheet=book.sheets.find(s=>s.path===path);const date=sheet&&[...sheet.dates].find(([,n])=>n===+ref.replace(/^[A-Z]+/,''))?.[0];if(date&&!groups.has(path+':'+date))groups.set(path+':'+date,{sheet,date,sources:[],entries:[]});}
  const write=(s,ref,value)=>{const key=s.path+'|'+ref,current=s.cells.get(ref);if(current?.formula)bad('Sel tujuan memiliki rumus: '+ref);const previous=managed[key];if(previous===undefined&&current?.value!==''&&current?.value!==undefined&&current?.value!=='0'&&String(value)!==current.value)bad('Sel '+ref+' sudah diisi manual. Periksa sebelum sinkronisasi.');if(previous!==undefined&&String(current?.value??'')!==String(previous)&&String(current?.value??'')!==String(value))bad('Sel '+ref+' berubah manual. Sinkronisasi dihentikan.');next[key]=String(value);if(String(current?.value??'')===String(value))return;s.source=setCell(s.source,ref,value,current?.style);s.cells.set(ref,{...current,value:String(value)});changes.push(key);};
  for(const {sheet,date,sources:planned,entries:actual} of groups.values()){
+  // Explicit actual entries replace the day's agenda estimate, avoiding double counting.
+  const automatic=actual.length?[]:automaticAgendaHours(planned),automaticByProgram=new Map();
+  for(const entry of automatic){const program=programColumn(entry.program,sheet.columns);if(program)automaticByProgram.set(program,(automaticByProgram.get(program)||0)+entry.hours);}
   const row=sheet.dates.get(date),sum=actual.reduce((n,e)=>n+Number(e.hours),0);if(sum>24)bad('Total jam aktual per hari melebihi 24 jam.');
   const pending=planned.filter(s=>!actual.some(e=>e.activity===s.title.replace(/^\[[^\]]*\]\s*/,'')&&e.program===programColumn(s.program,sheet.columns)));
-  const descriptions=[...new Set([...actual.map(e=>'[Aktual · '+e.program+'] '+e.activity),...pending.map(s=>s.title+(s.program?' · '+s.program:''))])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');write(sheet,'B'+row,descriptions);
-  for(const [program,col] of Object.entries(sheet.columns)){const records=actual.filter(e=>e.program===program),key=sheet.path+'|'+col+row;if(records.length||key in managed)write(sheet,col+row,records.reduce((n,e)=>n+Number(e.hours),0));}
+  const descriptions=[...new Set([...actual.map(e=>'[Actual · '+e.program+'] '+e.activity),...pending.map(s=>(s.id.startsWith('agenda:')?s.title.replace(/^\[[^\]]*\]/,date>today?'[Planned]':'[Agenda]'):s.title)+(s.program?' · '+s.program:'')),...automatic.map(e=>'['+(date>today?'Planned hours':'Agenda hours')+' · '+(e.program||'Program mapping required')+'] '+e.hours+' hours')])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');write(sheet,'B'+row,descriptions);
+  for(const [program,col] of Object.entries(sheet.columns)){const records=actual.filter(e=>e.program===program),key=sheet.path+'|'+col+row,auto=date<=today?automaticByProgram.get(program)||0:0;if(records.length||auto||key in managed)write(sheet,col+row,records.length?records.reduce((n,e)=>n+Number(e.hours),0):auto);}
   // Preserve every formula, including the template's Total Work and summary cells.
   // Confirmed-hour totals are written only to literal totals, never over formulas.
-  if(actual.length||sheet.path+'|O'+row in managed){const total=Array.from({length:12},(_,i)=>Number(sheet.cells.get(columnName(i+3)+row)?.value||0)).reduce((a,b)=>a+b,0);if(!Number.isFinite(total)||total>24)bad('Total jam termasuk isian manual melebihi 24 jam.');if(!sheet.cells.get('O'+row)?.formula)write(sheet,'O'+row,total);}
+  if(actual.length||date<=today&&automatic.length||sheet.path+'|O'+row in managed){const total=Array.from({length:12},(_,i)=>Number(sheet.cells.get(columnName(i+3)+row)?.value||0)).reduce((a,b)=>a+b,0);if(!Number.isFinite(total)||total>24)bad('Total jam termasuk isian manual melebihi 24 jam.');if(!sheet.cells.get('O'+row)?.formula)write(sheet,'O'+row,total);}
  }
- for(const sheet of book.sheets)for(const [program,col] of Object.entries(sheet.columns)){if(entries.some(e=>e.program===program&&sheet.dates.has(e.work_date))||sheet.path+'|'+col+'6' in managed){if(!sheet.cells.get(col+'6')?.formula){const total=[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0);write(sheet,col+'6',total/8);}}}
+ for(const sheet of book.sheets)for(const [program,col] of Object.entries(sheet.columns)){if(Object.keys(next).some(k=>k.startsWith(sheet.path+'|'+col))||entries.some(e=>e.program===program&&sheet.dates.has(e.work_date))||sheet.path+'|'+col+'6' in managed){if(!sheet.cells.get(col+'6')?.formula){const total=[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0);write(sheet,col+'6',total/8);}}}
  for(const sheet of book.sheets)if(changes.some(k=>k.startsWith(sheet.path+'|')))book.files[sheet.path]=strToU8(sheet.source);
  if(changes.length){let bookXml=strFromU8(book.files['xl/workbook.xml']);bookXml=bookXml.replace(/<calcPr\b[^>]*\/>/,'<calcPr fullCalcOnLoad="1" forceFullCalc="1"/>');book.files['xl/workbook.xml']=strToU8(bookXml);}
  return {bytes:changes.length?zipSync(book.files):bytes,managed:next,changes:changes.length,outside,unresolved:[...unresolved],sheets:book.sheets.map(s=>({name:s.name,programs:Object.keys(s.columns)}))};

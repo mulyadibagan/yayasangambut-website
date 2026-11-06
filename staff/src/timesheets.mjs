@@ -3,9 +3,22 @@ import {fail,now,HttpError} from './core.mjs';
 import {taskDirector} from './tasks.mjs';
 import {driveAccess,google} from './agenda-drive.mjs';
 import {openTimesheet,collectTimesheetSources,patchTimesheet} from './timesheet-workbook.mjs';
+import {translateBatch} from './translation.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const mime='application/vnd.ms-excel.sheet.macroEnabled.12';
 const md5=bytes=>createHash('md5').update(bytes).digest('hex');
+export async function englishTimesheetText(env,sources,entries){
+ const texts=[...new Set([...sources.map(s=>s.title.replace(/^\[[^\]]*\]\s*/,'')),...entries.map(e=>e.activity)])];
+ const translations=new Map();
+ for(const text of texts){
+  const key='timesheets/english/v1/'+createHash('sha256').update(text).digest('hex')+'.txt',cached=await env.MEDIA?.get?.(key);
+  if(cached){translations.set(text,await cached.text());continue;}
+  if(!env.AI)fail(503,'Terjemahan Inggris timesheet belum tersedia. Excel belum diubah.');
+  const values=await translateBatch(env.AI,[{id:'s0',text}]);translations.set(text,values.s0);
+  await env.MEDIA?.put(key,values.s0,{httpMetadata:{contentType:'text/plain; charset=utf-8'}});
+ }
+ return {sources:sources.map(s=>({...s,title:s.title.replace(/^(\[[^\]]*\]\s*)?(.*)$/,(_,prefix='',text)=>prefix+translations.get(text))})),entries:entries.map(e=>({...e,activity:translations.get(e.activity)}))};
+}
 const staffList=async env=>(await q(env,"SELECT id,name,email FROM users WHERE disabled=0 AND email LIKE ? AND NOT EXISTS(SELECT 1 FROM webgis_access a WHERE a.email=users.email AND a.scope='kups-finance') ORDER BY name",'%@'+env.GOOGLE_WORKSPACE_DOMAIN).all()).results;
 export function timesheetFileId(input){const s=String(input||'').trim(),id=/^https:\/\/(?:drive|docs)\.google\.com\/(?:file\/d|spreadsheets\/d)\/([\w-]+)/.exec(s)?.[1]||s;if(!/^[\w-]{15,120}$/.test(id))fail(400,'Masukkan tautan file Excel Drive yang benar.');return id;}
 export function actualInput(input){
@@ -29,7 +42,8 @@ export async function syncTimesheet(env,user){
  const lease=Date.now()+120000,config=await q(env,'UPDATE team_timesheet_files SET lock_until=?,last_attempt=? WHERE user_id=? AND enabled=1 AND lock_until<? RETURNING *',lease,now(),user,Date.now()).first();if(!config)fail(409,'Timesheet belum dihubungkan atau sedang disinkronkan.');
  try{
   const {access}=await driveAccess(env),original=await workbookFile(access,config.file_id),sources=await sourcesFor(env,user),entries=(await q(env,'SELECT * FROM team_timesheet_days WHERE user_id=? ORDER BY work_date,program',user).all()).results;
-  const result=patchTimesheet(original.bytes,sources,entries,JSON.parse(config.managed_json));
+  const english=await englishTimesheetText(env,sources,entries);
+  const result=patchTimesheet(original.bytes,english.sources,english.entries,JSON.parse(config.managed_json));
   if(result.changes){
    if(!env.MEDIA)fail(503,'Penyimpanan cadangan belum tersedia.');
    await env.MEDIA.put('timesheets/backups/'+config.file_id+'/'+original.file.md5Checksum+'.xlsm',original.bytes,{httpMetadata:{contentType:mime}});
