@@ -1,0 +1,65 @@
+import {unzipSync,zipSync,strFromU8,strToU8} from 'fflate';
+const bad=message=>{throw new Error(message);};
+const decode=s=>String(s).replace(/&#x([\da-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(+n)).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+const escape=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const attr=(s,k)=>decode(new RegExp('(?:^|\\s)'+k+'="([^"]*)"').exec(s)?.[1]||'');
+const texts=s=>[...s.matchAll(/<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g)].map(m=>decode(m[1])).join('');
+export const columnName=n=>{let s='';for(;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
+export function openTimesheet(bytes){
+ if(bytes.length>4*1024*1024)bad('File timesheet melebihi 4 MB.');let total=0;
+ const files=unzipSync(bytes,{filter:f=>{total+=f.originalSize;if(total>24*1024*1024||f.originalSize>12*1024*1024)bad('Isi workbook terlalu besar.');return true;}});
+ const xml=p=>{if(!files[p])bad('Struktur Excel tidak dikenali.');const s=strFromU8(files[p]);if(/<!DOCTYPE|<!ENTITY/i.test(s))bad('XML eksternal tidak didukung.');return s;};
+ const book=xml('xl/workbook.xml'),rels=xml('xl/_rels/workbook.xml.rels');
+ const strings=files['xl/sharedStrings.xml']?[...xml('xl/sharedStrings.xml').matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)].map(m=>texts(m[1])):[];
+ const relationships=new Map([...rels.matchAll(/<Relationship\s([^>]*?)\/?\s*>/g)].map(m=>[attr(m[1],'Id'),attr(m[1],'Target')]));
+ const sheets=[...book.matchAll(/<sheet\s([^>]*?)\/?\s*>/g)].map(m=>{
+  const target=relationships.get(attr(m[1],'r:id'));if(!target||!/^\/?(?:xl\/)?worksheets\/sheet\d+\.xml$/.test(target))bad('Lokasi lembar Excel tidak didukung.');
+  const path=target.startsWith('/xl/')?target.slice(1):target.startsWith('xl/')?target:'xl/'+target,source=xml(path),cells=new Map();
+  for(const c of source.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)){
+   const ref=attr(c[1],'r'),body=c[2]||'',type=attr(c[1],'t'),raw=decode(/<v(?:\s[^>]*)?>([\s\S]*?)<\/v>/.exec(body)?.[1]||'');
+   cells.set(ref,{value:type==='s'?strings[+raw]??'':type==='inlineStr'?texts(body):raw,formula:/<f(?:\s|>)/.test(body),style:attr(c[1],'s')});
+  }
+  if(cells.get('A7')?.value!=='Tanggal'||cells.get('B7')?.value!=='Kegiatan'||cells.get('O7')?.value!=='Total Work')bad('Header template timesheet tidak cocok.');
+  const columns={};for(let i=3;i<=14;i++){const name=cells.get(columnName(i)+'8')?.value.trim();if(name){if(columns[name])bad('Kolom program ganda.');columns[name]=columnName(i);}}
+  const dates=new Map();for(const [ref,c] of cells){if(!/^A\d+$/.test(ref)||c.formula||!/^\d+(?:\.0+)?$/.test(c.value)||+c.value<40000)continue;const iso=new Date(Date.UTC(/date1904="(?:1|true)"/.test(book)?1904:1899,/date1904="(?:1|true)"/.test(book)?0:11,/date1904="(?:1|true)"/.test(book)?1:30)+Number(c.value)*86400000).toISOString().slice(0,10);if(dates.has(iso))bad('Tanggal ganda pada template.');dates.set(iso,+ref.slice(1));}
+  return {name:attr(m[1],'name'),path,source,cells,columns,dates};
+ });
+ if(!sheets.length)bad('Lembar timesheet kosong.');return {files,sheets};
+}
+export function programColumn(program,columns){
+ if(columns[program])return program;
+ if(/april|agroforestri.*dayun/i.test(program)&&columns['APRIL-DAYUN'])return 'APRIL-DAYUN';
+ if(/\bjpik\b/i.test(program)&&columns.JPIK)return 'JPIK';return null;
+}
+export function collectTimesheetSources(tasks,agendas){
+ const rows=[];
+ for(const t of tasks)rows.push({id:'task:'+t.id,date:t.due_date,program:t.program,title:'[Tenggat tugas · konfirmasi pelaksanaan] '+t.title});
+ for(const a of agendas){if(a.status==='cancelled')continue;const start=a.start_at.slice(0,10),end=a.end_at.slice(0,10);let count=0;for(let day=start;day<=end;day=new Date(Date.parse(day+'T00:00:00Z')+86400000).toISOString().slice(0,10)){if(++count>366)bad('Rentang agenda terlalu panjang.');rows.push({id:'agenda:'+a.id,date:day,program:a.program,title:(a.status==='done'?'[Pelaksanaan tercatat · jam belum dikonfirmasi] ':a.status==='ongoing'?'[Berlangsung · jam belum dikonfirmasi] ':'[Rencana] ')+a.title});}}
+ return rows;
+}
+function setCell(xml,ref,value,style){
+ const number=typeof value==='number',cell='<c r="'+ref+'"'+(style?' s="'+style+'"':'')+(number?'><v>'+value+'</v>':' t="inlineStr"><is><t xml:space="preserve">'+escape(value)+'</t></is>')+'</c>';
+ const re=new RegExp('<c\\b(?=[^>]*\\br="'+ref+'")([^>]*?)(?:\\/>|>[\\s\\S]*?<\\/c>)');
+ if(re.test(xml))return xml.replace(re,()=>cell);
+ const row=ref.replace(/^[A-Z]+/,'');let found=false;xml=xml.replace(new RegExp('(<row\\b(?=[^>]*\\br="'+row+'")[^>]*>)([\\s\\S]*?)(<\\/row>)'),(_,a,b,c)=>{found=true;return a+b+cell+c;});if(!found)bad('Baris tanggal Excel tidak ditemukan.');return xml;
+}
+export function patchTimesheet(bytes,sources,entries,managed={}){
+ const book=openTimesheet(bytes),next={},changes=[];let outside=0;const unresolved=new Set();
+ const groups=new Map();for(const source of sources){const sheet=book.sheets.find(s=>s.dates.has(source.date));if(!sheet){outside++;continue;}const key=sheet.path+':'+source.date;const group=groups.get(key)||{sheet,date:source.date,sources:[],entries:[]};group.sources.push(source);groups.set(key,group);if(!programColumn(source.program,sheet.columns))unresolved.add(source.program||'Belum ditentukan');}
+ for(const entry of entries){const sheet=book.sheets.find(s=>s.dates.has(entry.work_date));if(!sheet)bad('Tanggal aktual tidak tersedia pada template.');if(!sheet.columns[entry.program])bad('Program aktual belum cocok dengan kolom Excel.');const key=sheet.path+':'+entry.work_date,group=groups.get(key)||{sheet,date:entry.work_date,sources:[],entries:[]};group.entries.push(entry);groups.set(key,group);}
+ for(const key of Object.keys(managed)){const [path,ref]=key.split('|'),sheet=book.sheets.find(s=>s.path===path);const date=sheet&&[...sheet.dates].find(([,n])=>n===+ref.replace(/^[A-Z]+/,''))?.[0];if(date&&!groups.has(path+':'+date))groups.set(path+':'+date,{sheet,date,sources:[],entries:[]});}
+ const write=(s,ref,value)=>{const key=s.path+'|'+ref,current=s.cells.get(ref);if(current?.formula)bad('Sel tujuan memiliki rumus: '+ref);const previous=managed[key];if(previous===undefined&&current?.value!==''&&current?.value!==undefined&&current?.value!=='0'&&String(value)!==current.value)bad('Sel '+ref+' sudah diisi manual. Periksa sebelum sinkronisasi.');if(previous!==undefined&&String(current?.value??'')!==String(previous)&&String(current?.value??'')!==String(value))bad('Sel '+ref+' berubah manual. Sinkronisasi dihentikan.');next[key]=String(value);if(String(current?.value??'')===String(value))return;s.source=setCell(s.source,ref,value,current?.style);s.cells.set(ref,{...current,value:String(value)});changes.push(key);};
+ for(const {sheet,date,sources:planned,entries:actual} of groups.values()){
+  const row=sheet.dates.get(date),sum=actual.reduce((n,e)=>n+Number(e.hours),0);if(sum>24)bad('Total jam aktual per hari melebihi 24 jam.');
+  const pending=planned.filter(s=>!actual.some(e=>e.activity===s.title.replace(/^\[[^\]]*\]\s*/,'')&&e.program===programColumn(s.program,sheet.columns)));
+  const descriptions=[...new Set([...actual.map(e=>'[Aktual · '+e.program+'] '+e.activity),...pending.map(s=>s.title+(s.program?' · '+s.program:''))])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');write(sheet,'B'+row,descriptions);
+  for(const [program,col] of Object.entries(sheet.columns)){const records=actual.filter(e=>e.program===program),key=sheet.path+'|'+col+row;if(records.length||key in managed)write(sheet,col+row,records.reduce((n,e)=>n+Number(e.hours),0));}
+  // Preserve every formula, including the template's Total Work and summary cells.
+  // Confirmed-hour totals are written only to literal totals, never over formulas.
+  if(actual.length||sheet.path+'|O'+row in managed){const total=Array.from({length:12},(_,i)=>Number(sheet.cells.get(columnName(i+3)+row)?.value||0)).reduce((a,b)=>a+b,0);if(!Number.isFinite(total)||total>24)bad('Total jam termasuk isian manual melebihi 24 jam.');if(!sheet.cells.get('O'+row)?.formula)write(sheet,'O'+row,total);}
+ }
+ for(const sheet of book.sheets)for(const [program,col] of Object.entries(sheet.columns)){if(entries.some(e=>e.program===program&&sheet.dates.has(e.work_date))||sheet.path+'|'+col+'6' in managed){if(!sheet.cells.get(col+'6')?.formula){const total=[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0);write(sheet,col+'6',total/8);}}}
+ for(const sheet of book.sheets)if(changes.some(k=>k.startsWith(sheet.path+'|')))book.files[sheet.path]=strToU8(sheet.source);
+ if(changes.length){let bookXml=strFromU8(book.files['xl/workbook.xml']);bookXml=bookXml.replace(/<calcPr\b[^>]*\/>/,'<calcPr fullCalcOnLoad="1" forceFullCalc="1"/>');book.files['xl/workbook.xml']=strToU8(bookXml);}
+ return {bytes:changes.length?zipSync(book.files):bytes,managed:next,changes:changes.length,outside,unresolved:[...unresolved],sheets:book.sheets.map(s=>({name:s.name,programs:Object.keys(s.columns)}))};
+}
