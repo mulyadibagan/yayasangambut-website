@@ -70,7 +70,8 @@ function setCell(xml,ref,value,style){
  const row=ref.replace(/^[A-Z]+/,'');let found=false;xml=xml.replace(new RegExp('(<row\\b(?=[^>]*\\br="'+row+'")[^>]*>)([\\s\\S]*?)(<\\/row>)'),(_,a,b,c)=>{found=true;return a+b+cell+c;});if(!found)bad('Baris tanggal Excel tidak ditemukan.');return xml;
 }
 export function patchTimesheet(bytes,sources,entries,managed={},today=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'})){
- const book=openTimesheet(bytes),next={},changes=[];let outside=0;const unresolved=new Set();
+ const book=openTimesheet(bytes),next={},changes=[],skippedManual=[];let outside=0;const unresolved=new Set();
+ const originalTotals=new Map(book.sheets.flatMap(sheet=>Array.from({length:12},(_,i)=>{const col=columnName(i+3);return [sheet.path+'|'+col+'6',[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0)/8];})));
  const canonical=program=>/april|agroforestri.*dayun/i.test(program)?'APRIL-DAYUN':/\bjpik\b/i.test(program)?'JPIK':program?.trim()||'Unallocated';
  // Use only unused program columns; never rename a real program or a column
  // containing hours. Missing agenda programs remain explicitly Unallocated.
@@ -85,14 +86,20 @@ export function patchTimesheet(bytes,sources,entries,managed={},today=new Date()
   for(const entry of automatic){const program=programColumn(entry.program,sheet.columns)||canonical(entry.program);if(sheet.columns[program])automaticByProgram.set(program,(automaticByProgram.get(program)||0)+entry.hours);}
   const row=sheet.dates.get(date),sum=actual.reduce((n,e)=>n+Number(e.hours),0);if(sum>24)bad('Total jam aktual per hari melebihi 24 jam.');
   const pending=planned.filter(s=>!actual.some(e=>e.activity===s.title.replace(/^\[[^\]]*\]\s*/,'')&&e.program===programColumn(s.program,sheet.columns)));
-  const descriptions=[...new Set([...actual.map(e=>'[Actual · '+e.program+'] '+e.activity),...pending.map(s=>(s.id.startsWith('agenda:')?s.title.replace(/^\[[^\]]*\]/,date>today?'[Planned]':'[Agenda]'):s.title)+(s.program?' · '+s.program:'')),...automatic.map(e=>'['+(date>today?'Planned hours':'Agenda hours')+' · '+(e.program||'Program mapping required')+'] '+e.hours+' hours')])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');write(sheet,'B'+row,descriptions);
+  const descriptions=[...new Set([...actual.map(e=>'[Actual · '+e.program+'] '+e.activity),...pending.map(s=>(s.id.startsWith('agenda:')?s.title.replace(/^\[[^\]]*\]/,date>today?'[Planned]':'[Agenda]'):s.title)+(s.program?' · '+s.program:'')),...automatic.map(e=>'['+(date>today?'Planned hours':'Agenda hours')+' · '+(e.program||'Program mapping required')+'] '+e.hours+' hours')])].join('\n');if(descriptions.length>30000)bad('Uraian kegiatan terlalu panjang.');
+  if(!actual.length){
+   const key=sheet.path+'|B'+row,cell=sheet.cells.get('B'+row),textConflict=cell?.value&&cell.value!=='0'&&cell.value!==descriptions&&(!(key in managed)||cell.value!==String(managed[key]));
+   const hoursConflict=Object.values(sheet.columns).some(col=>{const key=sheet.path+'|'+col+row,cell=sheet.cells.get(col+row);return !cell?.formula&&((Number(cell?.value||0)>0&&!(key in managed))||(key in managed&&String(cell?.value??'')!==String(managed[key])));});
+   if(textConflict||hoursConflict){skippedManual.push({date,sheet:sheet.name});for(const [key,value] of Object.entries(managed)){const [path,ref]=key.split('|');if(path===sheet.path&&Number(ref.replace(/^[A-Z]+/,''))===row)next[key]=value;}continue;}
+  }
+  write(sheet,'B'+row,descriptions);
   for(const [program,col] of Object.entries(sheet.columns)){const records=actual.filter(e=>e.program===program),key=sheet.path+'|'+col+row,auto=date<=today?automaticByProgram.get(program)||0:0;if(records.length||auto||key in managed)write(sheet,col+row,records.length?records.reduce((n,e)=>n+Number(e.hours),0):auto);}
   // Preserve every formula, including the template's Total Work and summary cells.
   // Confirmed-hour totals are written only to literal totals, never over formulas.
   if(actual.length||date<=today&&automatic.length||sheet.path+'|O'+row in managed){const total=Array.from({length:12},(_,i)=>Number(sheet.cells.get(columnName(i+3)+row)?.value||0)).reduce((a,b)=>a+b,0);if(!Number.isFinite(total)||total>24)bad('Total jam termasuk isian manual melebihi 24 jam.');if(!sheet.cells.get('O'+row)?.formula)write(sheet,'O'+row,total);}
  }
- for(const sheet of book.sheets)for(const [program,col] of Object.entries(sheet.columns)){if(Object.keys(next).some(k=>k.startsWith(sheet.path+'|'+col))||entries.some(e=>e.program===program&&sheet.dates.has(e.work_date))||sheet.path+'|'+col+'6' in managed){if(!sheet.cells.get(col+'6')?.formula){const total=[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0);write(sheet,col+'6',total/8);}}}
+ for(const sheet of book.sheets)for(const [program,col] of Object.entries(sheet.columns)){if(Object.keys(next).some(k=>k.startsWith(sheet.path+'|'+col))||entries.some(e=>e.program===program&&sheet.dates.has(e.work_date))||sheet.path+'|'+col+'6' in managed){if(!sheet.cells.get(col+'6')?.formula){const key=sheet.path+'|'+col+'6',current=sheet.cells.get(col+'6');if(!(key in managed)&&current?.value&&Number(current.value)===originalTotals.get(key))managed[key]=current.value;const total=[...sheet.dates.values()].reduce((sum,row)=>sum+Number(sheet.cells.get(col+row)?.value||0),0);write(sheet,col+'6',total/8);}}}
  for(const sheet of book.sheets)if(changes.some(k=>k.startsWith(sheet.path+'|')))book.files[sheet.path]=strToU8(sheet.source);
  if(changes.length){let bookXml=strFromU8(book.files['xl/workbook.xml']);bookXml=bookXml.replace(/<calcPr\b[^>]*\/>/,'<calcPr fullCalcOnLoad="1" forceFullCalc="1"/>');book.files['xl/workbook.xml']=strToU8(bookXml);}
- return {bytes:changes.length?zipSync(book.files):bytes,managed:next,changes:changes.length,outside,unresolved:[...unresolved],sheets:book.sheets.map(s=>({name:s.name,programs:Object.keys(s.columns)}))};
+ return {bytes:changes.length?zipSync(book.files):bytes,managed:next,changes:changes.length,outside,skippedManual,unresolved:[...unresolved],sheets:book.sheets.map(s=>({name:s.name,programs:Object.keys(s.columns)}))};
 }

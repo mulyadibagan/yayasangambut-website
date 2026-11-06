@@ -84,3 +84,9 @@ for(const driveVersion of ['v3','v2'])test('connected Drive sync backs up origin
  const retry=new URL('https://staff.test/api/timesheets/sync?staff=one');await timesheetApi(new Request(retry,{method:'POST'}),env,retry,actor,{payload:async()=>({})});assert.equal(writes,1);
  assert.equal(db.prepare('SELECT last_error FROM team_timesheet_files').get().last_error,'');
 });
+
+test('automatic sync preserves manual activity and hours while updating another date without double counting',()=>{
+ const manual=patchTimesheet(fixture(),[],[{work_date:'2026-11-01',program:'JPIK',hours:8,activity:'Manually confirmed work'}]),before=openTimesheet(manual.bytes).sheets[0];
+ const sources=collectTimesheetSources([],[{id:'a',title:'Agenda one',program:'JPIK',start_at:'2026-11-01',end_at:'2026-11-02',status:'done'}]),result=patchTimesheet(manual.bytes,sources,[],{},'2026-11-06'),after=openTimesheet(result.bytes).sheets[0];
+ assert.deepEqual(result.skippedManual,[{date:'2026-11-01',sheet:'Person 2026'}]);assert.equal(after.cells.get('B10').value,before.cells.get('B10').value);assert.equal(after.cells.get('D10').value,'8');assert.equal(after.cells.get('D11').value,'8');assert.equal(patchTimesheet(result.bytes,sources,[],result.managed,'2026-11-06').changes,0);
+});
