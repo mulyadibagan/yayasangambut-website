@@ -60,6 +60,13 @@ test('email sync keeps owner and origin checks and forwards only the existing in
  assert.equal(calls[1].headers.get('oai-authenticated-user-email'),owner.email);
 });
 
+test('sync page distinguishes zero-result execution and stale status from archive coverage',async()=>{
+ const e=env({id:'owner',email:'mulyadi@yayasangambut.org',role:'admin'});let calls=0;
+ e.FINANCE={async fetch(){calls++;return Response.json({sync:{status:'success',scannedCount:0,lastSuccess:'2020-01-01T00:00:00Z'},candidates:[]});}};
+ const html=await (await worker.fetch(request('/finance/email-sync'),e)).text();
+ assert.match(html,/Eksekusi integrasi berhasil/);assert.match(html,/0 pesan dipindai/);assert.match(html,/lebih dari 7 hari/);assert.match(html,/Periode email yang tercakup belum dilaporkan/);assert.match(html,/Belum dikonfirmasi integrasi/);assert.match(html,/Belum dilaporkan/);assert.equal(calls,1);
+});
+
 test('Riena reaches Finance pages and APIs with her own trusted identity',async()=>{
  const user={id:'finance',email:'rienaprasiddha@yayasangambut.org',role:'staff'};
  const e=env(user);e.FINANCE={async fetch(req){assert.equal(req.headers.get('oai-authenticated-user-email'),user.email);assert.equal(req.headers.get('cookie'),null);return new Response('ok');}};

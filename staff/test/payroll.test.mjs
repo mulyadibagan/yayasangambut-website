@@ -159,12 +159,21 @@ test('Director can create and edit own draft; Finance can review it; other admin
 });
 
 
-test('Director may submit and approve own payroll with explicit audit flag; Finance payment permissions unchanged',async()=>{
+test('Director cannot approve own payroll even after print review; rejection writes no approval, PDF, notification or payment',async()=>{
  const {env,db}=await setup();bindSource(env);let a=await call(env,'','director','POST',sample,201);
  a=await call(env,'/'+a.id+'/submit','director','POST',{version:a.version});assert.equal(a.status,'submitted');assert.equal(a.events.at(-1).snapshot.submitted_by,'mulyadi@yayasangambut.org');
- a=await reviewedApprove(env,a);assert.equal(a.status,'approved');assert.equal(a.events.at(-1).snapshot.self_approved,true);assert.equal(a.events.at(-1).actor_email,'mulyadi@yayasangambut.org');
+ const before=db.prepare('SELECT * FROM yg_payroll_requests WHERE id=?').get(a.id),events=db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_events').get().n;
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:await reviewToken(env,a)},409);
+ assert.deepEqual(db.prepare('SELECT * FROM yg_payroll_requests WHERE id=?').get(a.id),before);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_events').get().n,events);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_documents').get().n,0);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_notifications').get().n,0);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_payroll_payments').get().n,0);
+ // A migrated creator ID must not bypass the same-person email check.
+ db.prepare('UPDATE yg_payroll_requests SET creator=?,creator_email=? WHERE id=?').run('other','MULYADI@YAYASANGAMBUT.ORG',a.id);
+ await call(env,'/'+a.id+'/approve','director','POST',{version:a.version,review_confirmed:true,review_token:'unused'},409);
  await call(env,'/'+a.id+'/payments','director','POST',payment(a),403);
- a=await proof(env,a);a=await call(env,'/'+a.id+'/payments','finance','POST',payment(a,5400000),201);assert.equal(a.payment_status,'paid');
+ await call(env,'/'+a.id+'/payments','finance','POST',payment(a,5400000),409);
  assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123456);
 });
 

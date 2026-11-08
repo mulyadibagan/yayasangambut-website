@@ -189,6 +189,7 @@ export async function payrollRoute(req,env,u,ctx){
    else {if(!financeOwner(u))fail(403,'Hanya Direktur yang dapat menyetujui atau mengembalikan.');if(row.status!=='submitted')fail(409,'Hanya pengajuan yang sudah diajukan dapat ditinjau.');}
    let evidence=null;
    if(action==='approve'){
+    if(row.creator===u.id||row.creator_email?.toLowerCase()===u.email?.toLowerCase())fail(409,'Pemisahan tugas: Direktur tidak dapat menyetujui pengajuan yang dibuat sendiri. Pengajuan untuk persetujuan Direktur harus disiapkan Finance.');
     if(data.review_confirmed!==true||typeof data.review_token!=='string')fail(409,'Buka Review formulir dan hasil cetak, lalu konfirmasikan pemeriksaan sebelum menyetujui.');
     evidence=await q(env,'SELECT * FROM yg_payroll_reviews WHERE token=? AND request_id=? AND actor_email=? AND version=?',data.review_token,id,u.email,row.version).first();
     if(!evidence?.print_opened_at)fail(409,'Buka hasil cetak dari halaman review terlebih dahulu. Jika formulir berubah, review ulang versi terbaru.');
