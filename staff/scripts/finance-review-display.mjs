@@ -32,6 +32,7 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  if(!dashboard.includes("import statementDocuments from './finance-document-links.json';"))dashboard="import statementDocuments from './finance-document-links.json';\n"+dashboard;
  dashboard=replace(dashboard,'<a href={bankStatement2026.sourceUrl} target="_blank" rel="noopener noreferrer">Buka sumber mutasi rekening ↗</a>',`{(statementDocuments.statements||[]).map(statement=><a key={statement.url} href={statement.url} target="_blank" rel="noopener noreferrer" style={{marginRight:12}}>{statement.name} ↗</a>)}`);
  dashboard=replace(dashboard,'const sourceUrl = statementUrl || bankStatement2026.sourceUrl;','const sourceUrl = statementUrl;');
+ dashboard=replace(dashboard,'{evidenceReview && <p>{evidenceReview}</p>}','{evidenceReview && <p>{sourceUrl ? evidenceReview.replace(/rekening koran lengkap periode [^.]+ belum ditautkan\\./gi,"Rekening koran asli periode transaksi telah ditautkan.") : evidenceReview}</p>}');
  dashboard=replace(dashboard,'if (!links.length) return <div className="bank-source-evidence">','if (!links.length && !sourceUrl) return <div className="bank-source-evidence"><small>Rekening koran asli periode transaksi belum tertaut</small></div>;\n  if (!links.length) return <div className="bank-source-evidence">');
  await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),dashboard);
  dossier=replace(dossier,"import {useState}","import {reportSummary} from './finance-review-display.js';\nimport {useState}");
