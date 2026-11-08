@@ -1,13 +1,21 @@
 import {readFile,writeFile,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
+import {validateStatements} from './finance-bank-source-policy.mjs';
 
 const replace=(source,from,to)=>{if(source.includes(to))return source;if(source.split(from).length!==2)throw Error('Finance review display source drift');return source.replace(from,()=>to);};
 export async function applyReviewDisplay(root,documents={receipts:[],records:[]}){
+ validateStatements(documents.statements);
  for(const entry of [...(documents.receipts||[]),...(documents.records||[])]){
   if(!entry||typeof entry!=='object')throw Error('Invalid document metadata');
   for(const file of entry.files||[])if(!/^https:\/\/(?:drive|docs)\.google\.com\//.test(file.url)||typeof file.name!=='string')throw Error('Invalid document link');
  }
  await writeFile(resolve(root,'app/finance-document-links.json'),JSON.stringify(documents));
+ await copyFile(new URL('./finance-bank-source-policy.mjs',import.meta.url),resolve(root,'app/finance-bank-source-policy.js'));
+ const bankPath=resolve(root,'app/bank-statement-2026.ts');
+ let bank=await readFile(bankPath,'utf8');
+ const sourceMarker='// Period-specific original statement links; financial fields unchanged.';
+ if(!bank.includes(sourceMarker))bank+=`\n${sourceMarker}\nimport statementDocuments from './finance-document-links.json';\nimport {attachStatementSources} from './finance-bank-source-policy.js';\nObject.assign(bankStatement2026,attachStatementSources(bankStatement2026,statementDocuments.statements));\n`;
+ await writeFile(bankPath,bank);
  const read=async file=>(await readFile(resolve(root,file),'utf8')).replace(/\r\n/g,'\n');
  let receiptCss=await read('app/project-receipt-cluster.css');
  receiptCss=replace(receiptCss,'grid-template-columns: 105px minmax(0, 1fr) auto;','grid-template-columns: minmax(0, 1fr);');
@@ -21,6 +29,8 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  receipt=replace(receipt,'<small>{receipt.reference}</small>','<small>Mutasi bank belum tertaut · {receipt.reference}</small>');
  let dossier=await read('app/project-dossier.tsx');
  let dashboard=await read('app/finance-archive-dashboard.tsx');
+ if(!dashboard.includes("import statementDocuments from './finance-document-links.json';"))dashboard="import statementDocuments from './finance-document-links.json';\n"+dashboard;
+ dashboard=replace(dashboard,'<a href={bankStatement2026.sourceUrl} target="_blank" rel="noopener noreferrer">Buka sumber mutasi rekening ↗</a>',`{(statementDocuments.statements||[]).map(statement=><a key={statement.url} href={statement.url} target="_blank" rel="noopener noreferrer" style={{marginRight:12}}>{statement.name} ↗</a>)}`);
  dashboard=replace(dashboard,'const sourceUrl = statementUrl || bankStatement2026.sourceUrl;','const sourceUrl = statementUrl;');
  dashboard=replace(dashboard,'if (!links.length) return <div className="bank-source-evidence">','if (!links.length && !sourceUrl) return <div className="bank-source-evidence"><small>Rekening koran asli periode transaksi belum tertaut</small></div>;\n  if (!links.length) return <div className="bank-source-evidence">');
  await writeFile(resolve(root,'app/finance-archive-dashboard.tsx'),dashboard);
