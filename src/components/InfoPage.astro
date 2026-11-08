@@ -15,7 +15,11 @@ const isImpact=page==='dampak'||page==='impact';
 const isContact=page==='hubungi-kami'||page==='contact';
 const Layout = isAbout || isImpact || isLocations || isContact ? BaseLayout : ContentLayout;
 const ownTeam=await getCollection('team',({data})=>data.language===lang&&data.status==='published');
-const team=(ownTeam.length?ownTeam:await getCollection('team',({data})=>data.language==='id'&&data.status==='published')).sort((a,b)=>a.data.order-b.data.order);
+const team=(ownTeam.length?ownTeam:await getCollection('team',({data})=>data.language==='id'&&data.status==='published')).sort((a,b)=>a.data.order-b.data.order)
+  // Keep this title specific to Tim Kami; the shared profile also feeds the structure page.
+  .map(member=>member.data.name==='Zamharir, S.Pi.'
+    ? {...member,data:{...member.data,position:'Staf GIS dan Operasional',positionEn:'GIS & Operations Officer'}}
+    : member);
 const ownLocations=await getCollection('locations',({data})=>data.language===lang&&data.status==='published'&&Boolean(data.legacyCategorySlug));
 const fallbackLocations=lang==='en'&&!ownLocations.length?await getCollection('locations',({data})=>data.language==='id'&&data.status==='published'&&Boolean(data.legacyCategorySlug)):[];
 const locations=(ownLocations.length?ownLocations:fallbackLocations).sort((a,b)=>a.data.order-b.data.order);
