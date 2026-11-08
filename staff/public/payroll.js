@@ -71,7 +71,7 @@ function render(r){
 
  $('#files').innerHTML=r?.files?.some(f=>f.purpose!=='payment')?r.files.filter(f=>f.purpose!=='payment').map(f=>'<div class="file"><a href="'+base+'/'+r.id+'/files/'+f.id+'">'+esc(f.filename)+'</a><small>'+Math.ceil(f.size/1024)+' KB · '+esc(f.actor_email)+'</small></div>').join(''):'<p class="muted">Belum ada dokumen pendukung.</p>';
 
- const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review;$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=!r&&!preview;$('#print').textContent=r?'Cetak':'Pratinjau cetak';
+ const review=user.director&&r?.status==='submitted';$('#review-controls').hidden=!review;$('#approve').hidden=!review||r.creator_email?.toLowerCase()===user.email?.toLowerCase();$('#return').hidden=!review;$('#director-note').value='';$('#print').hidden=!r&&!preview;$('#print').textContent=r?'Cetak':'Pratinjau cetak';
 
  $('#cancel-request').hidden=!r||r.status==='cancelled'||r.paid>0;
  $('#cancellation-notice').hidden=r?.status!=='cancelled';$('#cancellation-notice').textContent=r?.cancelled_at?'Dibatalkan oleh '+r.cancelled_by+' · '+date(r.cancelled_at)+'. Alasan: '+r.cancellation_reason+'. Riwayat tetap tersimpan.':'';
