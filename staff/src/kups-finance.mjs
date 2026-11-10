@@ -3,6 +3,7 @@ import {activitiesRoute,publicActivities} from './kups-activities.mjs';
 import {detailsRoute,ledgerDetails,categories} from './kups-ledger-details.mjs';
 import {saveClosingReconciliation} from './kups-reconciliation.mjs';
 import {balancesAt,entireReport} from './kups-reporting.mjs';
+import {sourceReviewRoute} from './kups-source-reviews.mjs';
 import {fail,now,imageType} from './core.mjs';
 import {validateWebgisSession} from './webgis-sso.mjs';
 const origin='https://webgisyg.id';
@@ -54,6 +55,7 @@ export async function finance(req,env,url){
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
+ if(path==='/source-review')return await sourceReviewRoute(req,env,{method,u,g,q,json,body,requireAdmin,audit});
  if(path.startsWith('/activities'))return await activitiesRoute(req,env,url,{path,method,q,g,u,access:u.scope==='webgis-staff'&&u.role==='admin'?'admin':member?.role||'viewer',json,body});
  if(path.startsWith('/cba'))return await cbaRoute(req,env,url,{path,method,q,g,u,group,access,json,body,requireAdmin,write,audit});
  if(path==='/balances'&&method==='GET'){
@@ -127,6 +129,3 @@ export async function finance(req,env,url){
  return json({error},conflict?409:e.status||500);
  }
 }
-
-
-
