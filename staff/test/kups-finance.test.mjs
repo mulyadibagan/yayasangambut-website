@@ -145,28 +145,44 @@ test('payment edits/restores cannot exceed document total; document cannot be de
 test('repeat submission is idempotent and unknown historical accounts remain unassigned',async()=>{const f=fixture(),raw=await auth(f);await call(f,raw,'/setup','POST',{start_date:'2026-08-01',opening_amount:100000,version:1});const b=invoice({request_id:crypto.randomUUID()});const first=await call(f,raw,'/documents','POST',b),second=await call(f,raw,'/documents','POST',b);assert.equal(first.status,201);assert.equal(second.status,200);assert.equal(second.data.id,first.data.id);assert.equal(f.db.prepare('SELECT COUNT(*) n FROM kups_transactions').get().n,1);await call(f,raw,'/import','POST',{rows:[tx({source_ref:'old-account:10'})]});const r=(await call(f,raw,'/ledger?month=2026-08')).data;assert.equal(r.rows.find(t=>t.source_ref==='old-account:10').account,'unassigned');assert.equal(r.accounts.find(a=>a.id==='cash').closing,null);const viewer=await auth(f,'member');f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','member@gmail.com','viewer',0)");assert.equal((await call(f,viewer,'/documents','POST',invoice())).status,403);assert.equal((await call(f,viewer,'/transfers','POST',{date:'2026-08-20',from_account:'bank',to_account:'cash',amount:1000,description:'Tarik'})).status,403);});
 
 const accessMigration=()=>readFileSync(new URL('../migrations/0008_kups_read_access.sql',import.meta.url),'utf8');
-async function workspaceAuth(f){
+async function workspaceAuth(f,scope='webgis-staff'){
  f.db.exec("INSERT INTO users VALUES('ygstaff','staff@yayasangambut.org','YG Staff','staff',0)");
  const raw='yg-google-ygstaff';
- await f.env.DB.prepare('INSERT INTO webgis_sessions VALUES(?,?,?,?,?)').bind(await sha(raw),'ygstaff','webgis-staff','staff',Date.now()+100000).run();
+ if(scope==='kups-finance')f.db.exec("INSERT INTO webgis_access VALUES('staff@yayasangambut.org','kups-finance',0)");
+ await f.env.DB.prepare('INSERT INTO webgis_sessions VALUES(?,?,?,?,?)').bind(await sha(raw),'ygstaff',scope,scope==='kups-finance'?'kups':'staff',Date.now()+100000).run();
  return raw;
 }
-test('verified YG staff can read groups and ledger, but cannot mutate finance or manage members',async()=>{
+test('verified YG accounts can input and edit finance without receiving administrator permissions',async()=>{
  const f=fixture(),raw=await workspaceAuth(f);
- const groups=await call(f,raw,'/groups');assert.equal(groups.status,200);assert.equal(groups.data.groups[0].access,'viewer');
+ const groups=await call(f,raw,'/groups');assert.equal(groups.status,200);assert.equal(groups.data.groups[0].access,'treasurer');
  assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,200);
- for(const path of ['/transactions','/documents','/transfers','/members','/setup','/period','/import','/evidence'])assert.equal((await call(f,raw,path,'POST',{})).status,403,path);
+ for(const path of ['/members','/setup','/period','/import'])assert.equal((await call(f,raw,path,'POST',{})).status,403,path);
  assert.equal((await call(f,raw,'/members')).status,403);
+ const admin=await auth(f);await call(f,admin,'/setup','POST',{start_date:'2026-08-01',opening_amount:0,version:1});
+ const income=await call(f,raw,'/transactions','POST',tx());assert.equal(income.status,201);
+ assert.equal((await call(f,raw,'/transactions/'+income.data.id,'PUT',tx({amount:12000,version:1}))).status,200);
+ assert.equal((await call(f,raw,'/transactions','POST',tx({kind:'expense',amount:1000}))).status,201);
  f.db.exec("INSERT INTO kups_members VALUES('dayun-rimba-sejahtera','staff@yayasangambut.org','viewer',1)");
  assert.equal((await call(f,raw,'/groups')).data.groups.length,0);
  assert.equal((await call(f,raw,'/ledger?month=2026-08')).status,403);
- f.db.exec("UPDATE kups_members SET disabled=0,role='treasurer' WHERE email='staff@yayasangambut.org'");
+ f.db.exec("UPDATE kups_members SET disabled=0,role='viewer' WHERE email='staff@yayasangambut.org'");
  assert.equal((await call(f,raw,'/groups')).data.groups[0].access,'treasurer');
- assert.equal((await call(f,raw,'/transactions','POST',tx())).status,409); // Authorized; opening balance still missing.
+ assert.equal((await call(f,raw,'/transactions','POST',tx())).status,201);
 });
-test('domain read access requires exact domain and staff scope',()=>{
+test('organisation finance access requires exact domain and a verified Google session scope',()=>{
  for(const email of ['staff@yayasangambut.org.evil.com','staff@evilyayasangambut.org','staff@gmail.com','staff@@yayasangambut.org'])assert.throws(()=>assertGroupAccess({email,scope:'webgis-staff',role:'staff'},null));
- assert.throws(()=>assertGroupAccess({email:'staff@yayasangambut.org',scope:'kups-finance',role:'kups'},null));
+ assert.equal(assertGroupAccess({email:'staff@yayasangambut.org',scope:'kups-finance',role:'kups'},null,true),'treasurer');
+ assert.throws(()=>assertGroupAccess({email:'staff@yayasangambut.org',scope:'unknown',role:'staff'},null,true));
+ assert.throws(()=>assertGroupAccess({email:'staff@yayasangambut.org',scope:'webgis-staff',role:'staff'},{role:'viewer',disabled:1},true));
+});
+test('finance-only YG accounts get editor access while expired and disabled accounts are rejected',async()=>{
+ const f=fixture(),raw=await workspaceAuth(f,'kups-finance');
+ assert.equal((await call(f,raw,'/groups')).data.groups[0].access,'treasurer');
+ const admin=await auth(f);await call(f,admin,'/setup','POST',{start_date:'2026-08-01',opening_amount:0,version:1});
+ assert.equal((await call(f,raw,'/transactions','POST',tx())).status,201);
+ assert.equal((await call(f,raw,'/activities','POST',{})).status,403); // Finance editing does not grant attendance management.
+ f.db.exec("UPDATE users SET disabled=1 WHERE id='ygstaff'");assert.equal((await call(f,raw,'/groups')).status,401);
+ f.db.exec("UPDATE users SET disabled=0 WHERE id='ygstaff'; UPDATE webgis_sessions SET expires=0 WHERE user_id='ygstaff'");assert.equal((await call(f,raw,'/groups')).status,401);
 });
 test('Alfred migration allows Dayun read only, preserves grants, and cannot reach other groups or website APIs',async()=>{
  const f=fixture();f.db.exec(accessMigration());f.db.exec(accessMigration());
@@ -188,3 +204,4 @@ test('daily income and expenses require only date, category, nominal and descrip
  }
  const ledger=(await call(f,raw,'/ledger?month=2026-08')).data;assert.equal(ledger.summary.income,10000);assert.equal(ledger.summary.expense,20000);assert.equal(ledger.summary.closing,90000);
 });
+

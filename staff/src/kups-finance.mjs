@@ -23,11 +23,11 @@ export function validateTransaction(b,strict=false){
  return p;
 }
 async function body(req){if(Number(req.headers.get('content-length')||0)>200000)fail(413,'Data terlalu besar.');const reader=req.body?.getReader();let size=0;const parts=[];if(!reader)fail(400,'Data kosong.');while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>200000){await reader.cancel();fail(413,'Data terlalu besar.');}parts.push(value);}const bytes=new Uint8Array(size);let offset=0;for(const p of parts){bytes.set(p,offset);offset+=p.length;}try{return JSON.parse(new TextDecoder().decode(bytes));}catch{fail(400,'Data tidak valid.');}}
-const ygStaff=u=>u.scope==='webgis-staff'&&/^[^@\s]+@yayasangambut\.org$/.test(u.email||'');
+const ygStaff=u=>['webgis-staff','kups-finance'].includes(u.scope)&&/^[^@\s]+@yayasangambut\.org$/i.test(u.email||'');
 export function assertGroupAccess(u,member,write=false){
  if(u.scope==='webgis-staff'&&u.role==='admin')return 'admin';
  if(member?.disabled||(!member&&!ygStaff(u)))fail(403,'Email Anda belum memiliki akses keuangan kelompok ini.');
- const role=member?.role||'viewer';
+ const role=ygStaff(u)?'treasurer':member?.role||'viewer';
  if(write&&role!=='treasurer')fail(403,'Akses bendahara diperlukan.');
  return role;
 }
@@ -48,13 +48,13 @@ export async function finance(req,env,url){
  const path=url.pathname.replace('/api/kups',''),method=req.method;
  if(path==='/groups'&&method==='GET'){
   const admin=u.scope==='webgis-staff'&&u.role==='admin';
-  const sql=admin?"SELECT *,'admin' AS access FROM kups_groups":ygStaff(u)?"SELECT g.*,COALESCE(m.role,'viewer') AS access FROM kups_groups g LEFT JOIN kups_members m ON m.group_id=g.id AND m.email=? WHERE m.disabled IS NULL OR m.disabled=0":'SELECT g.*,m.role AS access FROM kups_groups g JOIN kups_members m ON m.group_id=g.id WHERE m.email=? AND m.disabled=0';
+  const sql=admin?"SELECT *,'admin' AS access FROM kups_groups":ygStaff(u)?"SELECT g.*,'treasurer' AS access FROM kups_groups g LEFT JOIN kups_members m ON m.group_id=g.id AND m.email=? WHERE m.disabled IS NULL OR m.disabled=0":'SELECT g.*,m.role AS access FROM kups_groups g JOIN kups_members m ON m.group_id=g.id WHERE m.email=? AND m.disabled=0';
   const groups=(await q(env,sql,...(admin?[]:[u.email])).all()).results;
   return json({groups,user:{name:u.name,email:u.email,admin:u.scope==='webgis-staff'&&u.role==='admin'}});
  }
  const g=url.searchParams.get('group')||'';const group=await q(env,'SELECT * FROM kups_groups WHERE id=?',g).first();if(!group)fail(404,'Kelompok tidak ditemukan.');
  const member=await q(env,'SELECT * FROM kups_members WHERE group_id=? AND email=?',g,u.email).first();const access=assertGroupAccess(u,member);const write=()=>assertGroupAccess(u,member,true);
- if(path.startsWith('/activities'))return await activitiesRoute(req,env,url,{path,method,q,g,u,access,json,body});
+ if(path.startsWith('/activities'))return await activitiesRoute(req,env,url,{path,method,q,g,u,access:u.scope==='webgis-staff'&&u.role==='admin'?'admin':member?.role||'viewer',json,body});
  if(path.startsWith('/cba'))return await cbaRoute(req,env,url,{path,method,q,g,u,group,access,json,body,requireAdmin,write,audit});
  if(path==='/balances'&&method==='GET'){
   const date=url.searchParams.get('date'),exclude=url.searchParams.get('exclude')||'';
@@ -127,5 +127,6 @@ export async function finance(req,env,url){
  return json({error},conflict?409:e.status||500);
  }
 }
+
 
 
