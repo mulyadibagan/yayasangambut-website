@@ -67,6 +67,11 @@
 .sidebar nav a[data-surat]{text-decoration:none;align-items:center;line-height:1.4;min-height:46px}.sidebar nav a[data-surat] .surat-menu-icon{font-size:18px;flex:0 0 18px;text-align:center}.sidebar nav a[data-surat]:hover{background:var(--pale);color:var(--green)}.sidebar nav a[data-surat]:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 
 /* Explicit 24-hour agenda controls, independent of browser/OS AM/PM settings. */
+.agenda-holiday-summary{margin:16px 0;padding:14px 16px;border:1px solid #e6bdba;border-radius:10px;background:#fff8f7;color:#742822}
+.agenda-holiday-summary p,.agenda-holiday-summary ul{margin:8px 0}
+.agenda-holiday-summary a{color:inherit;text-decoration:underline}
+.agenda-holiday{margin:6px 0;padding:6px;border-left:3px solid #ad3630;background:#fff0ee;color:#742822;font-size:12px;overflow-wrap:anywhere}
+.agenda-holiday strong,.agenda-holiday span{display:block}
 #agenda-form .agenda-datetime{min-width:0;margin:16px 0;padding:0;border:0}
 #agenda-form .agenda-datetime legend{padding:0;font-size:13px}
 #agenda-form .agenda-date-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(76px,.55fr) minmax(76px,.55fr);gap:10px}

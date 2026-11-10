@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseHTML} from 'linkedom';
-import {agendaTimeFields,composeAgendaTime,bindAgendaTime} from '../public/agenda-time.js';
+import {agendaTimeFields,composeAgendaTime,bindAgendaTime,parseAgendaDate} from '../public/agenda-time.js';
 import {agendaInput} from '../src/agendas.mjs';
+
+test('day-first dates preserve unambiguous dates and reject invalid calendar dates',()=>{
+ for(const [shown,iso] of [['10/11/2026','2026-11-10'],['01/02/2026','2026-02-01'],['29/02/2028','2028-02-29']])assert.equal(parseAgendaDate(shown),iso);
+ for(const value of ['11/10/26','2026-11-10','31/04/2026','29/02/2026','29/02/2100','00/11/2026','10/13/2026','10/11/0000'])assert.equal(parseAgendaDate(value),'');
+});
 
 test('agenda controls expose 00 through 23 without a locale-dependent time picker',()=>{
  const {document}=parseHTML(agendaTimeFields('start_at','Mulai','mulai'));
@@ -23,8 +28,9 @@ test('24-hour selection preserves local WIB API values at midnight and 23:59',()
 test('reopening an existing agenda resets split controls and propagates read-only state',()=>{
  const controls=Object.fromEntries(['start_at','start_at_date','start_at_hour','start_at_minute'].map(name=>{const control=new EventTarget();control.value='';control.disabled=false;return [name,control];}));
  const refresh=bindAgendaTime({querySelector:selector=>controls[selector.match(/name="([^"]+)"/)[1]]},'start_at');
- controls.start_at.value='2026-11-01T14:00';refresh();assert.equal(controls.start_at_hour.value,'14');assert.equal(controls.start_at_date.value,'2026-11-01');
+ controls.start_at.value='2026-11-01T14:00';refresh();assert.equal(controls.start_at_hour.value,'14');assert.equal(controls.start_at_date.value,'01/11/2026');
  controls.start_at_hour.value='23';controls.start_at_minute.value='59';controls.start_at_minute.dispatchEvent(new Event('change'));assert.equal(controls.start_at.value,'2026-11-01T23:59');
+ controls.start_at_date.value='10/11/2026';controls.start_at_date.dispatchEvent(new Event('input'));assert.equal(controls.start_at.value,'2026-11-10T23:59');refresh();assert.equal(controls.start_at_date.value,'10/11/2026');
  controls.start_at.disabled=true;refresh();assert.equal(controls.start_at_hour.disabled,true);assert.equal(controls.start_at_date.disabled,true);
  controls.start_at.value='';controls.start_at.disabled=false;refresh();assert.equal(controls.start_at_hour.value,'');assert.equal(controls.start_at_minute.value,'');assert.equal(controls.start_at_hour.disabled,false);
 });
