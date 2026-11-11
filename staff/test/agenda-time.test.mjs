@@ -34,3 +34,21 @@ test('reopening an existing agenda resets split controls and propagates read-onl
  controls.start_at.disabled=true;refresh();assert.equal(controls.start_at_hour.disabled,true);assert.equal(controls.start_at_date.disabled,true);
  controls.start_at.value='';controls.start_at.disabled=false;refresh();assert.equal(controls.start_at_hour.value,'');assert.equal(controls.start_at_minute.value,'');assert.equal(controls.start_at_hour.disabled,false);
 });
+
+test('calendar selection and manual entry stay in sync without changing WIB hours',()=>{
+ const names=['start_at','start_at_date','start_at_hour','start_at_minute','start_at_picker'];
+ const controls=Object.fromEntries(names.map(name=>{const control=new EventTarget();control.value='';control.disabled=false;return [name,control];}));
+ const refresh=bindAgendaTime({querySelector:selector=>controls[selector.match(/name="([^"]+)"/)[1]]},'start_at');
+ controls.start_at.value='2026-11-02T08:30';refresh();
+ assert.equal(controls.start_at_picker.value,'2026-11-02');
+ controls.start_at_picker.value='2026-12-17';controls.start_at_picker.dispatchEvent(new Event('change'));
+ assert.equal(controls.start_at_date.value,'17/12/2026');assert.equal(controls.start_at.value,'2026-12-17T08:30');
+ controls.start_at_date.value='29/02/2028';controls.start_at_date.dispatchEvent(new Event('input'));
+ assert.equal(controls.start_at_picker.value,'2028-02-29');
+ let opened=0;controls.start_at_picker.showPicker=()=>opened++;controls.start_at_date.dispatchEvent(new Event('click'));assert.equal(opened,1);
+ controls.start_at.disabled=true;refresh();assert.equal(controls.start_at_picker.disabled,true);
+ controls.start_at_date.dispatchEvent(new Event('click'));assert.equal(opened,1);
+ controls.start_at.value='';controls.start_at.disabled=false;refresh();assert.equal(controls.start_at_picker.value,'');
+ const {document}=parseHTML(agendaTimeFields('end_at','Selesai','selesai'));
+ assert.equal(document.querySelector('[name=end_at_picker]').getAttribute('aria-label'),'Pilih tanggal selesai');
+});

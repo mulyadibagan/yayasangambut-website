@@ -78,3 +78,10 @@
 #agenda-form .agenda-date-controls label{min-width:0;margin:8px 0 0;font-size:12px}
 #agenda-form .agenda-date-controls input,#agenda-form .agenda-date-controls select{width:100%;min-width:0;min-height:44px}
 @media(max-width:1100px){#agenda-form .agenda-date-controls{grid-template-columns:1fr 1fr}#agenda-form .agenda-date-controls label:first-child{grid-column:1/-1}}
+
+/* Keep day-first entry alongside a native calendar control on desktop and touch screens. */
+#agenda-form .agenda-date-entry{display:flex;align-items:center;gap:6px}
+#agenda-form .agenda-date-entry input:first-child{flex:1;width:0}
+#agenda-form .agenda-date-entry .agenda-date-picker{flex:0 0 44px;width:44px;padding:8px;color:transparent;cursor:pointer}
+#agenda-form .agenda-date-picker::-webkit-datetime-edit{display:none}
+#agenda-form .agenda-date-picker::-webkit-calendar-picker-indicator{margin:0;width:24px;height:24px;cursor:pointer;opacity:1}
