@@ -22,9 +22,10 @@ const branches=[
 <header class="org-heading"><p class="eyebrow">YAYASAN GAMBUT</p><h1>{title}</h1></header>
 <div class="org-chart" data-team-chart aria-label={title}>
  <svg class="direct-link" aria-hidden="true"><path /></svg>
+ <svg class="communication-link" aria-hidden="true"><path /></svg>
  <div class="director"><TeamPerson member={person('Mulyadi')} lang={lang} director/></div>
  <div class="leadership">
-  {['Warsito','Rafi Merbamas','Ir. Riena'].map(name=><div class="leader"><TeamPerson member={person(name)} lang={lang}/></div>)}
+  {['Warsito','Rafi Merbamas','Ir. Riena'].map(name=><div class="leader" data-communication-source={name==='Warsito'?'warsito':undefined}><TeamPerson member={person(name)} lang={lang}/></div>)}
  </div>
  <section class="program-team" aria-label={id?'Tim program':'Program team'}>
   <div class="branches">{branches.map(b=><section class:list={['branch',{direct:b.direct}]}>
@@ -33,6 +34,7 @@ const branches=[
   </section>)}</div>
  </section>
 </div>
+<p class="communication-caption"><span aria-hidden="true"></span>{id?'Garis biru putus-putus: komunikasi Khamidi Setyo Budi ↔ Warsito; bukan hubungan pelaporan.':'Blue dashed line: communication between Khamidi Setyo Budi and Warsito; not a reporting relationship.'}</p>
 </div></section>
 </BaseLayout>
 <script>
@@ -41,11 +43,17 @@ function connectDirector() {
   const source=chart.querySelector<HTMLElement>('.director .person');
   const target=chart.querySelector<HTMLElement>('.branch.direct .person');
   const path=chart.querySelector<SVGPathElement>('.direct-link path');
+  const communicationSource=chart.querySelector<HTMLElement>('[data-communication-source="warsito"] .person');
+  const communicationPath=chart.querySelector<SVGPathElement>('.communication-link path');
   if(!source||!target||!path)return;
   const draw=()=>{
    const box=chart.getBoundingClientRect(),a=source.getBoundingClientRect(),b=target.getBoundingClientRect();
    const x=box.width-5, y1=a.top-box.top+a.height/2, y2=b.top-box.top+b.height/2;
    path.setAttribute('d',`M ${a.right-box.left} ${y1} H ${x} V ${y2} H ${b.right-box.left}`);
+   if(communicationSource&&communicationPath){
+    const c=communicationSource.getBoundingClientRect(),bottom=box.height-8;
+    communicationPath.setAttribute('d',`M ${c.left-box.left} ${c.top-box.top+c.height/2} H 5 V ${bottom} H ${b.left-box.left+b.width/2} V ${b.bottom-box.top}`);
+   }
   };
   new ResizeObserver(draw).observe(chart);
   draw();
@@ -55,6 +63,7 @@ connectDirector();
 document.addEventListener('astro:page-load',connectDirector);
 </script>
 <style>
+.org-chart{padding-left:24px;padding-bottom:28px}.communication-link{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}.communication-link path{fill:none;stroke:#286b91;stroke-width:2;stroke-dasharray:3 5;stroke-linecap:round}.communication-caption{display:flex;align-items:center;gap:.6rem;color:#285f7d;font-size:.85rem;margin:1rem 0 0}.communication-caption span{width:2rem;flex-shrink:0;border-top:2px dashed #286b91}
 .org-page{background:#f5f7f2;padding:2rem 0 4rem}.back{display:inline-flex;align-items:center;min-height:44px;color:#225f49;font-size:.9rem;font-weight:700;text-decoration:none}.back:hover{text-decoration:underline}.org-heading{margin:1.8rem 0 2.5rem}.org-heading h1{font-size:clamp(2rem,4vw,3rem);margin:.6rem 0}
 .org-chart{--connector:#91af9e;position:relative;padding-right:24px}.direct-link{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:2}.direct-link path{fill:none;stroke:#477b64;stroke-width:2;stroke-dasharray:7 6;stroke-linecap:round}.director{width:min(100%,23rem);margin:auto;position:relative;padding-bottom:2rem}.director:after{content:'';position:absolute;left:50%;bottom:0;height:2rem;border-left:2px solid var(--connector)}
 .leadership{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem;max-width:62rem;margin:0 auto;position:relative}.leadership:before{content:'';position:absolute;top:0;left:calc(16.6667% - .33rem);right:calc(16.6667% - .33rem);border-top:2px solid var(--connector)}.leader{position:relative;padding-top:2rem}.leader:before{content:'';position:absolute;height:2rem;left:50%;top:0;border-left:2px solid var(--connector)}.leader :global(.person){height:100%}
