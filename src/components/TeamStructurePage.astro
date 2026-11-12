@@ -51,8 +51,12 @@ function connectDirector() {
    const x=box.width-5, y1=a.top-box.top+a.height/2, y2=b.top-box.top+b.height/2;
    path.setAttribute('d',`M ${a.right-box.left} ${y1} H ${x} V ${y2} H ${b.right-box.left}`);
    if(communicationSource&&communicationPath){
-    const c=communicationSource.getBoundingClientRect(),bottom=box.height-8;
-    communicationPath.setAttribute('d',`M ${c.left-box.left} ${c.top-box.top+c.height/2} H 5 V ${bottom} H ${b.left-box.left+b.width/2} V ${b.bottom-box.top}`);
+    const c=communicationSource.getBoundingClientRect();
+    // Use the gap between rows on desktop; the left gutter on stacked layouts.
+    const route=window.matchMedia('(min-width:1100px)').matches
+     ? `M ${c.left-box.left+c.width/2} ${c.bottom-box.top} V ${c.bottom-box.top+12} H ${b.right-box.left+10} V ${b.top-box.top+18} H ${b.right-box.left}`
+     : `M ${c.left-box.left} ${c.top-box.top+c.height/2} H 5 V ${b.top-box.top+b.height/2} H ${b.left-box.left}`;
+    communicationPath.setAttribute('d',route);
    }
   };
   new ResizeObserver(draw).observe(chart);
