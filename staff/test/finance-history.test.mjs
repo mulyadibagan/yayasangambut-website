@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {compileHistory,summarize,category,isoDate} from '../scripts/finance-history-policy.mjs';
+import {professionalCopy} from '../scripts/finance-presentation.mjs';
+test('full cash history preserves exact totals, prior years, legitimate repeats and split allocations',()=>{
+ const sources=[{year:2025,bank:{openingBalance:100,closingBalance:115.25,mutations:[{date:'15 Jan 2025',description:'Pencairan donor',reference:'A',debit:0,credit:20.25,balance:120.25},{date:'2025-12-30',description:'UM kegiatan',reference:'B',debit:5,credit:0,balance:115.25}]}},{year:2026,bank:{openingBalance:115.25,closingBalance:145.25,mutations:[{archiveIndex:0,postedAt:'2026-01-02',description:'Donasi staf',reference:'C',debit:0,credit:40,balance:155.25},{archiveIndex:1,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:150.25},{archiveIndex:2,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:145.25}]}}];
+ const closing={entries:[{index:0,debit:0,credit:40,allocations:[{bucket:'STAFF',amount:25},{bucket:'YG',amount:15}]}]};
+ const before=JSON.stringify({sources,closing}),report=compileHistory(sources,closing);
+ assert.equal(JSON.stringify({sources,closing}),before);assert.equal(report.rows.length,6);assert.equal(report.coverage.length,2);
+ assert.equal(report.coverage[0].difference,0);assert.equal(report.coverage[1].difference,0);assert.equal(report.coverage[1].carryDifference,0);
+ for(const group of ['project','category','year','month']){const out=summarize(report.rows,group);assert.equal(out.reduce((n,r)=>n+r.incoming,0),6025);assert.equal(out.reduce((n,r)=>n+r.outgoing,0),1500);}
+ assert.equal(summarize(report.rows,'year').reduce((n,r)=>n+r.count,0),5);
+ assert.throws(()=>compileHistory([...sources,sources[0]],closing),/duplicated/);
+ const invalid=structuredClone(closing);invalid.entries[0].credit=39;assert.throws(()=>compileHistory(sources,invalid),/link mismatch/);
+});
+test('internal reallocation is never counted as additional cash',()=>{
+ const report=compileHistory([{year:2026,bank:{openingBalance:0,closingBalance:10,mutations:[{date:'2026-01-01',description:'Sisa UM',debit:0,credit:10,balance:10}]}}],{entries:[{index:0,debit:0,credit:10,allocations:[{bucket:'YG',amount:30},{bucket:'STAFF',amount:-20}]}]});
+ assert.equal(report.rows.length,1);assert.equal(report.rows[0].credit,1000);assert.equal(report.rows[0].category,'Pengembalian uang muka');
+});
+test('uncertain classification remains explicit; cash receipts are not all donor income',()=>{
+ assert.equal(category({credit:10,description:'Donasi ARC3'}),'Donasi');
+ assert.equal(category({credit:10,description:'Angsuran tahap 8'}),'Pelunasan piutang');
+ assert.equal(category({credit:10,description:'Bunga bank'}),'Bunga bank');
+ assert.equal(category({credit:10,description:'Tidak jelas'}),'Penerimaan lain / perlu klasifikasi');
+ assert.equal(category({debit:10,description:'Tarik tunai gaji dan peralatan kantor'}),'Pengeluaran gabungan');
+ assert.equal(isoDate('13 November 2026'),'2026-11-13');assert.throws(()=>isoDate('yesterday'));
+});
+test('presentation changes preserve numerical expressions and financial identifiers',()=>{
+ const source='<button>Cashflow Project</button><p>Belum dilaporkan ke Riena</p><strong>{idr(view.projectedMonthlyPayroll)}</strong>';const changed=professionalCopy(source);
+ assert.ok(changed.includes('Arus Kas Proyek'));assert.ok(changed.includes('Bagian Keuangan'));assert.ok(changed.includes('{idr(view.projectedMonthlyPayroll)}'));assert.equal(professionalCopy(changed),changed);
+});

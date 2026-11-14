@@ -15,6 +15,7 @@ import {applyPayrollBridge} from './finance-payroll-bridge.mjs';
 import {applyFinanceReactShell} from './finance-react-shell.mjs';
 import {applyUmReturnIntegration} from './finance-um-return-display.mjs';
 import {applyReviewDisplay} from './finance-review-display.mjs';
+import {applyFinancePresentation} from './finance-presentation.mjs';
 const root=resolve('finance-runtime');
 const key=Buffer.from(process.env.PRIVATE_FINANCE_ARCHIVE_KEY||'','hex');
 if(key.length!==32)throw Error('PRIVATE_FINANCE_ARCHIVE_KEY is not configured.');
@@ -86,6 +87,7 @@ await applyFinanceReactShell(root);
 const documentLinks=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['finance_document_links_v1']);
 await applyReviewDisplay(root,documentLinks[0].results.length?JSON.parse(documentLinks[0].results[0].setting_value):{receipts:[],records:[]});
 await (await import('./finance-email-telemetry.mjs')).applyEmailTelemetry(root);
+await applyFinancePresentation(root);
 run('npm',['run','build']);
 // Verify new bank-derived donation archives independently of the fixed historical fixture.
 const updatedBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href+'?verified-updates')).bankStatement2026;
