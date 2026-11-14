@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {compileHistory,summarize,category,isoDate} from '../scripts/finance-history-policy.mjs';
 import {professionalCopy} from '../scripts/finance-presentation.mjs';
+import {applyFinancePresentation} from '../scripts/finance-presentation.mjs';
+import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 test('full cash history preserves exact totals, prior years, legitimate repeats and split allocations',()=>{
  const sources=[{year:2025,bank:{openingBalance:100,closingBalance:115.25,mutations:[{date:'15 Jan 2025',description:'Pencairan donor',reference:'A',debit:0,credit:20.25,balance:120.25},{date:'2025-12-30',description:'UM kegiatan',reference:'B',debit:5,credit:0,balance:115.25}]}},{year:2026,bank:{openingBalance:115.25,closingBalance:145.25,mutations:[{archiveIndex:0,postedAt:'2026-01-02',description:'Donasi staf',reference:'C',debit:0,credit:40,balance:155.25},{archiveIndex:1,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:150.25},{archiveIndex:2,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:145.25}]}}];
  const closing={entries:[{index:0,debit:0,credit:40,allocations:[{bucket:'STAFF',amount:25},{bucket:'YG',amount:15}]}]};
@@ -28,4 +32,19 @@ test('uncertain classification remains explicit; cash receipts are not all donor
 test('presentation changes preserve numerical expressions and financial identifiers',()=>{
  const source='<button>Cashflow Project</button><p>Belum dilaporkan ke Riena</p><strong>{idr(view.projectedMonthlyPayroll)}</strong>';const changed=professionalCopy(source);
  assert.ok(changed.includes('Arus Kas Proyek'));assert.ok(changed.includes('Bagian Keuangan'));assert.ok(changed.includes('{idr(view.projectedMonthlyPayroll)}'));assert.equal(professionalCopy(changed),changed);
+});
+test('presentation/report generation leaves source data byte-for-byte intact',async()=>{
+ const root=await mkdtemp(join(tmpdir(),'yg-history-'));
+ try{
+  const app=join(root,'app');await mkdir(app);await writeFile(join(root,'package.json'),'{"type":"module"}');
+  const bank=year=>`export const bankStatement${year}={openingBalance:1,closingBalance:2,mutations:[{date:'${year}-01-01',description:'test',debit:0,credit:1,balance:2}]};`;
+  const ledger='{"entries":[],"unchanged":true}',policy='export const STAFF_POLICY={active:true,monthlySalary:123};';
+  for(const [p,s] of Object.entries({'bank-statement-2025.js':bank(2025),'bank-statement-2026.js':bank(2026),'closing-august-2026.json':ledger,'policy.ts':policy,'finance-staff-tools.tsx':'export default ()=> <nav><div><a href="/finance/invoices">Invoice</a></div></nav>;','finance-archive-dashboard.tsx':"import PayrollPaymentsPanel from './payroll-payments-panel';\nexport default ()=> <main><PayrollPaymentsPanel /><a id=\"finance-invoice-entry\" href=\"/finance/invoices\">Invoice</a><h1>Cashflow Project</h1></main>;",'salary-balance-enhancer.tsx':"import PendingStaffAllocation from './pending';\nexport default ()=> <main><PendingStaffAllocation /></main>;"}))await writeFile(join(app,p),s);
+  await applyFinancePresentation(root);
+  assert.equal(await readFile(join(app,'closing-august-2026.json'),'utf8'),ledger);assert.equal(await readFile(join(app,'policy.ts'),'utf8'),policy);
+  for(const year of [2025,2026])assert.equal(await readFile(join(app,`bank-statement-${year}.js`),'utf8'),bank(year));
+  const output=JSON.parse(await readFile(join(app,'finance-history.json'),'utf8'));assert.equal(output.rows.length,2);
+  const page=await readFile(join(app,'finance-archive-dashboard.tsx'),'utf8');assert.ok(!page.includes('PayrollPaymentsPanel'));assert.ok(!page.includes('finance-invoice-entry'));assert.ok(page.includes('Arus Kas Proyek'));
+  assert.ok((await readFile(join(app,'salary-balance-enhancer.tsx'),'utf8')).includes('<PayrollPaymentsPanel />'));
+ }finally{await rm(root,{recursive:true,force:true});}
 });

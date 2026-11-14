@@ -40,14 +40,24 @@ export async function applyFinancePresentation(root){
  const after=await fingerprint(root);
  if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Presentation altered source data');
  // Read the private bank sources only; never migrate or write financial records.
- const files=(await readdir(app)).filter(n=>/^bank-statement-20\d{2}\.(?:ts|js)$/.test(n)).sort();
+ const files=(await readdir(app)).filter(n=>/(?:bank|statement|mutasi)/i.test(n)&&/20\d{2}/.test(n)&&/\.(?:ts|js|json)$/.test(n)).sort();
  const sources=[];
  for(const file of files){
-  const mod=await import(pathToFileURL(resolve(app,file)).href),candidates=Object.values(mod).filter(v=>v&&typeof v==='object'&&Array.isArray(v.mutations));
+  const mod=file.endsWith('.json')?{default:JSON.parse(await readFile(resolve(app,file),'utf8'))}:await import(pathToFileURL(resolve(app,file)).href);
+  const candidates=[];
+  for(const value of Object.values(mod)){
+   if(!value||typeof value!=='object')continue;
+   const list=Array.isArray(value)?value:value.mutations||value.entries||value.transactions||value.rows;
+   if(!Array.isArray(list)||!list.length||!list.every(r=>typeof r.debit==='number'&&typeof r.credit==='number'))continue;
+   candidates.push(Array.isArray(value)?{mutations:list}:{...value,mutations:list});
+  }
+  if(!candidates.length)continue;
   if(candidates.length!==1)throw Error('Bank history source schema needs review: '+file);
-  sources.push({year:Number(file.match(/20\d{2}/)[0]),bank:candidates[0]});
+  const year=Number(file.match(/20\d{2}/)[0]);
+  if(sources.some(s=>s.year===year))continue;
+  sources.push({year,bank:candidates[0]});
  }
- if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must cover both existing years');
+ if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must cover both existing years. Candidate source modules: '+files.join(', '));
  const closing=JSON.parse(await readFile(resolve(app,'closing-august-2026.json'),'utf8'));
  const report=compileHistory(sources,closing);
  await writeFile(resolve(app,'finance-history.json'),JSON.stringify(report),{mode:0o600});
