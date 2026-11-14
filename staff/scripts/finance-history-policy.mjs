@@ -76,5 +76,5 @@ export function compileHistory(sources,closing){
 }
 export function summarize(rows,group='category'){
  const map=new Map();for(const row of rows){const key=row[group]||'Belum dialokasikan',v=map.get(key)||{label:key,incoming:0,outgoing:0,ids:new Set()};v.incoming+=row.credit;v.outgoing+=row.debit;v.ids.add(row.id.split(':').slice(0,2).join(':'));map.set(key,v);}
- return [...map.values()].map(({ids,...v})=>({...v,count:ids.size,net:v.incoming-v.outgoing})).sort((a,b)=>b.incoming+b.outgoing-a.incoming-a.outgoing||a.label.localeCompare(b.label));
+ return [...map.values()].map(({ids,...v})=>({...v,count:ids.size,net:v.incoming-v.outgoing})).sort((a,b)=>['year','month'].includes(group)?a.label.localeCompare(b.label):b.incoming+b.outgoing-a.incoming-a.outgoing||a.label.localeCompare(b.label));
 }
