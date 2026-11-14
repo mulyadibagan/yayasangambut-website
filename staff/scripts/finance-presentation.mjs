@@ -73,7 +73,7 @@ export async function applyFinancePresentation(root){
   };
   const all=await readdir(app,{recursive:true});
   let bundle;
-  for(const name of all.filter(n=>n.endsWith('.json')||(/2025/.test(n)&&/\.(?:ts|js)$/.test(n)))){
+  for(const name of all.filter(n=>n.endsWith('.json')||(!n.includes('/')&&!n.includes('\\')&&/\.(?:ts|js)$/.test(n)))){
    try{
     let data;
     if(name.endsWith('.json'))data=JSON.parse(await readFile(resolve(app,name),'utf8'));
