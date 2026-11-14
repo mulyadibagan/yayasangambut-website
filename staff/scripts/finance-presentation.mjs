@@ -7,6 +7,17 @@ import {compileHistory} from './finance-history-policy.mjs';
 // Only presentation modules are edited. Ledger and source data are fingerprinted.
 const fingerprint=async root=>{const out={};for(const f of await readdir(resolve(root,'app')))if(/\.(?:json|ts|js)$/.test(f))out[f]=createHash('sha256').update(await readFile(resolve(root,'app',f))).digest('hex');return out;};
 export function professionalCopy(source){
+ // Owner excluded these two imported emails from this UM/PJUM scope.
+ // Retain source records and documents; filter only this unmatched-report view.
+ const excludedPjumIds=['MAIL-1A0FAF92FD3BA15B','PJUM-2026-EMAIL-012'];
+ const orphanLabel='PJUM belum memiliki pasangan UM dalam indeks';
+ if(source.includes(orphanLabel)){
+  const anchor=source.match(/\{([A-Za-z_$][\w$]*)\.length\}[^{}]{0,30}PJUM belum memiliki pasangan UM dalam indeks/);
+  if(!anchor)throw Error('Unmatched PJUM scope anchor missing');
+  const name=anchor[1], scoped='('+name+'.filter(record=>!'+JSON.stringify(excludedPjumIds)+'.includes(record.id)))';
+  source=source.replace(new RegExp('\\b'+name+'\\.(length|map)\\b','g'),(_,operation)=>scoped+'.'+operation);
+ }
+
  source=source.replace(/<p><b>Satu register keuangan\.<\/b>[\s\S]*?<\/p>/g,'<p>Mutasi rekening dan alokasi dana menggunakan sumber transaksi yang sama. Bukti pendukung tersedia pada setiap transaksi.</p>');
  source=source.replaceAll('Satu register keuangan. Mutasi rekening, alokasi Cashflow Project, Saving Gaji, dan Saving Umum membaca baris transaksi yang sama. Dokumen tertaut membuka salinan di Drive kerja; email hanya menjadi jejak asal pengiriman.','Mutasi rekening dan alokasi dana menggunakan sumber transaksi yang sama. Bukti pendukung tersedia pada setiap transaksi.');
  const labels={
