@@ -16,12 +16,16 @@ export function professionalCopy(source){
  for(const [from,to] of Object.entries(labels))source=source.replaceAll(from,to);
  source=source.replace(/>Cut-off /g,'>Posisi per ').replace(/>Budget dan pelaksanaan/g,'>Anggaran dan pelaksanaan').replace(/>Proyeksi setelah pending</g,'>Proyeksi setelah transaksi tertunda<').replace(/>Tidak ada transaksi pending</g,'>Tidak ada transaksi tertunda<');
  source=source.replace(/>Belum dilaporkan ke Riena</g,'>Belum dilaporkan ke Bagian Keuangan<').replace(/>Saldo belum dilaporkan ke Riena</g,'>Saldo belum dilaporkan ke Bagian Keuangan<');
- source=source.replace(/belum dilaporkan ke Riena(?=<)/g,'belum dilaporkan ke Bagian Keuangan');
+ source=source.replaceAll('belum dilaporkan ke Riena','belum dilaporkan ke Bagian Keuangan').replaceAll('Belum dilaporkan ke Riena','Belum dilaporkan ke Bagian Keuangan');
  const statusExpression=/\{((?:[A-Za-z_$][\w$]*\.)+(?:status|label|reportLabel|reportStatus|reportingStatus|statusLabel|reportStatusLabel))\}/g;
  if(statusExpression.test(source)){
   source=source.replace(statusExpression,'{financeDisplayLabel($1)}');
   if(!source.includes('function financeDisplayLabel('))source+='\nfunction financeDisplayLabel(value:any){return typeof value==="string"?value.replace(/ke Riena/g,"ke Bagian Keuangan").replace(/kepada Riena/g,"kepada Bagian Keuangan"):value;}\n';
  }
+ // Translate rendered children only; option values, workflow states and filters
+ // retain their original identities. Non-string financial values pass through.
+ source=source.replace(/>(\s*)\{([A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$][\w$]*)*)\}(\s*)</g,'>$1{financeDisplayLabel($2)}$3<');
+ if(source.includes('{financeDisplayLabel(')&&!source.includes('function financeDisplayLabel('))source+='\nfunction financeDisplayLabel(value:any){return typeof value==="string"?value.replace(/ke Riena/g,"ke Bagian Keuangan").replace(/kepada Riena/g,"kepada Bagian Keuangan"):value;}\n';
  // Keep audit methodology available without dominating the dashboard.
  source=source.replace(/<p(?: className="[^"]*")?>((?:Pemakaian tercakup =|"Sudah dipulihkan" mencakup|Total alokasi =)[^<]+)<\/p>/g,'<details className="yg-methodology"><summary>Dasar perhitungan</summary><p>$1</p></details>');
  // Remove only the repeated projection card, never its underlying calculations.
