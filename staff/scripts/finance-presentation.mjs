@@ -17,7 +17,9 @@ export function professionalCopy(source){
  source=source.replace(/>Cut-off /g,'>Posisi per ').replace(/>Budget dan pelaksanaan/g,'>Anggaran dan pelaksanaan').replace(/>Proyeksi setelah pending</g,'>Proyeksi setelah transaksi tertunda<').replace(/>Tidak ada transaksi pending</g,'>Tidak ada transaksi tertunda<');
  source=source.replace(/>Belum dilaporkan ke Riena</g,'>Belum dilaporkan ke Bagian Keuangan<').replace(/>Saldo belum dilaporkan ke Riena</g,'>Saldo belum dilaporkan ke Bagian Keuangan<');
  source=source.replaceAll('belum dilaporkan ke Riena','belum dilaporkan ke Bagian Keuangan').replaceAll('Belum dilaporkan ke Riena','Belum dilaporkan ke Bagian Keuangan');
- const statusExpression=/\{((?:[A-Za-z_$][\w$]*\.)+(?:status|label|reportLabel|reportStatus|reportingStatus|statusLabel|reportStatusLabel))\}/g;
+ // Preserve implicit option identities before translating their visible labels.
+ source=source.replace(/<option\b([^>]*?)>(\s*)\{([^{}]+)\}(\s*)<\/option>/g,(match,attrs,left,expression,right)=>/\bvalue\s*=/.test(attrs)?match:`<option${attrs} value={${expression}}>${left}{${expression}}${right}</option>`);
+ const statusExpression=/(?<!=)\{((?:[A-Za-z_$][\w$]*\.)+(?:status|label|reportLabel|reportStatus|reportingStatus|statusLabel|reportStatusLabel))\}/g;
  if(statusExpression.test(source)){
   source=source.replace(statusExpression,'{financeDisplayLabel($1)}');
   if(!source.includes('function financeDisplayLabel('))source+='\nfunction financeDisplayLabel(value:any){return typeof value==="string"?value.replace(/ke Riena/g,"ke Bagian Keuangan").replace(/kepada Riena/g,"kepada Bagian Keuangan"):value;}\n';
