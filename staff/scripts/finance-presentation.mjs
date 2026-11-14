@@ -11,11 +11,12 @@ export function professionalCopy(source){
  // Retain source records and documents; filter only this unmatched-report view.
  const excludedPjumIds=['MAIL-1A0FAF92FD3BA15B','PJUM-2026-EMAIL-012'];
  const orphanLabel='PJUM belum memiliki pasangan UM dalam indeks';
- if(source.includes(orphanLabel)){
+ if(source.includes(orphanLabel)&&!source.includes('/* owner-pjum-scope */')){
   const anchor=source.match(/\{([A-Za-z_$][\w$]*)\.length\}[^{}]{0,30}PJUM belum memiliki pasangan UM dalam indeks/);
   if(!anchor)throw Error('Unmatched PJUM scope anchor missing');
   const name=anchor[1], scoped='('+name+'.filter(record=>!'+JSON.stringify(excludedPjumIds)+'.includes(record.id)))';
   source=source.replace(new RegExp('\\b'+name+'\\.(length|map)\\b','g'),(_,operation)=>scoped+'.'+operation);
+  source+='\n/* owner-pjum-scope */\n';
  }
 
  source=source.replace(/<p><b>Satu register keuangan\.<\/b>[\s\S]*?<\/p>/g,'<p>Mutasi rekening dan alokasi dana menggunakan sumber transaksi yang sama. Bukti pendukung tersedia pada setiap transaksi.</p>');
