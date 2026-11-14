@@ -2,7 +2,7 @@ import {isMou} from '../public/letter-mou.js';
 import {cleanDocument,documentText,para} from '../public/letter-content.js';
 
 export const STATEMENT_LAYOUT='statement-v1';
-export const layoutFor=r=>isMou(r.data)?'mou-v2':r.data.kind==='PNY'?STATEMENT_LAYOUT:r.data.kind==='SPT'?'task-v1':'formal-v3';
+export const layoutFor=r=>isMou(r.data)?'mou-v2':r.data.kind==='SKR'?'certificate-v1':r.data.kind==='PNY'?STATEMENT_LAYOUT:r.data.kind==='SPT'?'task-v1':'formal-v3';
 
 // A rendition changes presentation only. Never write this projection into the
 // issued surat_annual row, or replace its original body/final object keys.

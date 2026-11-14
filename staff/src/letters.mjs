@@ -18,7 +18,7 @@ export function letterInput(v){
   if(typeof v[key]!=='string'||v[key].length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v[key]))fail(400,'Isian surat tidak valid: '+key);data[key]=v[key].trim();
  }
  if(!/^\d{4}-\d{2}-\d{2}$/.test(data.date)||!Number.isFinite(Date.parse(data.date))||new Date(data.date).toISOString().slice(0,10)!==data.date||!isLetterKind(data.kind)||!data.subject||!data.body||data.signer!=='Mulyadi, Direktur Yayasan Gambut')fail(400,'Periksa tanggal, jenis, perihal, isi, dan penandatangan.');
- if(rich){data.bodyFormat='rich-v1';data.bodyDoc=rich;}if(data.kind==='PNY'){if(v.statementPlace!==undefined&&(typeof v.statementPlace!=='string'||v.statementPlace.length>120||/[\u0000-\u001f]/.test(v.statementPlace)))fail(400,'Tempat penandatanganan tidak valid.');data.statementPlace=v.statementPlace?.trim()||'Pekanbaru';}
+ if(rich){data.bodyFormat='rich-v1';data.bodyDoc=rich;}if(['PNY','SKR'].includes(data.kind)){if(v.statementPlace!==undefined&&(typeof v.statementPlace!=='string'||v.statementPlace.length>120||/[\u0000-\u001f]/.test(v.statementPlace)))fail(400,'Tempat penandatanganan tidak valid.');data.statementPlace=v.statementPlace?.trim()||'Pekanbaru';}
  return data;
 }
 const decode=r=>({...r,data:JSON.parse(r.data)});

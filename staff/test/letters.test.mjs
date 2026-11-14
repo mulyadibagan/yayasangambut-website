@@ -47,14 +47,14 @@ test('format refresh preserves issuance, original archives and Drive references;
  const original={...r},oldBytes=files.get(r.pdf_key);
  db.prepare('INSERT INTO surat_annual_drive VALUES(?,?,?,?,?)').run(r.id,'pdf','old-drive','https://drive.google.com/file/d/old-drive/view','old-time');
  const refreshed=await Promise.all([action(env,r,'format'),action(env,r,'format')]);r=refreshed[0];
- assert.equal(r.layout,'formal-v3');assert.equal(r.number,original.number);assert.equal(r.issued_at,original.issued_at);assert.equal(r.version,original.version);
+ assert.equal(r.layout,'certificate-v1');assert.equal(r.number,original.number);assert.equal(r.issued_at,original.issued_at);assert.equal(r.version,original.version);
  assert.notEqual(r.pdf_key,original.pdf_key);assert.deepEqual(files.get(original.pdf_key),oldBytes);
  assert.equal(db.prepare('SELECT pdf_key FROM surat_annual WHERE id=?').get(r.id).pdf_key,original.pdf_key);
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);
- assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='format_formal-v3'").get().n,1);
+ assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='format_certificate-v1'").get().n,1);
  assert.equal(r.previousArchives[0].file_id,'old-drive');assert.equal(r.archives.length,0);
  await action(env,r,'format');assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_renditions').get().n,1);
- db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(r.id,'formal-v3','pdf','new-drive','https://drive.google.com/file/d/new-drive/view','new-time');
+ db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(r.id,'certificate-v1','pdf','new-drive','https://drive.google.com/file/d/new-drive/view','new-time');
  const register=await (await call(env,'/register')).json();assert.equal(register.rows[0].archives[0].file_id,'new-drive');
  const download=await call(env,'/'+r.id+'/pdf');assert.deepEqual(new Uint8Array(await download.arrayBuffer()),files.get(r.pdf_key));
  const next=await action(env,await approve(env,await create(env)),'issue');assert.equal(next.sequence,67);
@@ -85,7 +85,7 @@ test('new format retains prior layout and Drive references without issuing again
  db.prepare('INSERT INTO surat_renditions VALUES(?,?,?,?,?,?)').run(r.id,'formal-v2','v2.docx','v2.pdf','m','2026-10-21');
  db.prepare('INSERT INTO surat_rendition_drive VALUES(?,?,?,?,?,?)').run(r.id,'formal-v2','pdf','v2-drive','https://drive.google.com/file/d/v2-drive/view','old-time');
  files.set('v2.pdf',new Uint8Array([1,2,3]));r=await (await call(env,'/'+r.id)).json();assert.equal(r.layout,'formal-v2');
- r=await action(env,r,'format');assert.equal(r.layout,'formal-v3');assert.equal(r.previousArchives[0].file_id,'v2-drive');
+ r=await action(env,r,'format');assert.equal(r.layout,'certificate-v1');assert.equal(r.previousArchives[0].file_id,'v2-drive');
  assert.deepEqual(files.get('v2.pdf'),new Uint8Array([1,2,3]));assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_renditions WHERE surat_id=?').get(r.id).n,2);
  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM surat_annual_history WHERE action='issue'").get().n,1);
 });
@@ -244,4 +244,18 @@ test('number correction rejects live or historical collisions and leaves registe
  assert.equal((await call(env,'/'+two.id+'/renumber','m','POST',input)).status,500);env.MEDIA.put=put;
  assert.equal(db.prepare('SELECT number FROM surat_annual WHERE id=?').get(two.id).number,two.number);
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM surat_number_corrections').get().n,0);
+});
+
+test('SKR certificate has centered heading and closing without correspondence metadata',async()=>{
+ const {unzipSync,strFromU8}=await import('fflate');
+ const data={...sample,statementPlace:'Dumai'};
+ const docs=await letterDocuments({data,status:'draft',number:'78/YG/SKR/XI/2026'},readFileSync(new URL('../public/brand/yayasan-gambut-logo.png',import.meta.url)),readFileSync(new URL('../public/brand/surat-letterhead.png',import.meta.url)));
+ const text=strFromU8(unzipSync(docs.docx)['word/document.xml']);
+ assert.match(text,/SURAT KETERANGAN REKENING BANK/);
+ assert.match(text,/Nomor: 78\/YG\/SKR\/XI\/2026/);
+ assert.match(text,/Dumai, 21 Oktober 2026/);
+ assert.match(text,/Dibuat oleh,/);
+ assert.doesNotMatch(text,/Kepada Yth\.|Hormat kami,|Perihal|Lampiran/);
+ assert.equal((await PDFDocument.load(docs.pdf)).getPageCount(),1);
+ assert.equal(letterInput({...data,statementPlace:'Dumai'}).statementPlace,'Dumai');
 });
