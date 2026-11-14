@@ -5,7 +5,8 @@ export function compactSalaryTable(source){
  const result=source.replace(/<table\b[^>]*>[\s\S]*?<\/table>/g,table=>{
   if(!table.includes('Hak gaji proyek')||!table.includes('Total alokasi'))return table;
   matched++;
-  const headers=[...table.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(m=>m[1]);
+  const headerSection=table.match(/<thead\b[^>]*>([\s\S]*?)<\/thead>/)?.[1]||'';
+  const headers=[...headerSection.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(m=>m[1]);
   if(headers.length!==11)throw Error('Salary summary header schema changed');
   const keep=[0,2,6,7,8,9,10],extra=[1,3,4,5];
   table=table.replace(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g,(row,attrs,body)=>{
