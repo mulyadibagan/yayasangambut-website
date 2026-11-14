@@ -51,7 +51,7 @@ export function compileHistory(sources,closing){
    const splits=allocations?.filter(a=>a.amount!==0);
    if(splits?.length&&!(debit&&credit)&&splits.every(a=>Math.sign(a.amount)===sign)&&splits.reduce((n,a)=>n+Math.round(Math.abs(a.amount)*100),0)===amount){
     for(const [j,a] of splits.entries()){const part={...base,id:base.id+':'+j,debit:debit?Math.round(Math.abs(a.amount)*100):0,credit:credit?Math.round(Math.abs(a.amount)*100):0,project:projectLabel(a.bucket)};rows.push({...part,category:category({...part,debit:part.debit/100,credit:part.credit/100})});}
-   }else rows.push({...base,category:category(r)});
+   }else rows.push({...base,category:category({...base,debit:debit/100,credit:credit/100})});
   }
   const list=rows.filter(r=>r.year===year),first=bank.mutations[0],last=bank.mutations.at(-1);
   const opening=Number.isFinite(bank.openingBalance)?Math.round(bank.openingBalance*100):Math.round((first.balance+first.debit-first.credit)*100);
