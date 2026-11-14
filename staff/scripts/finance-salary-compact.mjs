@@ -9,12 +9,18 @@ export function compactSalaryTable(source){
   const headers=[...headerSection.matchAll(/<th\b[^>]*>([\s\S]*?)<\/th>/g)].map(m=>m[1]);
   if(headers.length!==11)throw Error('Salary summary header schema changed');
   const keep=[0,2,6,7,8,9,10],extra=[1,3,4,5];
+  const staffMap=table.match(/view\.totals\.map\(\((\w+)\)\s*=>/);
+  if(!staffMap)throw Error('Salary staff ordering anchor changed');
+  const staffRow=staffMap[1];
+  table=table.replace(staffMap[0], 'view.totals.slice().sort((a,b)=>ygSalaryStaffRank(a.staff)-ygSalaryStaffRank(b.staff)).map(('+staffRow+',salaryIndex) =>');
+
   table=table.replace(/<tr\b([^>]*)>([\s\S]*?)<\/tr>/g,(row,attrs,body)=>{
    const cells=[...body.matchAll(/<(th|td)\b([^>]*)>([\s\S]*?)<\/\1>/g)];
    if(cells.length!==11)throw Error('Salary summary row schema changed');
    const header=cells.every(c=>c[1]==='th');
    return '<tr'+attrs+'>'+keep.map(i=>{
     const c=cells[i];let content=c[3];
+    if(i===0&&!header&&content.includes(staffRow+'.staff'))content='<span className="yg-salary-number">{salaryIndex+1}.</span> '+content;
     if(i===0&&!header)content+='<details className="yg-salary-allocation"><summary>Rincian alokasi</summary><dl>'+extra.map(j=>'<div><dt>'+headers[j]+'</dt><dd>'+cells[j][3]+'</dd></div>').join('')+'</dl></details>';
     return '<'+c[1]+c[2]+' data-label="'+headers[i].replace(/<[^>]*>/g,'')+'">'+content+'</'+c[1]+'>';
    }).join('')+'</tr>';
@@ -22,5 +28,5 @@ export function compactSalaryTable(source){
   return table.replace(/<table\b([^>]*)>/,'<table$1 data-salary-summary="yg-salary-compact">');
  });
  if(matched!==1)throw Error('Salary summary table missing or ambiguous');
- return result;
+ return result+`\nfunction ygSalaryStaffRank(name:string){const value=String(name).toLowerCase();const order=['mulyadi','riena','riandra','zamhar','ainul','rafi','raja'];const rank=order.findIndex(key=>value.includes(key)||(key==='zamhar'&&value.includes('ariel')));return rank<0?order.length:rank;}\n`;
 }
