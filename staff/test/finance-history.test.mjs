@@ -6,6 +6,7 @@ import {applyFinancePresentation} from '../scripts/finance-presentation.mjs';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
+import {pathToFileURL} from 'node:url';
 test('full cash history preserves exact totals, prior years, legitimate repeats and split allocations',()=>{
  const sources=[{year:2025,bank:{openingBalance:100,closingBalance:115.25,mutations:[{date:'15 Jan 2025',description:'Pencairan donor',reference:'A',debit:0,credit:20.25,balance:120.25},{date:'2025-12-30',description:'UM kegiatan',reference:'B',debit:5,credit:0,balance:115.25}]}},{year:2026,bank:{openingBalance:115.25,closingBalance:145.25,mutations:[{archiveIndex:0,postedAt:'2026-01-02',description:'Donasi staf',reference:'C',debit:0,credit:40,balance:155.25},{archiveIndex:1,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:150.25},{archiveIndex:2,postedAt:'2026-01-03',description:'Gaji',reference:'D',debit:5,credit:0,balance:145.25}]}}];
  const closing={entries:[{index:0,debit:0,credit:40,allocations:[{bucket:'STAFF',amount:25},{bucket:'YG',amount:15}]}]};
@@ -34,6 +35,7 @@ test('undated legacy rows remain in cash totals without an invented date',()=>{
  const report=compileHistory([legacy]);assert.equal(report.rows.length,1);assert.equal(report.rows[0].date,'');assert.equal(report.rows[0].rawDate,'tanggal tidak terbaca');assert.equal(report.coverage[0].incoming,2500);assert.equal(report.coverage[0].uncertainDates,1);
  assert.throws(()=>compileHistory([{...legacy,allowUncertainDates:false}]));assert.throws(()=>isoDate('2022-02-31'));
  assert.equal(isoDate('13/11/2026'),'2026-11-13');
+ assert.equal(isoDate('3 Okt 22',2022),'2022-10-03');
 });
 test('presentation changes preserve numerical expressions and financial identifiers',()=>{
  const source='<button>Cashflow Project</button><p>Belum dilaporkan ke Riena</p><strong>{idr(view.projectedMonthlyPayroll)}</strong>';const changed=professionalCopy(source);
@@ -44,8 +46,9 @@ test('presentation/report generation leaves source data byte-for-byte intact',as
  try{
   const app=join(root,'app');await mkdir(app);await writeFile(join(root,'package.json'),'{"type":"module"}');
   const bank=year=>`export const bankStatement${year}={openingBalance:1,closingBalance:2,mutations:[{date:'${year}-01-01',description:'test',debit:0,credit:1,balance:2}]};`;
-  const ledger='{"entries":[],"unchanged":true}',policy='export const STAFF_POLICY={active:true,monthlySalary:123};';
+  const ledger='{"entries":[{"index":0,"debit":0,"credit":1}],"bankClosing":2,"unchanged":true}',policy='export const STAFF_POLICY={active:true,monthlySalary:123};';
   for(const [p,s] of Object.entries({'multi-year-source.json':JSON.stringify({years:[{year:2022,rows:[{opening:true,balance:0},{date:'2022-01-01',description:'test',incoming:1,outgoing:0,balance:1}]},{year:2025,rows:[{opening:true,balance:1},{date:'2025-01-01',description:'test',incoming:1,outgoing:0,balance:2}]}]}),'multi-year-reconciliation.js':'export const rowProjectKey=(year,row)=>row.project||"Belum dialokasikan";','bank-statement-2026.js':bank(2026),'closing-august-2026.json':ledger,'policy.ts':policy,'finance-staff-tools.tsx':'export default ()=> <nav><div><a href="/finance/invoices">Invoice</a></div></nav>;','finance-archive-dashboard.tsx':"import PayrollPaymentsPanel from './payroll-payments-panel';\nexport default ()=> <main><PayrollPaymentsPanel /><a id=\"finance-invoice-entry\" href=\"/finance/invoices\">Invoice</a><h1>Cashflow Project</h1></main>;",'salary-balance-enhancer.tsx':"import PendingStaffAllocation from './pending';\nexport default ()=> <main><PendingStaffAllocation /></main>;"}))await writeFile(join(app,p),s);
+  const cached=await import(pathToFileURL(join(app,'bank-statement-2026.js')).href);cached.bankStatement2026.mutations[0].credit=999;
   await applyFinancePresentation(root);
   assert.equal(await readFile(join(app,'closing-august-2026.json'),'utf8'),ledger);assert.equal(await readFile(join(app,'policy.ts'),'utf8'),policy);
   assert.equal(await readFile(join(app,'bank-statement-2026.js'),'utf8'),bank(2026));

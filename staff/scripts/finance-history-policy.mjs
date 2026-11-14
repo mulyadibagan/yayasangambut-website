@@ -1,8 +1,10 @@
 // Read-only cash report. Integer cents keep grouped totals identical to bank totals.
 export const cents=n=>{if(!Number.isFinite(n)||n<0)throw Error('Invalid bank amount');return Math.round(n*100);};
 const calendar=s=>{const d=new Date(s+'T00:00:00Z');if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==s)throw Error('Invalid calendar date');return s;};
-export function isoDate(value){
- const s=String(value||'').trim();
+export function isoDate(value,sourceYear){
+ let s=String(value||'').trim();
+ const short=s.match(/^(\d{1,2})([\s/-]+)([a-z]+|\d{1,2})([\s/-]+)(\d{2})$/i);
+ if(short&&sourceYear&&String(sourceYear).endsWith(short[5]))s=short[1]+short[2]+short[3]+short[4]+sourceYear;
  if(/^20\d{2}-\d{2}-\d{2}/.test(s))return calendar(s.slice(0,10));
  const numeric=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](20\d{2})$/);
  if(numeric)return calendar(`${numeric[3]}-${numeric[2].padStart(2,'0')}-${numeric[1].padStart(2,'0')}`);
@@ -44,7 +46,7 @@ export function compileHistory(sources,closing){
   for(const [i,r] of bank.mutations.entries()){
    const debit=cents(r.debit),credit=cents(r.credit);if(!debit&&!credit)continue;
    const rawDate=String(r.postedAt||r.date||'');let date='',dateIssue='';
-   try{date=isoDate(rawDate);}catch(error){if(!source.allowUncertainDates)throw error;dateIssue='Tanggal sumber perlu verifikasi';}
+   try{date=isoDate(rawDate,year);}catch(error){if(!source.allowUncertainDates)throw error;dateIssue='Tanggal sumber perlu verifikasi';}
    if(date&&date.slice(0,4)!==year){if(!source.allowUncertainDates)throw Error('Bank report year mismatch');dateIssue='Tahun pada tanggal berbeda dari tahun arsip';}
    const description=String(r.description||r.remark||'');
    const base={id:`${year}:${r.archiveIndex??i}`,date,rawDate,dateIssue,year,month:date&&!dateIssue?date.slice(0,7):year+' · Tanggal perlu verifikasi',description,reference:String(r.reference||''),debit,credit,project:projectLabel(r.project||r.projectLabel||r.label||r.projectCode),evidence:(r.evidence||[]).filter(e=>/^https:\/\/(?:drive|docs)\.google\.com\//.test(e.url||''))};

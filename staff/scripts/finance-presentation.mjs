@@ -44,7 +44,7 @@ export async function applyFinancePresentation(root){
  const files=(await readdir(app)).filter(n=>/(?:bank|statement|mutasi)/i.test(n)&&/20\d{2}/.test(n)&&/\.(?:ts|js|json)$/.test(n)).sort();
  const sources=[];
  for(const file of files){
-  const mod=file.endsWith('.json')?{default:JSON.parse(await readFile(resolve(app,file),'utf8'))}:await import(pathToFileURL(resolve(app,file)).href);
+  const mod=file.endsWith('.json')?{default:JSON.parse(await readFile(resolve(app,file),'utf8'))}:await import(pathToFileURL(resolve(app,file)).href+'?finance-history-current');
   const candidates=[];
   for(const value of Object.values(mod)){
    if(!value||typeof value!=='object')continue;
@@ -76,6 +76,8 @@ export async function applyFinancePresentation(root){
  }catch(error){if(error.code!=='ENOENT')throw error;}
  if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must include all existing periods');
  const closing=JSON.parse(await readFile(resolve(app,'closing-august-2026.json'),'utf8'));
+ const current=sources.find(s=>s.year===2026)?.bank;
+ if(!current||current.mutations.length!==closing.entries.length||Math.round(current.closingBalance*100)!==Math.round(closing.bankClosing*100))throw Error('History report must match the current canonical bank count and closing balance');
  const report=compileHistory(sources,closing);
  await writeFile(resolve(app,'finance-history.json'),JSON.stringify(report),{mode:0o600});
  await copyFile(new URL('./finance-history-policy.mjs',import.meta.url),resolve(app,'finance-history-policy.js'));
