@@ -60,22 +60,36 @@ export async function applyFinancePresentation(root){
  if(!sources.some(s=>s.year===2025)){
   // The original 2025 register may be embedded in the closing source rather
   // than a separate bank-statement module. Locate its bank rows structurally.
-  const candidates=[],schemas=[];
+  const candidates=[],schemas=[],unreadable=[];
   const walk=(value,file,path='',parent=null)=>{
    if(Array.isArray(value)){
     if(value.length&&value.every(r=>r&&typeof r==='object'&&typeof r.debit==='number'&&typeof r.credit==='number'&&typeof r.balance==='number')){
      let dates;try{dates=value.map(r=>String(r.postedAt||r.date||''));}catch{return;}
      if(dates.every(d=>/2025/.test(d)))candidates.push({file,path,bank:{...(parent&&!Array.isArray(parent)?parent:{}),mutations:value}});
-    }else if(value.length>100&&value[0]&&typeof value[0]==='object')schemas.push({file,path,keys:Object.keys(value[0])});
+    }else if(value.length>20&&value[0]&&typeof value[0]==='object')schemas.push({file,path,keys:Object.keys(value[0])});
     return;
    }
    if(value&&typeof value==='object')for(const [key,child] of Object.entries(value))walk(child,file,path?path+'.'+key:key,value);
   };
-  for(const name of (await readdir(app)).filter(n=>n.endsWith('.json')||(/2025/.test(n)&&/\.(?:ts|js)$/.test(n)))){
-   try{const data=name.endsWith('.json')?JSON.parse(await readFile(resolve(app,name),'utf8')):await import(pathToFileURL(resolve(app,name)).href);walk(data,name);}catch{/* Non-register source modules are not bank history. */}
+  const all=await readdir(app,{recursive:true});
+  let bundle;
+  for(const name of all.filter(n=>n.endsWith('.json')||(/2025/.test(n)&&/\.(?:ts|js)$/.test(n)))){
+   try{
+    let data;
+    if(name.endsWith('.json'))data=JSON.parse(await readFile(resolve(app,name),'utf8'));
+    else{
+     try{data=await import(pathToFileURL(resolve(app,name)).href);}catch{
+      bundle??=(await import(pathToFileURL(resolve(root,'node_modules/esbuild/lib/main.js')).href)).build;
+      const built=await bundle({entryPoints:[resolve(app,name)],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
+      const target=resolve(root,'history-source-'+unreadable.length+'-'+sources.length+'.mjs');
+      await writeFile(target,built.outputFiles[0].text,{mode:0o600});data=await import(pathToFileURL(target).href+'?file='+encodeURIComponent(name));
+     }
+    }
+    walk(data,name);
+   }catch{unreadable.push(name);}
   }
   const unique=[];for(const candidate of candidates)if(!unique.some(c=>JSON.stringify(c.bank.mutations)===JSON.stringify(candidate.bank.mutations)))unique.push(candidate);
-  if(unique.length!==1)throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas));
+  if(unique.length!==1){const imports=(await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8')).match(/from ['"][^'"]+['"]/g);throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas)+'; unreadable: '+unreadable.join(', ')+'; imports: '+JSON.stringify(imports));}
   sources.unshift({year:2025,bank:unique[0].bank});
  }
  if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must cover both existing years. Candidate source modules: '+files.join(', '));
