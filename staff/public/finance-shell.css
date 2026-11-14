@@ -14,3 +14,6 @@
 @media print{.yg-finance-tools{display:none}.yg-payroll-panel{box-shadow:none}}
 
 .yg-finance-tools>div{flex-wrap:wrap;justify-content:flex-end}.yg-methodology{margin:12px 0;color:#62776b;font-size:12px}.yg-methodology summary{cursor:pointer;font-weight:600;color:#315e48}.yg-methodology p{max-width:960px;line-height:1.7}.yg-payroll-panel{padding:18px 22px;margin-bottom:22px}.yg-payroll-panel h2{font-size:18px}.yg-finance-tools{flex-wrap:wrap}@media(max-width:600px){.yg-finance-tools>div{justify-content:flex-start;width:100%}.yg-finance-tools a{min-height:32px}}
+
+/* The projected payroll equals the active monthly need; show one metric. */
+div.salary-summary-strip>div:nth-child(3){display:none}div.salary-summary-strip{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:800px){div.salary-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){div.salary-summary-strip{grid-template-columns:1fr}}
