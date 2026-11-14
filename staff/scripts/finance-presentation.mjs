@@ -1,3 +1,4 @@
+import {compactSalaryTable} from './finance-salary-compact.mjs';
 import {readFile,writeFile,readdir,mkdir,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -60,6 +61,7 @@ export async function applyFinancePresentation(root){
    if(!source.includes('<PendingStaffAllocation />'))throw Error('Salary presentation anchor missing');
    source=source.replace('import PendingStaffAllocation',"import PayrollPaymentsPanel from './payroll-payments-panel';\nimport PendingStaffAllocation").replace('<PendingStaffAllocation />','<PayrollPaymentsPanel /><PendingStaffAllocation />');
   }
+  if(name==='salary-balance-enhancer.tsx')source=compactSalaryTable(source);
   await writeFile(resolve(app,name),professionalCopy(source));
  }
  const after=await fingerprint(root);

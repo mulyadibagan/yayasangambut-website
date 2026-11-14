@@ -17,3 +17,23 @@
 
 /* The projected payroll equals the active monthly need; show one metric. */
 div.salary-summary-strip>div:nth-child(3){display:none}div.salary-summary-strip{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:800px){div.salary-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:520px){div.salary-summary-strip{grid-template-columns:1fr}}
+
+/* Salary summary fits the available width; allocation detail stays per staff. */
+table[data-salary-summary]{width:100%!important;min-width:0!important;table-layout:fixed;font-size:13px!important}
+table[data-salary-summary] :is(th,td){padding:12px 10px!important;min-width:0!important;width:auto!important;white-space:normal!important;overflow-wrap:anywhere;vertical-align:top;font-variant-numeric:tabular-nums}
+table[data-salary-summary] :is(th,td):first-child{width:22%!important;text-align:left}
+table[data-salary-summary] :is(th,td):not(:first-child){text-align:right}
+.yg-salary-allocation{margin-top:6px;font-size:11px;font-weight:400;text-align:left}
+.yg-salary-allocation summary{cursor:pointer;color:#38674f;font-weight:600}
+.yg-salary-allocation dl{margin:8px 0 0}
+.yg-salary-allocation dl>div{padding:5px 0;border-top:1px solid #e5ece7}
+.yg-salary-allocation dt{color:#66786e}.yg-salary-allocation dd{margin:2px 0 0;font-weight:600}
+@media(max-width:760px){
+ table[data-salary-summary],table[data-salary-summary] :is(tbody,tfoot,tr){display:block;width:100%!important}
+ table[data-salary-summary] thead{display:none}
+ table[data-salary-summary] tr{padding:10px 12px;border-bottom:1px solid #dce6e0;box-sizing:border-box}
+ table[data-salary-summary] :is(th,td){display:flex;justify-content:space-between;gap:16px;padding:5px 0!important;border:0!important;width:100%!important;box-sizing:border-box;text-align:right}
+ table[data-salary-summary] :is(th,td):first-child{display:block;width:100%!important;text-align:left;padding-bottom:9px!important;font-size:14px}
+ table[data-salary-summary] :is(th,td):not(:first-child)::before{content:attr(data-label);text-align:left;color:#62746a;font-weight:400}
+}
+@media print{.yg-salary-allocation{display:none}}
