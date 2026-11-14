@@ -66,12 +66,19 @@ export async function applyFinancePresentation(root,options={}){
     if(value.length&&value.every(r=>r&&typeof r==='object'&&typeof r.debit==='number'&&typeof r.credit==='number'&&typeof r.balance==='number')){
      let dates;try{dates=value.map(r=>String(r.postedAt||r.date||''));}catch{return;}
      if(dates.every(d=>/2025/.test(d)))candidates.push({file,path,bank:{...(parent&&!Array.isArray(parent)?parent:{}),mutations:value}});
-    }else if(value.length>20&&value[0]&&typeof value[0]==='object')schemas.push({file,path,keys:Object.keys(value[0])});
+    }else{
+     if(value.length>20&&value[0]&&typeof value[0]==='object')schemas.push({file,path,keys:Object.keys(value[0])});
+     for(const [i,child] of value.entries())if(child&&typeof child==='object')walk(child,file,path+'['+i+']',value);
+    }
     return;
    }
    if(value&&typeof value==='object')for(const [key,child] of Object.entries(value))walk(child,file,path?path+'.'+key:key,value);
   };
   const all=await readdir(app,{recursive:true});
+  const outside=[];
+  const findJson=async(dir,prefix='')=>{for(const item of await readdir(dir,{withFileTypes:true})){if(['app','node_modules','dist','.git','.next'].includes(item.name))continue;const rel=prefix+item.name;if(item.isDirectory())await findJson(resolve(dir,item.name),rel+'/');else if(item.name.endsWith('.json'))outside.push(rel);}};
+  await findJson(root);
+  for(const name of outside){try{walk(JSON.parse(await readFile(resolve(root,name),'utf8')),'../'+name);}catch{unreadable.push('../'+name);}}
   let bundle;
   for(const name of all.filter(n=>n.endsWith('.json')||(!n.includes('/')&&!n.includes('\\')&&/\.(?:tsx?|[cm]?js)$/.test(n)))){
    try{
@@ -89,7 +96,7 @@ export async function applyFinancePresentation(root,options={}){
    }catch{unreadable.push(name);}
   }
   const unique=[];for(const candidate of candidates)if(!unique.some(c=>JSON.stringify(c.bank.mutations)===JSON.stringify(candidate.bank.mutations)))unique.push(candidate);
-  if(unique.length!==1){if(options.diagnose)await options.diagnose({dashboard:await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8'),modules:all,schemas,unreadable});const imports=(await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8')).match(/from ['"][^'"]+['"]/g);throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas)+'; unreadable: '+unreadable.join(', ')+'; imports: '+JSON.stringify(imports));}
+  if(unique.length!==1){if(options.diagnose)await options.diagnose({dashboard:await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8'),historical:await readFile(resolve(app,'multi-year-reconciliation.js'),'utf8'),historicalPanel:await readFile(resolve(app,'multi-year-reconciliation-panel.tsx'),'utf8'),modules:all,schemas,unreadable});throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas)+'; unreadable: '+unreadable.join(', '));}
   sources.unshift({year:2025,bank:unique[0].bank});
  }
  if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must cover both existing years. Candidate source modules: '+files.join(', '));
