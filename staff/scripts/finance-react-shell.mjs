@@ -19,7 +19,7 @@ export async function applyFinanceReactShell(root){
  const layout=resolve(root,'app/layout.tsx'),dashboard=resolve(root,'app/finance-archive-dashboard.tsx');
  const source=await readFile(layout,'utf8'),page=await readFile(dashboard,'utf8');
  await writeFile(layout,financeLayout(source));
- await writeFile(resolve(root,'app/finance-staff-tools.tsx'),`export default function FinanceStaffTools(){return <nav className="yg-finance-tools" aria-label="Layanan Finance"><a className="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/invoices">Invoice</a><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>;}`);
+ await writeFile(resolve(root,'app/finance-staff-tools.tsx'),`export default function FinanceStaffTools(){return <nav className="yg-finance-tools" aria-label="Layanan Finance"><a className="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/invoices">Invoice</a><a href="/finance/advances">Pengajuan UM &amp; PJUM</a><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>;}`);
  await copyFile(new URL('../public/finance-shell.css',import.meta.url),resolve(root,'app/finance-staff-shell.css'));
  await writeFile(dashboard,page.replace(/src="\/logo-yayasan-gambut\.png"\s+alt="Logo Yayasan Gambut"/g,'src="/brand/yayasan-gambut-logo.png" alt="Logo Yayasan Gambut" style={{width:46,height:46,objectFit:"contain"}}'));
  console.log('Finance navigation and branding prepared inside the React layout; finance data unchanged.');
