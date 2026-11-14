@@ -100,3 +100,12 @@ test('Finance login redirect remembers the requested page and query in a short-l
  assert.ok(cookie.includes('__Host-yg-finance-return='+encodeURIComponent(path)));
  for(const flag of ['HttpOnly','Secure','SameSite=Lax','Path=/','Max-Age=600'])assert.ok(cookie.includes(flag));
 });
+
+test('Zamharir enters only the UM workflow and cannot open financial reports or payroll',async()=>{
+ const user={id:'ariel',email:'zamharier@yayasangambut.org',name:'Zamharir',role:'editor'},e=env(user);
+ const landing=await worker.fetch(request('/finance'),e);assert.equal(landing.status,302);assert.equal(landing.headers.get('location'),origin+'/finance/advances');
+ assert.equal((await worker.fetch(request('/finance/advances'),e)).status,200);
+ const own=await worker.fetch(request('/finance/advances/api/me'),e);assert.equal(own.status,200);assert.equal((await own.json()).payroll,false);
+ for(const path of ['/finance/reports','/finance/closing-2026','/finance/payroll','/finance/api/requests'])assert.equal((await worker.fetch(request(path),e)).status,403);
+ assert.equal((await worker.fetch(request('/finance/advances'),env({...user,disabled:1}))).status,403);
+});

@@ -265,7 +265,7 @@ async function route(req,env,ctx){
       throw e;
     }
     if(url.pathname==='/finance/advances'||url.pathname.startsWith('/finance/advances/'))return advancesRoute(req,env,u);
-    if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&advanceAccess(u)&&!financeDashboardAccess(u)&&!payrollAccess(u,env))return redirect(env.APP_ORIGIN+'/finance/advances');
+    if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&u.email?.toLowerCase()==='zamharier@yayasangambut.org'&&advanceAccess(u)&&!financeDashboardAccess(u)&&!payrollAccess(u,env))return redirect(env.APP_ORIGIN+'/finance/advances');
     if(url.pathname==='/finance/signature'||url.pathname==='/finance/signature/api')return signatureRoute(req,env,u,readLimited);
     if(url.pathname==='/finance/invoices'||url.pathname.startsWith('/finance/invoices/'))return invoiceRoute(req,env,u,{payload,readLimited});
     if(url.pathname==='/finance/payroll'||url.pathname.startsWith('/finance/payroll/'))return payrollRoute(req,env,u,ctx);
