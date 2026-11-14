@@ -87,7 +87,7 @@ await applyFinanceReactShell(root);
 const documentLinks=await query('SELECT setting_value FROM finance_settings WHERE setting_key=?',['finance_document_links_v1']);
 await applyReviewDisplay(root,documentLinks[0].results.length?JSON.parse(documentLinks[0].results[0].setting_value):{receipts:[],records:[]});
 await (await import('./finance-email-telemetry.mjs')).applyEmailTelemetry(root);
-await applyFinancePresentation(root);
+await applyFinancePresentation(root,{diagnose:async data=>query('INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value',['finance_presentation_diagnostic_v1',JSON.stringify(data)])});
 run('npm',['run','build']);
 // Verify new bank-derived donation archives independently of the fixed historical fixture.
 const updatedBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href+'?verified-updates')).bankStatement2026;

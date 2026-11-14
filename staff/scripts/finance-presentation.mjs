@@ -22,7 +22,7 @@ export function professionalCopy(source){
  return source;
 }
 
-export async function applyFinancePresentation(root){
+export async function applyFinancePresentation(root,options={}){
  const before=await fingerprint(root),app=resolve(root,'app');
  for(const name of await readdir(app)){
   if(!name.endsWith('.tsx')||name==='finance-history-report.tsx')continue;
@@ -73,14 +73,14 @@ export async function applyFinancePresentation(root){
   };
   const all=await readdir(app,{recursive:true});
   let bundle;
-  for(const name of all.filter(n=>n.endsWith('.json')||(!n.includes('/')&&!n.includes('\\')&&/\.(?:ts|js)$/.test(n)))){
+  for(const name of all.filter(n=>n.endsWith('.json')||(!n.includes('/')&&!n.includes('\\')&&/\.(?:tsx?|[cm]?js)$/.test(n)))){
    try{
     let data;
     if(name.endsWith('.json'))data=JSON.parse(await readFile(resolve(app,name),'utf8'));
     else{
      try{data=await import(pathToFileURL(resolve(app,name)).href);}catch{
       bundle??=(await import(pathToFileURL(resolve(root,'node_modules/esbuild/lib/main.js')).href)).build;
-      const built=await bundle({entryPoints:[resolve(app,name)],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent'});
+      const built=await bundle({entryPoints:[resolve(app,name)],bundle:true,platform:'node',format:'esm',write:false,logLevel:'silent',loader:{'.css':'empty'}});
       const target=resolve(root,'history-source-'+unreadable.length+'-'+sources.length+'.mjs');
       await writeFile(target,built.outputFiles[0].text,{mode:0o600});data=await import(pathToFileURL(target).href+'?file='+encodeURIComponent(name));
      }
@@ -89,7 +89,7 @@ export async function applyFinancePresentation(root){
    }catch{unreadable.push(name);}
   }
   const unique=[];for(const candidate of candidates)if(!unique.some(c=>JSON.stringify(c.bank.mutations)===JSON.stringify(candidate.bank.mutations)))unique.push(candidate);
-  if(unique.length!==1){const imports=(await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8')).match(/from ['"][^'"]+['"]/g);throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas)+'; unreadable: '+unreadable.join(', ')+'; imports: '+JSON.stringify(imports));}
+  if(unique.length!==1){if(options.diagnose)await options.diagnose({dashboard:await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8'),modules:all,schemas,unreadable});const imports=(await readFile(resolve(app,'finance-archive-dashboard.tsx'),'utf8')).match(/from ['"][^'"]+['"]/g);throw Error('Historical bank source needs review. Candidates: '+JSON.stringify(unique.map(c=>({file:c.file,path:c.path})))+'; array schemas: '+JSON.stringify(schemas)+'; unreadable: '+unreadable.join(', ')+'; imports: '+JSON.stringify(imports));}
   sources.unshift({year:2025,bank:unique[0].bank});
  }
  if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must cover both existing years. Candidate source modules: '+files.join(', '));
