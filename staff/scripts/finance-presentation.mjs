@@ -71,7 +71,7 @@ export async function applyFinancePresentation(root){
     if(![r.incoming,r.outgoing,r.balance].every(Number.isFinite))throw Error('Legacy bank amounts need review');
     return {archiveIndex:i,date:r.date,project:rowProjectKey(year,r),description:r.description,reference:String(r.row??''),debit:r.outgoing,credit:r.incoming,balance:r.balance,evidence:(r.links||[]).map(link=>typeof link==='string'?{url:link,label:'Bukti'}:{url:link.url,label:link.label||link.name||'Bukti'})};
    });
-   sources.push({year,bank:{openingBalance:opening,closingBalance:sheet.rows.at(-1).balance,mutations}});
+   sources.push({year,allowUncertainDates:true,bank:{openingBalance:opening,closingBalance:sheet.rows.at(-1).balance,mutations}});
   }
  }catch(error){if(error.code!=='ENOENT')throw error;}
  if(!sources.some(s=>s.year===2025)||!sources.some(s=>s.year===2026))throw Error('Bank history must include all existing periods');

@@ -1,11 +1,14 @@
 // Read-only cash report. Integer cents keep grouped totals identical to bank totals.
 export const cents=n=>{if(!Number.isFinite(n)||n<0)throw Error('Invalid bank amount');return Math.round(n*100);};
+const calendar=s=>{const d=new Date(s+'T00:00:00Z');if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==s)throw Error('Invalid calendar date');return s;};
 export function isoDate(value){
  const s=String(value||'').trim();
- if(/^20\d{2}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+ if(/^20\d{2}-\d{2}-\d{2}/.test(s))return calendar(s.slice(0,10));
+ const numeric=s.match(/^(\d{1,2})[/-](\d{1,2})[/-](20\d{2})$/);
+ if(numeric)return calendar(`${numeric[3]}-${numeric[2].padStart(2,'0')}-${numeric[1].padStart(2,'0')}`);
  const months=['jan','feb','mar','apr','mei','jun','jul','agu','sep','okt','nov','des'];
  const m=s.toLowerCase().match(/^(\d{1,2})\s+([a-z]+)\s+(20\d{2})/);
- if(m){const key={may:'mei',aug:'agu',oct:'okt',dec:'des'}[m[2].slice(0,3)]||m[2].slice(0,3),month=months.indexOf(key)+1;if(month)return `${m[3]}-${String(month).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+ if(m){const key={may:'mei',aug:'agu',oct:'okt',dec:'des'}[m[2].slice(0,3)]||m[2].slice(0,3),month=months.indexOf(key)+1;if(month)return calendar(`${m[3]}-${String(month).padStart(2,'0')}-${m[1].padStart(2,'0')}`);}
  throw Error('Bank report date needs an explicit adapter');
 }
 export function category(row){
@@ -40,9 +43,11 @@ export function compileHistory(sources,closing){
   seen.add(year);
   for(const [i,r] of bank.mutations.entries()){
    const debit=cents(r.debit),credit=cents(r.credit);if(!debit&&!credit)continue;
-   const date=isoDate(r.postedAt||r.date);if(date.slice(0,4)!==year)throw Error('Bank report year mismatch');
+   const rawDate=String(r.postedAt||r.date||'');let date='',dateIssue='';
+   try{date=isoDate(rawDate);}catch(error){if(!source.allowUncertainDates)throw error;dateIssue='Tanggal sumber perlu verifikasi';}
+   if(date&&date.slice(0,4)!==year){if(!source.allowUncertainDates)throw Error('Bank report year mismatch');dateIssue='Tahun pada tanggal berbeda dari tahun arsip';}
    const description=String(r.description||r.remark||'');
-   const base={id:`${year}:${r.archiveIndex??i}`,date,year,month:date.slice(0,7),description,reference:String(r.reference||''),debit,credit,project:projectLabel(r.project||r.projectLabel||r.label||r.projectCode),evidence:(r.evidence||[]).filter(e=>/^https:\/\/(?:drive|docs)\.google\.com\//.test(e.url||''))};
+   const base={id:`${year}:${r.archiveIndex??i}`,date,rawDate,dateIssue,year,month:date&&!dateIssue?date.slice(0,7):year+' · Tanggal perlu verifikasi',description,reference:String(r.reference||''),debit,credit,project:projectLabel(r.project||r.projectLabel||r.label||r.projectCode),evidence:(r.evidence||[]).filter(e=>/^https:\/\/(?:drive|docs)\.google\.com\//.test(e.url||''))};
    const entry=year==='2026'?closing?.entries?.find(e=>e.index===(r.archiveIndex??i)):null;
    if(entry&&(cents(entry.debit)!==debit||cents(entry.credit)!==credit))throw Error('Bank report canonical link mismatch');
    const allocations=entry?.bankAllocations||entry?.allocations;
@@ -58,12 +63,14 @@ export function compileHistory(sources,closing){
   const ending=Number.isFinite(bank.closingBalance)?Math.round(bank.closingBalance*100):Math.round(last.balance*100);
   if(!Number.isSafeInteger(opening)||!Number.isSafeInteger(ending))throw Error('Bank report balance missing');
   const incoming=list.reduce((n,r)=>n+r.credit,0),outgoing=list.reduce((n,r)=>n+r.debit,0);
-  coverage.push({year,from:list.map(r=>r.date).sort()[0],to:list.map(r=>r.date).sort().at(-1),transactions:bank.mutations.filter(r=>r.debit||r.credit).length,opening,ending,incoming,outgoing,difference:ending-opening-incoming+outgoing});
+  const dated=list.filter(r=>r.date&&!r.dateIssue).map(r=>r.date).sort();
+  coverage.push({year,from:dated[0]||'',to:dated.at(-1)||'',uncertainDates:list.filter(r=>r.dateIssue).length,transactions:bank.mutations.filter(r=>r.debit||r.credit).length,opening,ending,incoming,outgoing,difference:ending-opening-incoming+outgoing});
  }
- rows.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));coverage.sort((a,b)=>a.year.localeCompare(b.year));
+ rows.sort((a,b)=>(a.date||a.year).localeCompare(b.date||b.year)||a.id.localeCompare(b.id));coverage.sort((a,b)=>a.year.localeCompare(b.year));
  for(let i=1;i<coverage.length;i++)coverage[i].carryDifference=coverage[i].opening-coverage[i-1].ending;
  if(new Set(rows.map(r=>r.id)).size!==rows.length)throw Error('Bank report identity duplicated');
- return {rows,coverage,from:rows[0]?.date,to:rows.at(-1)?.date};
+ const dated=rows.filter(r=>r.date&&!r.dateIssue).map(r=>r.date).sort();
+ return {rows,coverage,from:dated[0]||'',to:dated.at(-1)||''};
 }
 export function summarize(rows,group='category'){
  const map=new Map();for(const row of rows){const key=row[group]||'Belum dialokasikan',v=map.get(key)||{label:key,incoming:0,outgoing:0,ids:new Set()};v.incoming+=row.credit;v.outgoing+=row.debit;v.ids.add(row.id.split(':').slice(0,2).join(':'));map.set(key,v);}

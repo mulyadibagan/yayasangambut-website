@@ -29,6 +29,12 @@ test('uncertain classification remains explicit; cash receipts are not all donor
  assert.equal(category({debit:10,description:'Tarik tunai gaji dan peralatan kantor'}),'Pengeluaran gabungan');
  assert.equal(isoDate('13 November 2026'),'2026-11-13');assert.throws(()=>isoDate('yesterday'));
 });
+test('undated legacy rows remain in cash totals without an invented date',()=>{
+ const legacy={year:2022,allowUncertainDates:true,bank:{openingBalance:0,closingBalance:25,mutations:[{date:'tanggal tidak terbaca',description:'Pencairan',debit:0,credit:25,balance:25}]}};
+ const report=compileHistory([legacy]);assert.equal(report.rows.length,1);assert.equal(report.rows[0].date,'');assert.equal(report.rows[0].rawDate,'tanggal tidak terbaca');assert.equal(report.coverage[0].incoming,2500);assert.equal(report.coverage[0].uncertainDates,1);
+ assert.throws(()=>compileHistory([{...legacy,allowUncertainDates:false}]));assert.throws(()=>isoDate('2022-02-31'));
+ assert.equal(isoDate('13/11/2026'),'2026-11-13');
+});
 test('presentation changes preserve numerical expressions and financial identifiers',()=>{
  const source='<button>Cashflow Project</button><p>Belum dilaporkan ke Riena</p><strong>{idr(view.projectedMonthlyPayroll)}</strong>';const changed=professionalCopy(source);
  assert.ok(changed.includes('Arus Kas Proyek'));assert.ok(changed.includes('Bagian Keuangan'));assert.ok(changed.includes('{idr(view.projectedMonthlyPayroll)}'));assert.equal(professionalCopy(changed),changed);
