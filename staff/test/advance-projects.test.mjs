@@ -6,6 +6,10 @@ import {registerHooks} from 'node:module';
 const hook=registerHooks({resolve(s,c,next){if(s==='sanitize-html')return {url:'data:text/javascript,export default ()=>{}',shortCircuit:true};return next(s,c);}});
 const {parseProjectActivities,projectCommitments,linkAdvanceProject}=await import('../src/advance-projects.mjs');hook.deregister();
 const html='<article class="aramco-activity-card"><div class="aramco-activity-main"><code>1.1</code><span><b>Kegiatan &amp; pelatihan</b></span></div><div class="aramco-budget-cell"><b>Rp&nbsp;1.000.000</b></div><div data-label="UM kumulatif"><b>Rp 200.000</b></div><div data-label="Realisasi"><b>Rp 180.000</b></div></article>';
+test('an archive without a RAB never turns past UM amounts into an invented budget',()=>{
+ const archive='<table><tr><td><code>1</code></td><th>Kegiatan</th><td>15 Nov 2026</td><td>Rp 500.000</td><td>Rp 400.000</td><td>Rp 100.000</td><td>Laporan</td><td>Dokumen</td></tr></table>';
+ const activities=parseProjectActivities(archive);assert.equal(activities[0].budget,null);assert.equal(activities[0].legacyUm,500000);assert.equal(projectCommitments({id:'X',activities},[]).activities[0].remaining,null);
+});
 test('project ceilings come from the same activity cards and existing commitments are not added twice',()=>{
  const activities=parseProjectActivities(html);assert.equal(activities[0].budget,1000000);assert.equal(activities[0].legacyCommitted,200000);assert.equal(activities[0].name,'Kegiatan & pelatihan');
  const rows=[['draft',900000],['submitted',300000],['closed',100000],['cancelled',900000]].map(([status,amount],i)=>({id:String(i),status,payload:{project_id:'X',allocations:[{code:'1.1',amount}]}}));

@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s),api='/finance/advances/api';
 let me,rows=[],current=null,busy=false,dirty=false;
 const labels={draft:'Draf UM',returned:'UM dikembalikan',submitted:'Pemeriksaan Keuangan',checked:'Persetujuan Direktur',approved:'Siap dicairkan',disbursed:'Menunggu PJUM',pjum_draft:'Draf PJUM',pjum_returned:'PJUM dikembalikan',pjum_submitted:'Pemeriksaan PJUM',pjum_checked:'Persetujuan PJUM',settlement:'Penyelesaian selisih',closed:'Selesai',cancelled:'Dibatalkan'};
-const money=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
+const money=n=>n===null?'Belum tersedia':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
 const date=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
 function el(tag,text,attrs={}){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;Object.assign(e,attrs);return e;}
 function notice(s){$('#notice').textContent=s;}
@@ -51,7 +51,7 @@ let projects=[],activeBudget=null;
 function projectLink(p){const a=$('#project-detail');a.hidden=!p?.url;if(p?.url)a.href=p.url;}
 async function setupProjects(){
  projects=await request('/projects');
- for(const id of ['#project-choice','#overview-project'])$(id).replaceChildren(el('option','Pilih proyek',{value:''}),...projects.map(p=>el('option',p.name,{value:p.id})));
+ for(const id of ['#project-choice','#overview-project'])$(id).replaceChildren(el('option','Pilih proyek',{value:''}),...projects.map(p=>el('option',p.name+(p.closed?' · ditutup':''),{value:p.id,disabled:id==='#project-choice'&&p.closed})));
  const params=new URLSearchParams(location.search),id=params.get('project');
  if(projects.some(p=>p.id===id)){$('#overview-project').value=id;await loadOverview();if(params.get('activity'))await chooseActivity(id,params.get('activity'));}
 }
@@ -59,16 +59,16 @@ async function loadBudget(){
  const id=$('#project-choice').value;if(!id){activeBudget=null;$('#budget-info').textContent='';return;}
  activeBudget=await request('/project?'+new URLSearchParams({id,exclude:current?.id||''}));
  $('#um-form').elements.project.value=activeBudget.name;projectLink(activeBudget);
- $('#activity-choice').replaceChildren(el('option','Pilih kegiatan',{value:''}),...activeBudget.activities.filter(a=>!a.management).map(a=>el('option',a.code+' · '+a.name+' · sisa '+money(a.remaining),{value:a.code,disabled:a.remaining<=0})));
- $('#budget-info').textContent=activeBudget.unconfigured?'Rincian pagu proyek belum tersedia. Pengajuan akan diperiksa Bagian Keuangan.':'Pilih kode kegiatan. Sisa pagu memperhitungkan komitmen lama serta pengajuan baru yang sudah dikirim.';
+ $('#activity-choice').replaceChildren(el('option','Pilih kegiatan',{value:''}),...activeBudget.activities.filter(a=>!a.management).map(a=>el('option',a.code+' · '+a.name+' · sisa '+money(a.remaining),{value:a.code,disabled:activeBudget.closed||(a.remaining!==null&&a.remaining<=0)})));
+ $('#budget-info').textContent=activeBudget.unconfigured||activeBudget.missingBudget?'RAB lengkap belum tersedia. Daftar kegiatan mengikuti arsip terdahulu; isi kode untuk kegiatan baru dan lampirkan dasar anggarannya. Pengajuan akan diperiksa Bagian Keuangan.':'Pilih kode kegiatan. Sisa pagu memperhitungkan komitmen lama serta pengajuan baru yang sudah dikirim.';
 }
 async function loadOverview(){
  const id=$('#overview-project').value,out=$('#activity-overview');out.replaceChildren();list();if(!id)return;
  const data=await request('/project?'+new URLSearchParams({id}));
- if(data.unconfigured){out.append(el('p','Rincian pagu proyek belum tersedia.'));return;}
+ if(data.closed)out.append(el('p','Proyek sudah ditutup; pengajuan UM baru tidak tersedia.'));if(data.missingBudget||data.unconfigured)out.append(el('p','RAB lengkap belum tersedia. Pagu dan sisa yang belum diajukan belum dapat ditentukan; kegiatan baru perlu dasar anggaran untuk diperiksa.'));if(data.unconfigured)return;
  const table=el('table'),head=el('tr');for(const label of ['Kegiatan','Pagu','UM / realisasi terdahulu','Draf baru','Sedang diproses','Sudah dicairkan','Sisa belum diajukan',''])head.append(el('th',label));table.append(head);
  for(const a of data.activities){const tr=el('tr');tr.append(el('th',a.code+' · '+a.name));for(const value of [a.budget,a.legacyCommitted,a.draft,a.pending,a.disbursed,a.remaining])tr.append(el('td',money(value)));
- const td=el('td');if(!a.management&&a.remaining>0){const b=el('button','Ajukan UM',{type:'button',className:'secondary'});b.onclick=()=>run(()=>chooseActivity(id,a.code));td.append(b);}else td.textContent=a.management?'Pengajuan gaji':'Pagu terkomitmen';tr.append(td);table.append(tr);}
+ const td=el('td');if(!data.closed&&!a.management&&(a.remaining===null||a.remaining>0)){const b=el('button','Ajukan UM',{type:'button',className:'secondary'});b.onclick=()=>run(()=>chooseActivity(id,a.code));td.append(b);}else td.textContent=a.management?'Pengajuan gaji':'Pagu terkomitmen';tr.append(td);table.append(tr);}
  const scroll=el('div',undefined,{className:'scroll'});scroll.append(table);out.append(scroll);
 }
 async function chooseActivity(project,code){
