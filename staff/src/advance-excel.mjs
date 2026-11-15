@@ -9,7 +9,7 @@ export function advanceExcel(template,request){
  for(let n=1;n<=7;n++)row(n,[],18);
  row(8,[cell('A8','No UM',50),cell('B8',': '+request.number,51),cell('D8','Project',53),cell('E8',': '+p.project,54)],30);merges.push('E8:J8');
  row(9,[cell('A9','Tanggal',50),cell('B9',': '+day(request.created_at),51),cell('D9','Kegiatan',53),cell('E9',p.activity,71)],42);merges.push('E9:J9');
- row(10,[cell('A10','Lokasi',50),cell('B10',p.location,51),cell('D10','Periode',53),cell('E10',day(p.start)+' - '+day(p.end),71)],30);merges.push('E10:J10');
+ row(10,[cell('A10','Lokasi',50),cell('B10',p.location,51),cell('D10','Periode',53),cell('E10',day(p.start)+' – '+day(p.end),71)],30);merges.push('E10:J10');
  row(12,[cell('A12','No',58),cell('B12','Deskripsi',59),cell('C12','Unit Cost',73),cell('D12','',74),cell('E12','',74),cell('F12','',74),cell('G12','',74),cell('H12','',74),cell('I12','',75),cell('J12','Jumlah',60)],32);merges.push('C12:I12');
  let n=13,total=0;const subtotalRows=[],groups=new Map();
  for(const item of p.items){const key=item.activity_code||'';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);}
@@ -29,7 +29,7 @@ export function advanceExcel(template,request){
  n++;row(n,[cell('B'+n,'Posisi: '+(request.creator_email.startsWith('mulyadi@')?'Direktur':request.creator_email.startsWith('riena')?'Finance':'Staf'),19),cell('C'+n,'Posisi: Finance',18),cell('E'+n,'Posisi: Direktur',6)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
  n++;row(n,[cell('B'+n,'Tgl: '+day(submitted?.created_at),19),cell('C'+n,'Tgl: '+day(checked?.created_at),19),cell('E'+n,'Tgl: '+day(approved?.created_at),6)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
  const statusLabels={draft:'Draf UM',returned:'Perlu perbaikan',submitted:'Menunggu pemeriksaan',checked:'Menunggu persetujuan',approved:'Disetujui',disbursed:'Sudah dicairkan',closed:'Selesai',cancelled:'Dibatalkan'};
- n++;row(n,[cell('B'+n,'Status: '+(statusLabels[request.status]||'Tahap pertanggungjawaban')+' � versi '+request.version,19)]);merges.push('B'+n+':J'+n);
+ n++;row(n,[cell('B'+n,'Status: '+(statusLabels[request.status]||'Tahap pertanggungjawaban')+' · versi '+request.version,19)]);merges.push('B'+n+':J'+n);
  n+=2;row(n,[cell('B'+n,'PEMBAYARAN',28),cell('E'+n,'CATATAN',30)]);merges.push('E'+n+':J'+n);
  for(const [label,value] of [['Bank Transfer','Ya'],['Nama Bank',p.bank||''],['Nomor Rekening',p.account||''],['Nama Pemilik Rekening',p.account_name||'']]){n++;row(n,[cell('B'+n,label,32),cell('C'+n,': '+value,29),...(label==='Bank Transfer'?[cell('E'+n,p.notes||'',32)]:[])],label==='Bank Transfer'?40:24);merges.push('C'+n+':D'+n,...(label==='Bank Transfer'?['E'+n+':J'+n]:[]));}
  n++;row(n,[cell('B'+n,'Dokumen pengajuan uang muka Yayasan Gambut.',19)],30);merges.push('B'+n+':J'+n);
@@ -37,4 +37,3 @@ export function advanceExcel(template,request){
  files['xl/worksheets/sheet1.xml']=strToU8(sheet);files['xl/workbook.xml']=strToU8(strFromU8(files['xl/workbook.xml']).replace('PUM!$A$1:$J$43','PUM!$A$1:$J$'+n));
  return zipSync(files,{level:6});
 }
-

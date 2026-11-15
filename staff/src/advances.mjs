@@ -15,7 +15,7 @@ function date(v){if(typeof v!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(v)||Numbe
 function amount(v,zero=false){if(!Number.isSafeInteger(v)||v<(zero?0:1)||v>10000000000)fail(400,'Nominal harus rupiah bulat dan tidak melebihi Rp10 miliar.');return v;}
 export function advanceInput(body,report=false){
  if(!body||typeof body!=='object'||Array.isArray(body))fail(400,'Data pengajuan tidak valid.');
- if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1-100 rincian biaya.');
+ if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1–100 rincian biaya.');
  let total=0;
  const items=body.items.map(row=>{
   if(!row||typeof row!=='object')fail(400,'Rincian biaya tidak valid.');
@@ -121,4 +121,3 @@ export async function advancesRoute(req,env,u){
  }
  return json(await detail(env,await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''})));
 }
-

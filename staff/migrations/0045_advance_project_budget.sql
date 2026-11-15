@@ -14,4 +14,3 @@ BEGIN
   ),0) > json_extract(a.value,'$.budget')-json_extract(a.value,'$.legacyCommitted')
  ) THEN RAISE(ABORT,'ADVANCE_BUDGET_EXCEEDED') END;
 END;
-

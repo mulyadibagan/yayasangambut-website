@@ -3,7 +3,7 @@ import {fail} from './core.mjs';
 export const advanceProjects=[
  ['ARC3','Aramco Phase 3','aramco-phase-3'],['SPMCLS','SPM-CLS','spm-cls'],
  ['PENABULU','Penabulu Small Grants','penabulu'],['PPCF','PPCF Pematang Duku','ppcf'],
- ['CORE26','Aliansi Kolibri � Core Fund 2026','kolibri-core-2026'],
+ ['CORE26','Aliansi Kolibri · Core Fund 2026','kolibri-core-2026'],
  ['RESTO','Restorasi Imbo Putui','restorasi-imbo-putui'],
  ['APRIL','APRIL Group',null],['YG','Operasional Yayasan',null]
 ].map(([id,name,slug])=>({id,name,slug,url:slug?'/finance/projects/'+slug+'?year=2026':null}));
@@ -59,4 +59,3 @@ export async function linkAdvanceProject(env,u,data){
  });
  return data;
 }
-

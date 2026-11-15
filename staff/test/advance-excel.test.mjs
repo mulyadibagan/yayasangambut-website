@@ -9,4 +9,3 @@ test('Excel keeps YG header, grouped activity subtotals, PRODUCT formulas, and e
  const output=unzipSync(advanceExcel(template,input)),sheet=strFromU8(output['xl/worksheets/sheet1.xml']);assert.match(sheet,/ROUND\(PRODUCT\(C14:I14\),0\)/);assert.match(sheet,/<v>1500000<\/v>/);assert.match(sheet,/<t[^>]*>=2\+2<\/t>/);assert.match(sheet,/001234567/);assert.ok(output['xl/media/image1.png']);assert.ok(!output['xl/media/image2.png']);assert.ok(!output['xl/sharedStrings.xml']);assert.equal((sheet.match(/Subtotal kegiatan/g)||[]).length,2);
  assert.throws(()=>advanceExcel(template,{...input,total:1}),/Total UM/);
 });
-

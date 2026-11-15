@@ -23,4 +23,3 @@ test('database atomically prevents competing submissions exceeding the same budg
  const payload=JSON.stringify({project_id:'ARC3',allocations:[{code:'1',amount:600,budget:1000,legacyCommitted:0}]});insert.run('a',payload);insert.run('b',payload);db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='a'").run();assert.throws(()=>db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='b'").run(),/ADVANCE_BUDGET_EXCEEDED/);
  db.prepare("UPDATE yg_advance_requests SET status='returned' WHERE id='a'").run();db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='b'").run();assert.equal(db.prepare("SELECT status FROM yg_advance_requests WHERE id='b'").get().status,'submitted');
 });
-
