@@ -13,6 +13,7 @@ test('Finance React shell is idempotent and leaves financial source files untouc
   await mkdir(join(root,'app'));
   await writeFile(join(root,'app/layout.tsx'),layout);
   await writeFile(join(root,'app/finance-archive-dashboard.tsx'),'<img src="/logo-yayasan-gambut.png" alt="Logo Yayasan Gambut" />');
+  await writeFile(join(root,'app/project-cash-view.tsx'),`'use client';export default function Projects(){return <section><h2>Proyek {year}</h2><label>Pilih proyek<select value={selected} onChange={e=>setSelected(e.target.value)}><option value="ARC3">Aramco</option></select></label></section>;}`);
   const ledger='export default {closing:123456,entries:[{amount:9876}]};';
   await writeFile(join(root,'app/finance-ledger-2026.ts'),ledger);
   await applyFinanceReactShell(root);const once=await readFile(join(root,'app/layout.tsx'),'utf8');
