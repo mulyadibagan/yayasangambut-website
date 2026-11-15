@@ -1,0 +1,12 @@
+'use client';
+import {useEffect,useState} from 'react';
+const money=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+export default function ProjectAdvancePanel(){
+ const [data,setData]=useState<any>(null),[error,setError]=useState('');
+ useEffect(()=>{const path=window.location.pathname;if(!path.startsWith('/finance/projects/'))return;const slug=path.split('/')[3],controller=new AbortController();
+  fetch('/finance/advances/api/projects',{signal:controller.signal}).then(async r=>{if(!r.ok)throw Error('Daftar proyek belum dapat dimuat.');const projects=await r.json();const p=projects.find((p:any)=>p.slug===slug);if(!p)return;const response=await fetch('/finance/advances/api/project?id='+encodeURIComponent(p.id),{signal:controller.signal,cache:'no-store'});const body=await response.json();if(!response.ok)throw Error(body.error||'Pengajuan proyek belum dapat dimuat.');setData(body);}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();
+ },[]);
+ if(!data&&!error)return null;
+ return <section className="yg-project-advance-panel" aria-label="Pengajuan UM terhubung proyek"><h2>Pengajuan UM kegiatan</h2><p>Hubungkan pengajuan dengan pos anggaran proyek. Draf belum mengunci pagu; pengajuan yang dikirim memakai sisa pagu setelah komitmen terdahulu.</p>{error?<p role="alert">{error}</p>:<><a href={'/finance/advances?project='+data.id}>Buka seluruh pengajuan proyek </a><details><summary>Kegiatan dan sisa yang belum diajukan ({data.activities.length})</summary><div className="yg-project-advance-grid">{data.activities.map((a:any)=><article key={a.code}><h3>{a.code} � {a.name}</h3><dl><div><dt>Pagu kegiatan</dt><dd>{money(a.budget)}</dd></div><div><dt>Komitmen terdahulu</dt><dd>{money(a.legacyCommitted)}</dd></div><div><dt>Draf baru</dt><dd>{money(a.draft)}</dd></div><div><dt>Sedang diproses</dt><dd>{money(a.pending)}</dd></div><div><dt>Dicairkan melalui sistem</dt><dd>{money(a.disbursed)}</dd></div><div><dt>Sisa belum diajukan</dt><dd>{money(a.remaining)}</dd></div></dl>{a.management?<a href="/finance/payroll">Buka pengajuan gaji</a>:a.remaining>0?<a href={'/finance/advances?project='+data.id+'&activity='+encodeURIComponent(a.code)}>Ajukan UM kegiatan </a>:<small>Pagu sudah terkomitmen</small>}</article>)}</div></details></> }</section>;
+}
+

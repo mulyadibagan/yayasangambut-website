@@ -37,3 +37,10 @@ table[data-salary-summary] :is(th,td):not(:first-child){text-align:right}
  table[data-salary-summary] :is(th,td):not(:first-child)::before{content:attr(data-label);text-align:left;color:#62746a;font-weight:400}
 }
 @media print{.yg-salary-allocation{display:none}}
+
+.yg-project-advance-panel{margin:22px auto;padding:20px 24px;max-width:1320px;box-sizing:border-box;background:#fff;border:1px solid #dce6e0;border-radius:12px;color:#234536;font:13px/1.6 Arial,sans-serif}
+.yg-project-advance-panel h2{font-size:19px;margin:0 0 6px}.yg-project-advance-panel p{margin:0 0 12px;color:#60756a}.yg-project-advance-panel a{color:#205d43}.yg-project-advance-panel details{margin-top:14px}.yg-project-advance-panel summary{cursor:pointer;font-weight:600}
+.yg-project-advance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}.yg-project-advance-grid article{padding:16px;background:#f5f8f6;border:1px solid #e4ebe6;border-radius:8px}.yg-project-advance-grid h3{font-size:14px;margin:0 0 12px}.yg-project-advance-grid dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 12px}.yg-project-advance-grid dt{font-size:11px;color:#63766b}.yg-project-advance-grid dd{margin:2px 0;font-weight:600}
+@media(max-width:760px){.yg-project-advance-panel{margin:14px;padding:16px}.yg-project-advance-grid{grid-template-columns:1fr}}
+@media print{.yg-project-advance-panel{display:none}}
+

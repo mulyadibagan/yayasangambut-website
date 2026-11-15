@@ -1,3 +1,4 @@
+import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
 import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {advancesPage} from './advances-page.mjs';
@@ -14,19 +15,20 @@ function date(v){if(typeof v!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(v)||Numbe
 function amount(v,zero=false){if(!Number.isSafeInteger(v)||v<(zero?0:1)||v>10000000000)fail(400,'Nominal harus rupiah bulat dan tidak melebihi Rp10 miliar.');return v;}
 export function advanceInput(body,report=false){
  if(!body||typeof body!=='object'||Array.isArray(body))fail(400,'Data pengajuan tidak valid.');
- if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1–100 rincian biaya.');
+ if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1-100 rincian biaya.');
  let total=0;
  const items=body.items.map(row=>{
   if(!row||typeof row!=='object')fail(400,'Rincian biaya tidak valid.');
   const description=string(row.description),unit=string(row.unit,60),quantity=row.quantity,days=row.days,rate=amount(row.rate,report);
   if(!Number.isFinite(quantity)||quantity<=0||quantity>1000000||Math.abs(Math.round(quantity*100)-quantity*100)>0.000001||!Number.isSafeInteger(days)||days<1||days>3660)fail(400,'Volume maksimal dua desimal dan hari harus bilangan bulat positif.');
-  const subtotal=Math.round(quantity*days*rate);amount(subtotal,report);total+=subtotal;
-  return {description,unit,quantity,days,rate,subtotal,...(report?{date:date(row.date)}:{})};
+  const times=row.times??1;if(!Number.isSafeInteger(times)||times<1||times>3660)fail(400,'Frekuensi harus bilangan bulat positif.');
+  const subtotal=Math.round(quantity*days*times*rate);amount(subtotal,report);total+=subtotal;
+  return {description,unit,quantity,days,times,rate,subtotal,...(row.activity_code?{activity_code:string(row.activity_code,80)}:{}),...(report?{date:date(row.date)}:{})};
  });
  amount(total,report);
  if(report)return {items,total,notes:string(body.notes||'',4000,false)};
  const start=date(body.start),end=date(body.end);if(end<start)fail(400,'Tanggal akhir mendahului tanggal mulai.');
- return {project:string(body.project,160),activity:string(body.activity,240),location:string(body.location,240),start,end,notes:string(body.notes||'',4000,false),items,total};
+ return {project_id:body.project_id?string(body.project_id,40):'',bank:string(body.bank||'',80,false),account:string(body.account||'',80,false),account_name:string(body.account_name||'',160,false),project:string(body.project,160),activity:string(body.activity,240),location:string(body.location,240),start,end,notes:string(body.notes||'',4000,false),items,total};
 }
 const own=(u,row)=>row.creator===u.id;
 function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya dapat dibuka pengaju, Bagian Keuangan, dan Direktur.');}
@@ -49,7 +51,7 @@ async function mutate(env,row,u,action,changes,snapshot={}){
    q(env,'UPDATE yg_advance_requests SET '+fields.map(k=>k+'=?').join(',')+',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',...fields.map(k=>changes[k]),event,at,row.id,row.version),
    q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event)
   ]);if(!result[0].meta.changes)fail(409,'Pengajuan telah diubah. Muat ulang sebelum menyimpan.');
- }catch(e){if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Referensi pembayaran sudah digunakan.');throw e;}
+ }catch(e){if(String(e.message).includes('ADVANCE_BUDGET_EXCEEDED'))fail(409,'Pengajuan melebihi sisa pagu kegiatan atau pagu telah digunakan pengajuan lain. Muat ulang anggaran.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Referensi pembayaran sudah digunakan.');throw e;}
  return read(env,row.id);
 }
 const uploadAllowed=(u,row,purpose)=>purpose==='um'?own(u,row)&&['draft','returned'].includes(row.status):purpose==='pjum'?own(u,row)&&['disbursed','pjum_returned','pjum_draft'].includes(row.status):purpose==='payment'?advanceFinance(u)&&row.status==='approved':purpose==='settlement'?advanceFinance(u)&&row.status==='settlement':false;
@@ -60,10 +62,16 @@ export async function advancesRoute(req,env,u){
  const path=new URL(req.url).pathname,prefix='/finance/advances';
  if([prefix,prefix+'/'].includes(path)&&req.method==='GET')return new Response(advancesPage(),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  if(path===prefix+'/api/me'&&req.method==='GET')return json({id:u.id,name:u.name,email:u.email,director:director(u),finance:advanceFinance(u),payroll:manager(u),dashboard:manager(u)});
+ if(path===prefix+'/api/projects'&&req.method==='GET')return json(advanceProjects);
+ if(path===prefix+'/api/project'&&req.method==='GET'){
+  const url=new URL(req.url),source=await projectSource(env,u,url.searchParams.get('id'));
+  const records=(await q(env,'SELECT id,status,payload FROM yg_advance_requests').all()).results;
+  return json(projectCommitments(source,records,url.searchParams.get('exclude')));
+ }
  if(path===prefix+'/api'){
   if(req.method==='GET'){const rows=(await q(env,'SELECT * FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;return json(rows.map(serialize));}
   if(req.method==='POST'){
-   const data=advanceInput(await input(req)),id=crypto.randomUUID(),event=crypto.randomUUID(),at=now();
+   const data=await linkAdvanceProject(env,u,advanceInput(await input(req))),id=crypto.randomUUID(),event=crypto.randomUUID(),at=now();
    await env.DB.batch([q(env,'INSERT INTO yg_advance_requests(id,creator,creator_email,creator_name,payload,total,last_event,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)',id,u.id,u.email,u.name,JSON.stringify(data),data.total,event,at,at),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) VALUES(?,?,?,?,1,?,?)',event,id,u.email,'created',JSON.stringify(data),at)]);
    return json(await detail(env,await read(env,id)),201);
   }
@@ -74,6 +82,13 @@ export async function advancesRoute(req,env,u){
  if(action==='files'&&fileId&&req.method==='GET'){
   const file=await q(env,'SELECT * FROM yg_advance_files WHERE id=? AND request_id=?',fileId,id).first();if(!file)fail(404,'Berkas tidak ditemukan.');const object=await env.MEDIA.get(file.storage_key);if(!object)fail(404,'Berkas belum tersedia.');
   return new Response(object.body,{headers:{'Content-Type':file.mime,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+ }
+ if(action==='excel'&&req.method==='GET'){
+  const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/um-template-yg.xlsx'));
+  if(!template.ok)fail(503,'Template Excel UM belum tersedia.');
+  const {advanceExcel}=await import('./advance-excel.mjs');
+  const bytes=advanceExcel(new Uint8Array(await template.arrayBuffer()),await detail(env,row));
+  return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+number(row)+'.xlsx"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(!action&&req.method==='GET')return json(await detail(env,row));
  if(action==='files'&&!fileId&&req.method==='POST'){
@@ -89,10 +104,11 @@ export async function advancesRoute(req,env,u){
  if(req.method!=='POST'&&req.method!=='PUT')fail(405,'Metode tidak didukung.');
  const body=await input(req);if(body.version!==row.version)fail(409,'Pengajuan berubah. Muat ulang.');
  if(!action&&req.method==='PUT'){
-  if(!own(u,row)||!['draft','returned'].includes(row.status))fail(403,'Hanya pengaju yang dapat menyunting draf UM.');const data=advanceInput(body);return json(await detail(env,await mutate(env,row,u,'updated',{payload:JSON.stringify(data),total:data.total},data)));
+  if(!own(u,row)||!['draft','returned'].includes(row.status))fail(403,'Hanya pengaju yang dapat menyunting draf UM.');const data=await linkAdvanceProject(env,u,advanceInput(body));return json(await detail(env,await mutate(env,row,u,'updated',{payload:JSON.stringify(data),total:data.total},data)));
  }
  if(req.method!=='POST')fail(405,'Metode tidak didukung.');
  const status=advanceTransition(u,row,action),changes={status},snapshot={};
+ if(action==='submit'&&JSON.parse(row.payload).project_id){const data=await linkAdvanceProject(env,u,JSON.parse(row.payload));changes.payload=JSON.stringify(data);snapshot.allocations=data.allocations;}
  if(['return','report_return'].includes(action))changes.note=string(body.note,4000);
  else if(['check','approve','report_check','report_approve'].includes(action))changes.note=string(body.note||'',4000,false);
  if(action==='disburse'){
@@ -105,3 +121,4 @@ export async function advancesRoute(req,env,u){
  }
  return json(await detail(env,await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''})));
 }
+
