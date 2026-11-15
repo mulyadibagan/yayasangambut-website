@@ -6,7 +6,7 @@ export function aprilCashEntry(source){
  if(source.includes('/* april-cash-entry */'))return source;
  const label=source.indexOf('Pilih proyek');if(label<0)throw Error('Cashflow project selector label missing');
  const start=source.indexOf('<select',label),end=openingEnd(source,start);if(start<0||start-label>1500)throw Error('Cashflow project selector missing');
- const capture=` onChangeCapture={(event)=>{if((event.target as HTMLSelectElement).value==='__APRIL'){event.stopPropagation();window.location.assign('/finance/projects/april-dayun');}}}`;
+ const capture=` onChangeCapture={(event)=>{if((event.target as HTMLSelectElement).value==='__APRIL'){event.stopPropagation();window.dispatchEvent(new Event('yg-april-cash-open'));}}}`;
  source=source.slice(0,start+7)+capture+source.slice(start+7,end+1)+'<option value="__APRIL">APRIL Dayun</option>'+source.slice(end+1);
  const heading=/<h2\b[^>]*>\s*Proyek(?:(?!<\/h2>)[\s\S])*<\/h2>/g;
  const matches=[...source.matchAll(heading)];if(matches.length!==1)throw Error('Cashflow project heading missing or ambiguous');
@@ -18,8 +18,6 @@ export function aprilCashEntry(source){
 }
 export async function prepareAprilCash(root,source){
  for(const [file,target] of [['april-cashflow.tsx','app/april-cashflow.tsx'],['april-cash-policy.js','app/april-cash-policy.js']])await copyFile(new URL('../finance-ui/'+file,import.meta.url),resolve(root,target));
- const dir=resolve(root,'app/finance/projects/april-dayun');await mkdir(dir,{recursive:true});
- await writeFile(resolve(dir,'page.tsx'),`import AprilCashflow from '../../../april-cashflow';\nexport default function AprilDayunPage(){return <main className="finance-project-page"><AprilCashflow /></main>;}\n`);
  if(source.includes('Pilih proyek')&&/<h2\b[^>]*>\s*Proyek(?:(?!<\/h2>)[\s\S])*<\/h2>/.test(source))return aprilCashEntry(source);
  const candidates=[];
  for(const file of await readdir(resolve(root,'app'))){if(!file.endsWith('.tsx')||file==='april-cashflow.tsx')continue;const body=await readFile(resolve(root,'app',file),'utf8');if(body.includes('Pilih proyek')&&/<h2\b[^>]*>\s*Proyek(?:(?!<\/h2>)[\s\S])*<\/h2>/.test(body))candidates.push({file,body});}
