@@ -15,7 +15,7 @@ function setup(){const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_k
 async function call(env,user,path='',method='GET',data){return advancesRoute(new Request(origin+prefix+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},...(data?{body:JSON.stringify(data)}:{})}),env,users[user]);}
 const body=async r=>r.json();
 async function reject(fn,status){await assert.rejects(fn,e=>e.status===status);}
-async function upload(env,user,row,purpose){const {PDFDocument}=await import('pdf-lib');const pdf=await PDFDocument.create();pdf.addPage();const proof=await pdf.save();const r=await advancesRoute(new Request(origin+prefix+'/'+row.id+'/files?'+new URLSearchParams({purpose,name:'bukti.pdf',version:row.version}),{method:'POST',headers:{Origin:origin},body:proof}),env,users[user]);return r.json();}
+async function upload(env,user,row,purpose,pages=1){const {PDFDocument}=await import('pdf-lib');const pdf=await PDFDocument.create();for(let i=0;i<pages;i++)pdf.addPage();const proof=await pdf.save();const r=await advancesRoute(new Request(origin+prefix+'/'+row.id+'/files?'+new URLSearchParams({purpose,name:'bukti.pdf',version:row.version}),{method:'POST',headers:{Origin:origin},body:proof}),env,users[user]);return r.json();}
 test('only the three named active accounts can submit; volume arithmetic is server-owned',()=>{for(const who of ['director','finance','staff'])assert.equal(advanceAccess(users[who]),true);assert.equal(advanceAccess(users.other),false);assert.equal(advanceAccess({...users.staff,disabled:1}),false);assert.equal(advanceInput({...sample,total:1}).total,1000000);assert.throws(()=>advanceInput({...sample,items:[{...sample.items[0],quantity:-1}]}));assert.throws(()=>advanceInput({...sample,end:'2026-10-01'}));});
 test('end-to-end UM, PJUM and refund with finance review, immutable evidence and audit',async()=>{
  const {env,db,objects}=setup();let row=await body(await call(env,'staff','','POST',sample));assert.equal(row.total,1000000);assert.match(row.number,/^UM-20\d{2}-\d{5}$/);const id=row.id;
@@ -53,4 +53,12 @@ test('legacy link is unique, keeps the original amount and never creates bank tr
  row=await body(await call(env,'director','/'+row.id+'/report','POST',{version:row.version,report_date:'2026-11-15',items:row.report.items,notes:'Bukti diperiksa manual.'}));
  row=await body(await call(env,'director','/'+row.id+'/report_submit','POST',{version:row.version}));await reject(()=>call(env,'finance','/'+row.id+'/report_check','POST',{version:row.version}),400);
  assert.equal(row.status,'pjum_submitted');assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123);
+});
+
+test('batch OCR persists three page results once, rejects foreign evidence and reuses successful page reads',async()=>{
+ const {env,db}=setup();let row=await body(await call(env,'director','','POST',sample));db.prepare("UPDATE yg_advance_requests SET status='disbursed' WHERE id=?").run(row.id);row=await body(await call(env,'director','/'+row.id));row=await upload(env,'director',row,'pjum',3);const fid=row.files[0].id,version=row.version;
+ await reject(()=>call(env,'director','/'+row.id+'/scan','POST',{version,pages:[{file_id:fid,page:1},{file_id:'other',page:2}]}),400);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM yg_advance_ocr').get().n,0);
+ row=await body(await call(env,'director','/'+row.id+'/scan','POST',{version,pages:[1,2,3].map(page=>({file_id:fid,page}))}));assert.equal(row.version,version+1);assert.equal(row.ocr.length,3);assert.equal(row.status,'disbursed');assert.equal(row.actual,null);
+ db.prepare("UPDATE yg_advance_ocr SET result='{}'").run();const stable=row.version;row=await body(await call(env,'director','/'+row.id+'/scan','POST',{version:stable,pages:[1,2,3].map(page=>({file_id:fid,page}))}));assert.equal(row.version,stable);
+ await reject(()=>call(env,'director','/'+row.id+'/scan','POST',{version:stable,pages:[{file_id:fid,page:4}]}),400);assert.equal(db.prepare('SELECT amount FROM finance_transactions').get().amount,123);
 });

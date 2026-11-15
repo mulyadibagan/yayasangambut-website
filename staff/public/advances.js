@@ -109,9 +109,9 @@ $('#scan-receipts').onclick=()=>run(async()=>{
  const mapped=current.report?.items||[];if(!mapped.length)throw Error('Isi dan simpan rincian PJUM terlebih dahulu.');
  $('#pjum-form').querySelectorAll('input,textarea,select').forEach(e=>e.disabled=true);const pages=[...new Map(mapped.filter(i=>i.file_id&&i.page).map(i=>[i.file_id+':'+i.page,i])).values()];
  if(!pages.length)throw Error('Tautkan bukti dan halaman pada rincian.');
- for(const [i,item] of pages.entries()){
-  $('#scan-progress').textContent='Membaca bukti '+(i+1)+' dari '+pages.length+'; halaman '+item.page+'. Tetap buka halaman ini.';
-  current=await request('/'+current.id+'/scan','POST',{version:current.version,file_id:item.file_id,page:item.page});renderChecks();
+ for(let i=0;i<pages.length;i+=3){
+  const batch=pages.slice(i,i+3);$('#scan-progress').textContent='Membaca bukti '+(i+1)+'–'+Math.min(i+3,pages.length)+' dari '+pages.length+'. Tetap buka halaman ini.';
+  current=await request('/'+current.id+'/scan','POST',{version:current.version,pages:batch.map(item=>({file_id:item.file_id,page:item.page}))});renderChecks();
  }
  $('#scan-progress').textContent='Pemeriksaan otomatis selesai. Baca catatan setiap kuitansi sebelum mengirim.';await reload();render();
 });
