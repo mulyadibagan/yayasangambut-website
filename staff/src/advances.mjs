@@ -75,7 +75,7 @@ export async function advancesRoute(req,env,u){
   if(!manager(u))fail(403,'Arsip UM dilaporkan oleh Direktur atau Finance.');
   const body=await input(req),legacy=(await legacySource(env,u)).find(r=>r.id===body.id);if(!legacy)fail(404,'UM arsip tidak ditemukan.');
   const old=await q(env,'SELECT * FROM yg_advance_requests WHERE legacy_id=?',legacy.id).first();if(old)return json(await detail(env,old));
-  if(legacy.reported>=legacy.amount)fail(409,'UM arsip sudah dilaporkan. Periksa laporan yang telah ada.');
+  if(legacy.reported>0)fail(409,'UM arsip sudah memiliki PJUM. Periksa laporan yang telah ada agar tidak dilaporkan dua kali.');
   // Archive values are retained verbatim. Missing bank metadata must be confirmed
   // against the existing transfer, never interpreted as a new cash payment.
   const paid=date(legacy.paid_date||body.paid_date);if(paid>today())fail(400,'Tanggal pencairan tidak boleh di masa depan.');
