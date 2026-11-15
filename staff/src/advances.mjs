@@ -66,6 +66,21 @@ export async function advancesRoute(req,env,u){
  if([prefix,prefix+'/'].includes(path)&&req.method==='GET')return new Response(advancesPage(),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  if(path===prefix+'/api/me'&&req.method==='GET')return json({id:u.id,name:u.name,email:u.email,director:director(u),finance:advanceFinance(u),payroll:manager(u),dashboard:manager(u)});
  if(path===prefix+'/api/projects'&&req.method==='GET')return json(advanceProjects);
+ if(path===prefix+'/api/pjum_preview'&&req.method==='POST'){
+  const {importPjumExcel}=await import('./pjum-excel.mjs');return json(importPjumExcel(await binary(req)));
+ }
+ if(path===prefix+'/api/pjum_resolve'&&req.method==='POST'){
+  const body=await input(req),normalize=s=>String(s||'').replace(/\s/g,'').toUpperCase(),um=normalize(string(body.um_number,160));
+  const requests=(await q(env,'SELECT * FROM yg_advance_requests WHERE creator=?',u.id).all()).results;
+  const matches=requests.filter(r=>normalize(number(r))===um);if(matches.length>1)fail(409,'Nomor UM memiliki lebih dari satu catatan. Pilih UM yang sesuai.');
+  if(matches.length===1){if(!uploadAllowed(u,matches[0],'pjum'))fail(409,'PJUM untuk UM ini sudah dikirim atau belum dapat dilaporkan.');return json(await detail(env,matches[0]));}
+  if(!manager(u))fail(400,'UM belum ditemukan pada pengajuan Anda. Minta Finance menghubungkan UM arsip terlebih dahulu.');
+  const legacy=(await legacySource(env,u)).filter(r=>normalize(r.number)===um);if(legacy.length!==1)fail(400,'Nomor UM pada Excel belum cocok dengan arsip. Pilih UM asal atau periksa nomor pada Excel.');
+  const source=legacy[0],expected=/mulyadi/i.test(source.applicant)?'mulyadi@yayasangambut.org':/riena/i.test(source.applicant)?'rienaprasiddha@yayasangambut.org':/zamhar|ariel/i.test(source.applicant)?'zamharier@yayasangambut.org':'';
+  if(expected!==u.email.toLowerCase())fail(403,'PJUM harus dilaporkan oleh pengaju UM yang tercantum pada arsip.');
+  if(source.bank_status!=='Cocok'||source.bank_amount!==source.amount||!source.paid_date)fail(400,'Bukti pencairan UM lama perlu diperiksa Finance terlebih dahulu.');
+  return advancesRoute(new Request(env.APP_ORIGIN+prefix+'/api/legacy',{method:'POST',headers:{Origin:env.APP_ORIGIN,'Content-Type':'application/json'},body:JSON.stringify({id:source.id,owner_email:u.email,paid_date:source.paid_date,reference:source.reference||'Mutasi terverifikasi '+source.paid_date+' / '+source.number})}),env,u);
+ }
  if(path===prefix+'/api/legacy'&&req.method==='GET'){
   if(!manager(u))fail(403,'Arsip UM dilaporkan oleh Direktur atau Finance.');
   const adopted=(await q(env,'SELECT legacy_id,id,status FROM yg_advance_requests WHERE legacy_id IS NOT NULL').all()).results;

@@ -1,11 +1,9 @@
 # Pelaporan PJUM
 
-UM terdahulu ditautkan melalui menu Laporkan PJUM dari UM terdahulu. Tautan ini tidak mencatat pencairan baru dan tidak mengunci ulang pagu. Pilih pengaju sesuai dokumen; konfirmasi tanggal dan referensi transfer lama berdasarkan bukti.
+Alur utama: unggah Excel PJUM YG dan satu PDF kuitansi, lalu pilih Unggah & periksa PJUM. Nomor UM dibaca dari sheet PUM/UM; rincian, nomor kuitansi, dan halaman PDF ditautkan otomatis. Draf disimpan dan pembacaan kuitansi berjalan tanpa pengisian tabel manual.
 
-Unggah PDF kuitansi, kemudian impor Excel PJUM YG. Kolom No Receipt dipertahankan; periksa pemetaan setiap nomor ke halaman PDF. Simpan tanggal laporan sebenarnya. Draf bertanggal masa depan belum dapat diajukan.
+Tanggal laporan yang sudah ditetapkan pada draf dipertahankan. Draf baru mengambil tanggal dari Excel. Ringkasan menampilkan jumlah kuitansi, realisasi, selisih, tanggal, dan hasil pembacaan. Pengaju tetap menekan Kirim PJUM setelah meninjau hasil; tanggal masa depan belum dapat diajukan.
 
-Pemeriksaan otomatis membaca setiap halaman scan JPEG yang tertanam pada PDF atau berkas JPG/PNG. Hasilnya membandingkan nomor, penerima, tanggal, nominal dan uraian dengan rincian. Halaman atau format yang tidak terbaca tetap memerlukan pemeriksaan manual. Tidak ada autentikasi tanda tangan otomatis.
+Rincian dapat dibuka untuk memperbaiki data bila nomor UM belum cocok, jumlah halaman PDF berbeda, atau informasi bukti belum lengkap. Sistem tidak membuat pencairan baru. UM arsip baru hanya dihubungkan otomatis bila pengaju cocok dan pencairan sudah terverifikasi bank.
 
-Nomor ganda, halaman ganda, bukti hilang, halaman di luar berkas dan pengeluaran di masa depan menghalangi pengajuan. Peringatan pembacaan dan pengeluaran sebelum pencairan harus dijelaskan dalam pemeriksaan Finance. Riena wajib mengonfirmasi pemeriksaan bukti, tanda tangan, penerima, nominal dan kegiatan sebelum persetujuan Direktur.
-
-OCR tidak mengubah nominal atau menyetujui laporan. Pembacaan dilakukan melalui binding AI privat yang sudah digunakan oleh aplikasi. Lampiran dan hasil pembacaan hanya tersedia bagi pengaju, Finance dan Direktur.
+OCR membantu pencocokan data. Nomor tulisan tangan, tanda tangan, keabsahan bukti, dan kesesuaian kegiatan tetap diperiksa Finance sebelum persetujuan Direktur.

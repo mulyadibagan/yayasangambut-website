@@ -12,10 +12,11 @@ export function importPjumExcel(bytes){
  const doc=p=>{if(!files[p])fail(400,'Struktur Excel tidak lengkap.');const text=strFromU8(files[p]);if(/<!DOCTYPE|<!ENTITY/i.test(text))fail(400,'Deklarasi XML tidak didukung.');return text;};
  const ss=files['xl/sharedStrings.xml']?[...doc('xl/sharedStrings.xml').matchAll(/<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g)].map(x=>texts(x[1])):[];
  const workbook=doc('xl/workbook.xml');if(/date1904="(?:1|true)"/.test(workbook))fail(400,'Gunakan kalender Excel 1900.');
- const sheet=[...workbook.matchAll(/<sheet\s([^>]+)\/?\s*>/g)].map(m=>m[1]).find(s=>attr(s,'name').toUpperCase()==='PJUM');if(!sheet)fail(400,'Sheet PJUM tidak ditemukan.');
- const rel=[...doc('xl/_rels/workbook.xml.rels').matchAll(/<Relationship\s([^>]+)\/?\s*>/g)].map(m=>m[1]).find(r=>attr(r,'Id')===attr(sheet,'r:id'));
+ const sheets=[...workbook.matchAll(/<sheet\s([^>]+)\/?\s*>/g)].map(m=>m[1]),relationships=[...doc('xl/_rels/workbook.xml.rels').matchAll(/<Relationship\s([^>]+)\/?\s*>/g)].map(m=>m[1]);
+ const readSheet=sheet=>{const rel=relationships.find(r=>attr(r,'Id')===attr(sheet,'r:id'));
  const target=attr(rel||'','Target');if(!/^\/?(?:xl\/)?worksheets\/sheet\d+\.xml$/.test(target))fail(400,'Lokasi sheet tidak didukung.');
- const cells=new Map([...doc(target.startsWith('/')?target.slice(1):target.startsWith('xl/')?target:'xl/'+target).matchAll(/<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)].map(c=>{const content=c[2]||'',v=content.match(/<v>([^<]*)<\/v>/)?.[1];return [attr(c[1],'r'),attr(c[1],'t')==='s'?ss[Number(v)]:attr(c[1],'t')==='inlineStr'?texts(content):v];}));
+ return new Map([...doc(target.startsWith('/')?target.slice(1):target.startsWith('xl/')?target:'xl/'+target).matchAll(/<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)].map(c=>{const content=c[2]||'',v=content.match(/<v>([^<]*)<\/v>/)?.[1];return [attr(c[1],'r'),attr(c[1],'t')==='s'?ss[Number(v)]:attr(c[1],'t')==='inlineStr'?texts(content):v];}));};
+ const sheet=sheets.find(s=>attr(s,'name').toUpperCase()==='PJUM');if(!sheet)fail(400,'Sheet PJUM tidak ditemukan.');const cells=readSheet(sheet),pumSheet=sheets.find(s=>['PUM','UM'].includes(attr(s,'name').toUpperCase())),pum=pumSheet?readSheet(pumSheet):null;
  const get=(col,r)=>cells.get(col+r),items=[],warnings=[];let activity='';
  for(let r=1;r<=2000;r++){
   const code=String(get('A',r)||'').trim().match(/^(\d+(?:\.\d+)+)\.?(?:\s|$)/);if(code)activity=code[1];
@@ -31,5 +32,7 @@ export function importPjumExcel(bytes){
  if(!items.length||items.length>100)fail(400,'Tidak ditemukan 1–100 rincian bertanggal dengan kolom No Receipt pada sheet PJUM.');
  const numbers=items.map(i=>i.receipt_no.toLowerCase());if(new Set(numbers).size!==numbers.length)fail(400,'Nomor kuitansi pada Excel berulang.');
  warnings.push('Nomor halaman awal mengikuti urutan rincian. Periksa terhadap PDF sebelum mengirim.');
- return {items,total:items.reduce((n,i)=>n+i.subtotal,0),report_number:String(cells.get('B9')||'').replace(/^:\s*/,''),warnings};
+ const clean=v=>String(v||'').replace(/^:\s*/,'').trim(),rawDate=clean(cells.get('B77')).replace(/^Tgl\s*:?\s*/i,''),months=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'],match=rawDate.toLowerCase().match(/^(\d{1,2})\s+([a-z]+)\s+(20\d{2})$/),month=match?months.indexOf(match[2])+1:0;
+ const report_date=match&&month?`${match[3]}-${String(month).padStart(2,'0')}-${match[1].padStart(2,'0')}`:'';
+ return {items,total:items.reduce((n,i)=>n+i.subtotal,0),um_number:clean(pum?.get('B6')),report_number:clean(cells.get('B9')),report_date,warnings};
 }
