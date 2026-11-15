@@ -35,3 +35,13 @@ test('OCR never uses expected receipt values and malformed model output stays un
  assert.equal((await scanReceipt(env,jpeg,'image/jpeg',1)).amount,1500000);
  env.AI.run=async()=>({response:'not JSON'});assert.ok((await scanReceipt(env,jpeg,'image/jpeg',1)).error);
 });
+
+test('Excel file selection reaches the import API while genuinely edited report fields block it',async()=>{
+ const {readFile}=await import('node:fs/promises'),{parseHTML}=await import('linkedom'),{createContext,runInContext}=await import('node:vm'),{advancesPage}=await import('../src/advances-page.mjs');
+ const {document,Event}=parseHTML(advancesPage());let imports=0;
+ const context=createContext({document,window:{addEventListener(){}},location:{search:''},URLSearchParams,confirm:()=>true,fetch:async url=>{if(url.includes('import_excel')){imports++;throw Error('Import request reached');}return {ok:true,json:async()=>url.endsWith('/me')?{id:'mul',name:'Mulyadi',director:true}:[]};}});
+ runInContext(await readFile(new URL('../public/advances.js',import.meta.url),'utf8'),context);await new Promise(setImmediate);
+ runInContext("current={id:'request',creator:'mul',version:1,status:'disbursed',total:1,payload:{},files:[]};",context);
+ const picker=document.querySelector('#import-pjum');Object.defineProperty(picker,'files',{value:[{name:'test.xlsx',size:100}]});picker.dispatchEvent(new Event('input',{bubbles:true}));picker.onchange();await new Promise(setImmediate);assert.equal(imports,1);
+ document.querySelector('#pjum-form textarea').dispatchEvent(new Event('input',{bubbles:true}));picker.onchange();await new Promise(setImmediate);assert.equal(imports,1);assert.match(document.querySelector('#notice').textContent,/Simpan perubahan/);
+});
