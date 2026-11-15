@@ -49,7 +49,7 @@ export const reservedStatus=s=>!['draft','returned','cancelled'].includes(s);
 export function projectCommitments(source,requests,excludeId){
  return {...source,activities:source.activities.map(a=>{
   let draft=0,pending=0,disbursed=0;
-  for(const request of requests){if(request.id===excludeId||request.status==='cancelled')continue;const p=typeof request.payload==='string'?JSON.parse(request.payload):request.payload;if(p.project_id!==source.id)continue;
+  for(const request of requests){if(request.id===excludeId||request.status==='cancelled')continue;const p=typeof request.payload==='string'?JSON.parse(request.payload):request.payload;if(p.legacy||p.project_id!==source.id)continue;
    const allocation=p.allocations?.find(x=>x.code===a.code);if(!allocation)continue;
    if(['draft','returned'].includes(request.status))draft+=allocation.amount;
    else if(['submitted','checked','approved'].includes(request.status))pending+=allocation.amount;
