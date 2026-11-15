@@ -4,6 +4,7 @@ import {financeOwner} from './finance-access.mjs';
 import {advancesPage} from './advances-page.mjs';
 import {legacySource} from './advance-legacy.mjs';
 import {receiptChecks,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
+import {loadBudget,saveBudget,budgetPage} from './project-budget.mjs';
 
 const applicants=new Set(['mulyadi@yayasangambut.org','zamharier@yayasangambut.org','rienaprasiddha@yayasangambut.org']);
 export const advanceAccess=u=>!!u&&!u.disabled&&applicants.has(u.email?.toLowerCase());
@@ -64,6 +65,13 @@ export async function advancesRoute(req,env,u){
  if(req.method!=='GET'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
  const path=new URL(req.url).pathname,prefix='/finance/advances';
  if([prefix,prefix+'/'].includes(path)&&req.method==='GET')return new Response(advancesPage(),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+ if(path===prefix+'/budget'&&req.method==='GET')return new Response(budgetPage(await loadBudget(env),manager(u)),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+ if(path===prefix+'/api/budget'){
+  if(!manager(u))fail(403,'Anggaran dikelola Direktur dan Finance.');
+  if(req.method==='GET')return json(await loadBudget(env));
+  if(req.method==='POST')return json(await saveBudget(env,u,await input(req)));
+  fail(405,'Metode tidak didukung.');
+ }
  if(path===prefix+'/api/me'&&req.method==='GET')return json({id:u.id,name:u.name,email:u.email,director:director(u),finance:advanceFinance(u),payroll:manager(u),dashboard:manager(u)});
  if(path===prefix+'/api/projects'&&req.method==='GET')return json(advanceProjects);
  if(path===prefix+'/api/pjum_preview'&&req.method==='POST'){

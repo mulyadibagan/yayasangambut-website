@@ -21,3 +21,7 @@ test('paid records are already in dossier commitments and draft reports do not s
 test('unrelated projects, rejected emails and payroll cannot consume activity ceilings',()=>{
  const result=syncArchive(source,[{...email,project:'ARC3'},{...email,status:'Ditolak'},{...email,type:'GAJI'}]);assert.equal(result.archive.length,0);
 });
+test('private live budgets also reserve email disbursements without a static dossier baseline',()=>{
+ const result=syncArchive({...source,liveBudget:true},[{...email,code:'1.1.3',amount:800,status:'Dicairkan'}]);
+ assert.equal(result.activities[0].legacyCommitted,800);assert.equal(result.activities[0].archivePending,0);assert.equal(result.activities[0].archiveOutstanding,800);
+});

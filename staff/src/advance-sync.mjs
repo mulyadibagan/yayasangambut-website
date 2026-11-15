@@ -44,5 +44,8 @@ export function syncArchive(source,records){
   return {id:r.id,identity:archiveIdentity(r),number:number(r),paid:paid(r),allocations:archiveAllocations(source,r),reported:verified.reduce((n,p)=>n+Number(p.actualAmount??p.amount??0),0),returned:verified.filter(p=>p.bankStatus==='Cocok'&&Number(p.bankAmount)===Number(p.balance)).reduce((n,p)=>n+Number(p.balance||0),0)};
  });
  const unallocated=archive.filter(r=>!r.paid&&!r.allocations.length).length;
- return {...source,archive,unallocated,activities:source.activities.map(a=>({...a,archivePending:archive.filter(r=>!r.paid).reduce((n,r)=>n+(r.allocations.find(x=>x.code===a.code)?.amount||0),0),archiveOutstanding:archive.filter(r=>r.paid&&r.allocations.length===1&&r.allocations[0].code===a.code).reduce((n,r)=>n+Math.max(0,r.allocations[0].amount-r.reported-r.returned),0)}))};
+ return {...source,archive,unallocated,activities:source.activities.map(a=>{
+  const paidRows=archive.filter(r=>r.paid),legacyUm=paidRows.reduce((n,r)=>n+(r.allocations.find(x=>x.code===a.code)?.amount||0),0),legacyRealized=paidRows.filter(r=>r.allocations.length===1&&r.allocations[0].code===a.code).reduce((n,r)=>n+r.reported,0);
+  return {...a,...(source.liveBudget?{legacyUm,legacyRealized,legacyCommitted:Math.max(legacyUm,legacyRealized)}:{}),archivePending:archive.filter(r=>!r.paid).reduce((n,r)=>n+(r.allocations.find(x=>x.code===a.code)?.amount||0),0),archiveOutstanding:paidRows.filter(r=>r.allocations.length===1&&r.allocations[0].code===a.code).reduce((n,r)=>n+Math.max(0,r.allocations[0].amount-r.reported-r.returned),0)};
+ })};
 }

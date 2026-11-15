@@ -1,5 +1,6 @@
 import {fail} from './core.mjs';
 import {syncArchive,archiveAllocations} from './advance-sync.mjs';
+import {loadBudget} from './project-budget.mjs';
 
 export const advanceProjects=[
  ['ARC3','Aramco Phase 3','aramco-phase-3'],['SPMCLS','SPM-CLS','spm-cls'],
@@ -8,7 +9,7 @@ export const advanceProjects=[
  ['RESTO','Restorasi Imbo Putui','restorasi-imbo-putui'],['MAEARTH','Ma Earth','ma-earth'],
  ['SPM25','SPM 2025','spm-2025'],['BPDPKS','BPDPKS · Bengkalis & Siak','bpdpks'],['AK_CORE_2025','Aliansi Kolibri · Core Fund 2025','kolibri-core-2025'],
  ['APRIL','APRIL Group',null],['YG','Operasional Yayasan',null]
-].map(([id,name,slug])=>({id,name,slug,closed:['PPCF','SPM25','BPDPKS','AK_CORE_2025'].includes(id),url:slug?'/finance/projects/'+slug+'?year=2026':null}));
+].map(([id,name,slug])=>({id,name,slug,closed:['PPCF','SPM25','BPDPKS','AK_CORE_2025'].includes(id),url:slug?'/finance/projects/'+slug+'?year=2026':id==='APRIL'?'/finance/advances/budget':null}));
 const plain=s=>String(s||'').replace(/<!--[\s\S]*?-->/g,'').replace(/<[^>]*>/g,' ').replace(/&nbsp;|&#160;/g,' ').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#x27;|&#39;/g,"'").replace(/\s+/g,' ').trim();
 export function rupiah(s){const value=plain(s).match(/Rp\s*(-?[\d.]+)(?:,(\d{1,2}))?/);return value?Math.round(Number(value[1].replaceAll('.',''))+Number('0.'+(value[2]||'0'))):null;}
 export function parseProjectActivities(html){
@@ -37,14 +38,16 @@ export function parseProjectActivities(html){
 }
 export async function projectSource(env,u,projectId){
  const project=advanceProjects.find(p=>p.id===projectId);if(!project)fail(400,'Pilih proyek yang tersedia.');
- if(!project.slug)return {...project,activities:[],unconfigured:true};
+ const configured=projectId==='APRIL'?await loadBudget(env):null;
+ if(!project.slug&&!configured)return {...project,activities:[],unconfigured:true};
  if(!env.FINANCE)fail(503,'Sumber anggaran proyek belum tersambung.');
  // Deliberately return only activity codes, approved ceilings and commitment
  // totals to the three authorized applicants. No bank ledger or other staff data.
- const response=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+project.url,{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
- if(!response.ok)fail(503,'Rincian anggaran proyek belum dapat dibaca.');
- const activities=parseProjectActivities(await response.text());
- const source={...project,activities,unconfigured:!activities.length,missingBudget:!activities.length||activities.some(a=>a.budget===null),asOf:new Date().toISOString()};
+ let activities;
+ if(configured)activities=configured.activities;
+ else {const response=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+project.url,{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
+ if(!response.ok)fail(503,'Rincian anggaran proyek belum dapat dibaca.');activities=parseProjectActivities(await response.text());}
+ const source={...project,...(configured?{liveBudget:true,budgetSummary:{servicesTotal:configured.servicesTotal,annualActivitiesTotal:configured.annualActivitiesTotal,periodTotal:configured.periodTotal,contractStart:configured.contractStart,contractEnd:configured.contractEnd,periodStart:configured.periodStart,periodEnd:configured.periodEnd}}:{}),activities,unconfigured:!activities.length,missingBudget:!activities.length||activities.some(a=>a.budget===null),asOf:new Date().toISOString()};
  const archiveResponse=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+'/finance/api/requests',{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
  if(!archiveResponse.ok)fail(503,'Arsip UM belum dapat disinkronkan. Muat ulang sebelum mengajukan.');
  const archiveData=await archiveResponse.json();if(!Array.isArray(archiveData.requests))fail(503,'Format arsip UM belum dapat disinkronkan.');
