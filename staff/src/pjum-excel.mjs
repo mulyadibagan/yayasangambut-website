@@ -18,7 +18,7 @@ export function importPjumExcel(bytes){
  const cells=new Map([...doc(target.startsWith('/')?target.slice(1):target.startsWith('xl/')?target:'xl/'+target).matchAll(/<c\s([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)].map(c=>{const content=c[2]||'',v=content.match(/<v>([^<]*)<\/v>/)?.[1];return [attr(c[1],'r'),attr(c[1],'t')==='s'?ss[Number(v)]:attr(c[1],'t')==='inlineStr'?texts(content):v];}));
  const get=(col,r)=>cells.get(col+r),items=[],warnings=[];let activity='';
  for(let r=1;r<=2000;r++){
-  if(/^\d+(?:\.\d+)+\.?$/.test(String(get('A',r)||'').trim()))activity=String(get('A',r)).trim().replace(/\.$/,'');
+  const code=String(get('A',r)||'').trim().match(/^(\d+(?:\.\d+)+)\.?(?:\s|$)/);if(code)activity=code[1];
   if(!/^\d+(?:\.\d+)?$/.test(get('A',r)||'')||!get('B',r))continue;
   const serial=Number(get('A',r));if(serial<36526||serial>73050)continue;
   if(!get('K',r))fail(400,'Nomor kuitansi belum diisi pada baris '+r+'.');
