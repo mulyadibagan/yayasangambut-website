@@ -106,7 +106,7 @@ export async function advancesRoute(req,env,u){
  }
  if(path===prefix+'/api/project'&&req.method==='GET'){
   const url=new URL(req.url),source=await projectSource(env,u,url.searchParams.get('id'));
-  const records=(await q(env,'SELECT id,status,payload FROM yg_advance_requests').all()).results;
+  const records=(await q(env,'SELECT id,status,payload,report FROM yg_advance_requests').all()).results;
   return json(projectCommitments(source,records,url.searchParams.get('exclude')));
  }
  if(path===prefix+'/api'){

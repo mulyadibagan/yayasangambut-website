@@ -1,4 +1,5 @@
 import {fail} from './core.mjs';
+import {syncArchive,archiveAllocations} from './advance-sync.mjs';
 
 export const advanceProjects=[
  ['ARC3','Aramco Phase 3','aramco-phase-3'],['SPMCLS','SPM-CLS','spm-cls'],
@@ -43,19 +44,34 @@ export async function projectSource(env,u,projectId){
  const response=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+project.url,{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
  if(!response.ok)fail(503,'Rincian anggaran proyek belum dapat dibaca.');
  const activities=parseProjectActivities(await response.text());
- return {...project,activities,unconfigured:!activities.length,missingBudget:!activities.length||activities.some(a=>a.budget===null),asOf:new Date().toISOString()};
+ const source={...project,activities,unconfigured:!activities.length,missingBudget:!activities.length||activities.some(a=>a.budget===null),asOf:new Date().toISOString()};
+ const archiveResponse=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+'/finance/api/requests',{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
+ if(!archiveResponse.ok)fail(503,'Arsip UM belum dapat disinkronkan. Muat ulang sebelum mengajukan.');
+ const archiveData=await archiveResponse.json();if(!Array.isArray(archiveData.requests))fail(503,'Format arsip UM belum dapat disinkronkan.');
+ return syncArchive(source,archiveData.requests);
 }
 export const reservedStatus=s=>!['draft','returned','cancelled'].includes(s);
 export function projectCommitments(source,requests,excludeId){
  return {...source,activities:source.activities.map(a=>{
-  let draft=0,pending=0,disbursed=0;
-  for(const request of requests){if(request.id===excludeId||request.status==='cancelled')continue;const p=typeof request.payload==='string'?JSON.parse(request.payload):request.payload;if(p.legacy||p.project_id!==source.id)continue;
-   const allocation=p.allocations?.find(x=>x.code===a.code);if(!allocation)continue;
+  let draft=0,pending=a.archivePending||0,disbursed=0,reported=0,reportDraft=0,outstanding=a.archiveOutstanding||0;
+  for(const request of requests){if(request.id===excludeId||request.status==='cancelled')continue;const p=typeof request.payload==='string'?JSON.parse(request.payload):request.payload;
+   const legacy=p.legacy,allocations=legacy?archiveAllocations(source,{...legacy,code:legacy.code,project:legacy.project}):p.allocations;
+   if(!legacy&&p.project_id!==source.id)continue;
+   if(legacy&&!source.archive?.some(r=>r.id===legacy.id))continue;
+   const allocation=allocations?.find(x=>x.code===a.code);if(!allocation)continue;
+   const report=typeof request.report==='string'?JSON.parse(request.report):request.report;
+   const value=report?(allocations.length===1?report.total:(report.items||[]).filter(i=>i.activity_code===a.code).reduce((n,i)=>n+i.subtotal,0)):0;
+   if(report){
+    if(['pjum_submitted','pjum_checked','settlement','closed'].includes(request.status)){
+     const existing=legacy?source.archive.find(r=>r.id===legacy.id)?.reported||0:0,delta=Math.max(0,(value||0)-existing);reported+=delta;if(legacy)outstanding=Math.max(0,outstanding-delta);
+    }else reportDraft+=value||0;
+   }
+   if(legacy)continue;
    if(['draft','returned'].includes(request.status))draft+=allocation.amount;
    else if(['submitted','checked','approved'].includes(request.status))pending+=allocation.amount;
-   else disbursed+=allocation.amount;
+   else {disbursed+=allocation.amount;if(request.status!=='closed')outstanding+=Math.max(0,allocation.amount-(['pjum_submitted','pjum_checked','settlement'].includes(request.status)?value||0:0));}
   }
-  return {...a,draft,pending,disbursed,remaining:source.closed?0:a.budget===null?null:Math.max(0,a.budget-a.legacyCommitted-pending-disbursed)};
+  return {...a,draft,pending,disbursed,reported:(a.legacyRealized||0)+reported,reportDraft,outstanding,remaining:source.closed?0:a.budget===null?null:Math.max(0,a.budget-a.legacyCommitted-pending-disbursed)};
  })};
 }
 export async function linkAdvanceProject(env,u,data){
@@ -65,7 +81,7 @@ export async function linkAdvanceProject(env,u,data){
  const amounts=new Map();for(const item of data.items){if(!item.activity_code)fail(400,'Pilih kode kegiatan untuk setiap baris biaya.');amounts.set(item.activity_code,(amounts.get(item.activity_code)||0)+item.subtotal);}
  data.allocations=[...amounts].map(([code,amount])=>{
   const row=source.activities.find(a=>a.code===code)||(source.missingBudget?{name:data.activity,budget:null,legacyCommitted:0}:null);if(!row||row.management)fail(400,'Pos kegiatan tidak tersedia untuk UM. Biaya staf diajukan melalui pengajuan gaji.');
-  return {code,name:row.name,amount,budget:row.budget,legacyCommitted:row.legacyCommitted};
+  return {code,name:row.name,amount,budget:row.budget,legacyCommitted:row.legacyCommitted+(row.archivePending||0)};
  });
  return data;
 }

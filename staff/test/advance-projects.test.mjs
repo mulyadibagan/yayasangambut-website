@@ -17,7 +17,7 @@ test('project ceilings come from the same activity cards and existing commitment
  assert.equal(projectCommitments({id:'X',activities},rows,'1').activities[0].remaining,700000);
 });
 test('server owns project names and allocation ceilings, and rejects unknown activity codes',async()=>{
- const env={APP_ORIGIN:'https://staff.yayasangambut.org',FINANCE:{fetch:async()=>new Response(html)}};
+ const env={APP_ORIGIN:'https://staff.yayasangambut.org',FINANCE:{fetch:async r=>r.url.includes('/api/requests')?Response.json({requests:[]}):new Response(html)}};
  const data={project_id:'ARC3',project:'forged',items:[{activity_code:'1.1',subtotal:100000}]};const out=await linkAdvanceProject(env,{email:'director'},data);assert.equal(out.project,'Aramco Phase 3');assert.equal(out.allocations[0].budget,1000000);
  await assert.rejects(()=>linkAdvanceProject(env,{}, {...data,items:[{activity_code:'unknown',subtotal:1}]}),e=>e.status===400);
 });
@@ -26,4 +26,16 @@ test('database atomically prevents competing submissions exceeding the same budg
  const insert=db.prepare('INSERT INTO yg_advance_requests(id,creator,creator_email,creator_name,payload,total,last_event,created_at,updated_at) VALUES(?,\'u\',\'u\',\'u\',?,600,\'x\',\'2026-11-15\',\'2026-11-15\')');
  const payload=JSON.stringify({project_id:'ARC3',allocations:[{code:'1',amount:600,budget:1000,legacyCommitted:0}]});insert.run('a',payload);insert.run('b',payload);db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='a'").run();assert.throws(()=>db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='b'").run(),/ADVANCE_BUDGET_EXCEEDED/);
  db.prepare("UPDATE yg_advance_requests SET status='returned' WHERE id='a'").run();db.prepare("UPDATE yg_advance_requests SET status='submitted' WHERE id='b'").run();assert.equal(db.prepare("SELECT status FROM yg_advance_requests WHERE id='b'").get().status,'submitted');
+});
+
+test('a linked archive PJUM draft stays outstanding and a submitted report settles it without reserving UM twice',()=>{
+ const activities=[{code:'4.1',name:'Community-Based Protection',budget:1000,legacyCommitted:1000,legacyRealized:0,archiveOutstanding:1000}],archive=[{id:'old',reported:0}];
+ const payload={legacy:{id:'old',code:'4.1',amount:1000},allocations:[]},row={id:'linked',status:'pjum_draft',payload,report:{total:1000,items:[]}};
+ const draft=projectCommitments({id:'ARC3',activities,archive},[row]).activities[0];assert.equal(draft.remaining,0);assert.equal(draft.reportDraft,1000);assert.equal(draft.outstanding,1000);assert.equal(draft.disbursed,0);
+ const submitted=projectCommitments({id:'ARC3',activities,archive},[{...row,status:'pjum_submitted'}]).activities[0];assert.equal(submitted.reported,1000);assert.equal(submitted.outstanding,0);assert.equal(submitted.remaining,0);
+});
+
+test('live email reservations also update the database ceiling used by new UM submissions',async()=>{
+ const env={APP_ORIGIN:'https://staff.yayasangambut.org',FINANCE:{fetch:async r=>r.url.includes('/api/requests')?Response.json({requests:[{id:'email',type:'UM',project:'ARC3',code:'1.1',amount:300000,status:'Menunggu Persetujuan'}]}):new Response(html)}};
+ const data=await linkAdvanceProject(env,{email:'director'},{project_id:'ARC3',items:[{activity_code:'1.1',subtotal:100000}]});assert.equal(data.allocations[0].legacyCommitted,500000);
 });
