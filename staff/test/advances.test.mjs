@@ -72,3 +72,21 @@ test('batch OCR persists three page results once, rejects foreign evidence and r
 });
 
 async function reviewFixture(env,who,row){const item=row.report.items[0];row=await body(await call(env,who,'/'+row.id+'/scan','POST',{version:row.version,pages:[{file_id:item.file_id,page:item.page}]}));assert.equal(row.status,'pjum_draft');const other=who==='finance'?'director':'finance';await reject(()=>call(env,other,'/'+row.id+'/receipt_review','POST',{version:row.version,index:0,status:'matched'}),403);await reject(()=>call(env,who,'/'+row.id+'/receipt_review','POST',{version:row.version,index:0,status:'needs_fix',note:'Perlu koreksi'}),400);await reject(()=>call(env,who,'/'+row.id+'/receipt_review','POST',{version:row.version,index:0,status:'needs_fix',fields:['invalid'],note:'Perlu koreksi'}),400);row=await body(await call(env,who,'/'+row.id+'/receipt_review','POST',{version:row.version,index:0,status:'needs_fix',fields:['receipt_no'],note:'Nomor perlu diperbaiki'}));assert.equal(row.checks.unresolved,1);assert.deepEqual(row.checks.rows[0].manual.fields,['receipt_no']);assert.equal(row.status,'pjum_draft');const stale=row.version;row=await body(await call(env,who,'/'+row.id+'/receipt_review','POST',{version:row.version,index:0,status:'matched'}));assert.equal(row.checks.unresolved,0);assert.equal(row.checks.rows[0].manual.actor_email,users[who].email);assert.equal(row.ocr[0].result.error!==undefined,true);await reject(()=>call(env,who,'/'+row.id+'/receipt_review','POST',{version:stale,index:0,status:'matched'}),409);return row;}
+
+test('reporter can attach optional JPEG refund proof only for own draft surplus; it never changes expenditure',async()=>{
+ const {env,db}=setup();let row=await body(await call(env,'staff','','POST',sample));
+ db.prepare("UPDATE yg_advance_requests SET status='disbursed',paid_date='2026-11-01' WHERE id=?").run(row.id);
+ row=await body(await call(env,'staff','/'+row.id));
+ row=await body(await call(env,'staff','/'+row.id+'/report','POST',{version:row.version,items:[{...sample.items[0],rate:200000,date:'2026-11-01',receipt_no:'1',recipient:'Penerima'}]}));
+ const jpeg=(await import('jpeg-js')).default.encode({data:new Uint8Array(40*40*4).fill(255),width:40,height:40},80).data;
+ const send=(who,bytes,name='pengembalian.jpg')=>advancesRoute(new Request(origin+prefix+'/'+row.id+'/files?'+new URLSearchParams({purpose:'settlement',name,version:row.version}),{method:'POST',headers:{Origin:origin},body:bytes}),env,users[who]);
+ await reject(()=>send('director',jpeg),403);
+ await reject(()=>send('staff',new TextEncoder().encode('%PDF-invalid'),'bukti.pdf'),400);
+ const actual=row.actual,total=row.total;
+ row=await body(await send('staff',jpeg));
+ assert.equal(row.actual,actual);assert.equal(row.total,total);assert.equal(row.status,'pjum_draft');
+ assert.equal(row.files.at(-1).purpose,'settlement');assert.equal(row.files.at(-1).mime,'image/jpeg');
+ const preview=await call(env,'finance','/'+row.id+'/files/'+row.files.at(-1).id+'?preview=1');assert.match(preview.headers.get('Content-Disposition'),/^inline/);
+ db.prepare("UPDATE yg_advance_requests SET actual=total WHERE id=?").run(row.id);
+ await reject(()=>send('staff',jpeg),403);
+});

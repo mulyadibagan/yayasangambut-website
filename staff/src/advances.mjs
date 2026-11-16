@@ -58,7 +58,7 @@ async function mutate(env,row,u,action,changes,snapshot={}){
  }catch(e){if(String(e.message).includes('ADVANCE_BUDGET_EXCEEDED'))fail(409,'Pengajuan melebihi sisa pagu kegiatan atau pagu telah digunakan pengajuan lain. Muat ulang anggaran.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Referensi pembayaran sudah digunakan.');throw e;}
  return read(env,row.id);
 }
-const uploadAllowed=(u,row,purpose)=>purpose==='um'?own(u,row)&&['draft','returned'].includes(row.status):purpose==='pjum'?own(u,row)&&['disbursed','pjum_returned','pjum_draft'].includes(row.status):purpose==='payment'?advanceFinance(u)&&row.status==='approved':purpose==='settlement'?advanceFinance(u)&&row.status==='settlement':false;
+const uploadAllowed=(u,row,purpose)=>purpose==='um'?own(u,row)&&['draft','returned'].includes(row.status):purpose==='pjum'?own(u,row)&&['disbursed','pjum_returned','pjum_draft'].includes(row.status):purpose==='payment'?advanceFinance(u)&&row.status==='approved':purpose==='settlement'?(advanceFinance(u)&&row.status==='settlement'||own(u,row)&&['pjum_draft','pjum_returned'].includes(row.status)&&Number.isSafeInteger(row.actual)&&row.total>row.actual):false;
 async function proof(env,id,purpose){if(!await q(env,'SELECT id FROM yg_advance_files WHERE request_id=? AND purpose=?'+(purpose==='pjum'?" AND mime IN ('application/pdf','image/jpeg','image/png')":''),id,purpose).first())fail(400,'Unggah dokumen pendukung '+({pjum:'PJUM',payment:'pencairan',settlement:'penyelesaian'}[purpose]||'UM')+' terlebih dahulu.');}
 export async function advancesRoute(req,env,u){
  if(!advanceAccess(u))fail(403,'Pengajuan UM hanya tersedia untuk Mulyadi, Zamharir, dan Riena.');
@@ -152,6 +152,7 @@ export async function advancesRoute(req,env,u){
   const name=string(url.searchParams.get('name'),180),bytes=await binary(req),size=bytes.length;
   let mime=new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':bytes[0]===255&&bytes[1]===216&&bytes[2]===255?'image/jpeg':bytes[0]===137&&bytes[1]===80&&bytes[2]===78&&bytes[3]===71?'image/png':null;
   if(!mime&&purpose==='pjum'&&/\.xlsx$/i.test(name)){const {importPjumExcel}=await import('./pjum-excel.mjs');importPjumExcel(bytes);mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';}
+  if(purpose==='settlement'&&row.status!=='settlement'&&mime!=='image/jpeg')fail(400,'Gunakan JPEG (.jpg atau .jpeg) untuk bukti transfer pengembalian sisa UM.');
   if(!mime)fail(400,'Gunakan PDF, JPG, PNG, atau Excel PJUM YG (.xlsx).');if(!env.MEDIA)fail(503,'Penyimpanan lampiran belum tersedia.');
   const similar=(await q(env,'SELECT storage_key FROM yg_advance_files WHERE request_id=? AND purpose=? AND filename=? AND size=? AND mime=? LIMIT 5',id,purpose,name,size,mime).all()).results;
   if(similar.length){const hash=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b)),v=>v.toString(16).padStart(2,'0')).join(''),digest=await hash(bytes);for(const prior of similar){const object=await env.MEDIA.get(prior.storage_key);if(object){const old=object.arrayBuffer?await object.arrayBuffer():await new Response(object.body).arrayBuffer();if(await hash(old)===digest)return json(await detail(env,row));}}}
