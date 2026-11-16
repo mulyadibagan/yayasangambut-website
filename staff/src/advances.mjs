@@ -130,7 +130,7 @@ export async function advancesRoute(req,env,u){
  const [,id,action,fileId]=match,row=await read(env,id);visible(u,row);
  if(action==='files'&&fileId&&req.method==='GET'){
   const file=await q(env,'SELECT * FROM yg_advance_files WHERE id=? AND request_id=?',fileId,id).first();if(!file)fail(404,'Berkas tidak ditemukan.');const object=await env.MEDIA.get(file.storage_key);if(!object)fail(404,'Berkas belum tersedia.');
-  return new Response(object.body,{headers:{'Content-Type':file.mime,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+  return new Response(object.body,{headers:{'Content-Type':file.mime,'Content-Disposition':(new URL(req.url).searchParams.get('preview')==='1'&&['application/pdf','image/jpeg','image/png'].includes(file.mime)?"inline":"attachment")+"; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(action==='excel'&&req.method==='GET'){
   const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/um-template-yg.xlsx'));

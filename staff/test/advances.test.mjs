@@ -16,6 +16,13 @@ async function call(env,user,path='',method='GET',data){return advancesRoute(new
 const body=async r=>r.json();
 async function reject(fn,status){await assert.rejects(fn,e=>e.status===status);}
 async function upload(env,user,row,purpose,pages=1){const {PDFDocument}=await import('pdf-lib');const pdf=await PDFDocument.create();for(let i=0;i<pages;i++)pdf.addPage();const proof=await pdf.save();const r=await advancesRoute(new Request(origin+prefix+'/'+row.id+'/files?'+new URLSearchParams({purpose,name:'bukti.pdf',version:row.version}),{method:'POST',headers:{Origin:origin},body:proof}),env,users[user]);return r.json();}
+
+test('PDF preview stays private and inline only when requested; default download remains available',async()=>{
+ const {env}=setup();let row=await body(await call(env,'staff','','POST',sample));row=await upload(env,'staff',row,'um');const path='/'+row.id+'/files/'+row.files[0].id;
+ const preview=await call(env,'staff',path+'?preview=1');assert.equal(preview.status,200);assert.match(preview.headers.get('Content-Disposition'),/^inline;/);assert.equal(preview.headers.get('Content-Type'),'application/pdf');assert.match(preview.headers.get('Cache-Control'),/private/);
+ const download=await call(env,'staff',path);assert.match(download.headers.get('Content-Disposition'),/^attachment;/);
+ await reject(()=>call(env,'other',path+'?preview=1'),403);
+});
 test('only the three named active accounts can submit; volume arithmetic is server-owned',()=>{for(const who of ['director','finance','staff'])assert.equal(advanceAccess(users[who]),true);assert.equal(advanceAccess(users.other),false);assert.equal(advanceAccess({...users.staff,disabled:1}),false);assert.equal(advanceInput({...sample,total:1}).total,1000000);assert.throws(()=>advanceInput({...sample,items:[{...sample.items[0],quantity:-1}]}));assert.throws(()=>advanceInput({...sample,end:'2026-10-01'}));});
 test('end-to-end UM, PJUM and refund with finance review, immutable evidence and audit',async()=>{
  const {env,db,objects}=setup();let row=await body(await call(env,'staff','','POST',sample));assert.equal(row.total,1000000);assert.match(row.number,/^UM-20\d{2}-\d{5}$/);const id=row.id;
