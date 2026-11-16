@@ -27,7 +27,7 @@ function render(){
  $('#files').replaceChildren();for(const file of current?.files||[]){const d=el('div',undefined,{className:'file-row'}),a=el('a',file.filename,{href:api+'/'+current.id+'/files/'+file.id,target:'_blank',rel:'noopener'});d.append(a,el('small',({um:'Pengajuan UM',pjum:'Bukti PJUM',payment:'Bukti pencairan',settlement:'Bukti penyelesaian'}[file.purpose])+' · '+file.actor_email));$('#files').append(d);}if(!current?.files?.length)$('#files').append(el('p','Belum ada lampiran.'));
  $('#events').replaceChildren();const eventNames={created:'Draf dibuat',updated:'Draf diperbarui',submit:'UM diajukan',check:'UM diperiksa',approve:'UM disetujui',return:'UM dikembalikan',disburse:'Pencairan dicatat',report:'Draf PJUM disimpan',report_submit:'PJUM diajukan',report_check:'PJUM diperiksa',report_approve:'PJUM disetujui',report_return:'PJUM dikembalikan',settle:'Selisih diselesaikan',cancel:'Pengajuan dibatalkan',file_added:'Lampiran ditambahkan',receipt_review:'Kuitansi diperiksa pelapor'};
  for(const event of current?.events||[]){const p=el('div',eventNames[event.action]||event.action,{className:'event'});p.append(el('small',event.actor_email+' · '+new Date(event.created_at).toLocaleString('id-ID')));if(event.snapshot.note)p.append(el('p',event.snapshot.note));$('#events').append(p);}
- $('#payment-date').value=date();$('#payment-reference').value='';$('#action-note').value='';$('#upload').value='';$('#settlement-amount').value=current?Math.abs(current.total-(current.actual??current.total)):0;totals();permissions();list();refreshPjumChoices();renderPairSummary();
+ $('#payment-date').value=date();$('#payment-reference').value='';$('#action-note').value='';$('#upload').value='';$('#settlement-amount').value=current?Math.abs(current.total-(current.actual??current.total)):0;totals();permissions();list();refreshPjumChoices();renderPairSummary();renderReviewSummary();
 }
 function permissions(){
  const edit=editable(),rep=reportEditable(),s=current?.status,manager=me.finance||me.director;$('#um-form').querySelectorAll('input,textarea,button').forEach(e=>e.disabled=!edit);$('#save').hidden=!edit;$('#add-um').hidden=!edit;
@@ -58,7 +58,7 @@ async function setupProjects(){
  projects=await request('/projects');
  for(const id of ['#project-choice','#overview-project'])$(id).replaceChildren(el('option','Pilih proyek',{value:''}),...projects.map(p=>el('option',p.name+(p.closed?' · ditutup':''),{value:p.id,disabled:id==='#project-choice'&&p.closed})));
  const params=new URLSearchParams(location.search),id=params.get('project');
- const reportId=params.get('id');if(reportId&&/^[a-f0-9-]{36}$/.test(reportId)){current=await request('/'+reportId);dirty=false;const review=me.finance||me.director&&params.get('view')==='review';setMode(!review);render();if(review){$('#page-title').textContent='Pemeriksaan PJUM';$('#page-description').textContent=me.finance?'Periksa laporan, dokumen, dan catatan PJUM.':'Tampilan pemeriksaan untuk Direktur. Pemeriksaan Finance tetap dilakukan oleh Riena.';$('#pjum-manual').open=true;$('#receipt-notes').open=true;}}
+ const reportId=params.get('id');if(reportId&&/^[a-f0-9-]{36}$/.test(reportId)){current=await request('/'+reportId);dirty=false;const review=me.finance||me.director&&params.get('view')==='review';setMode(!review);render();if(review){$('#page-title').textContent='Pemeriksaan PJUM';$('#page-description').textContent=me.finance?'Periksa laporan, dokumen, dan catatan PJUM.':'Tampilan pemeriksaan untuk Direktur. Pemeriksaan Finance tetap dilakukan oleh Riena.';$('#pjum-manual').open=false;$('#receipt-notes').open=false;}}
  if(projects.some(p=>p.id===id)){$('#overview-project').value=id;await loadOverview();if(params.get('activity'))await chooseActivity(id,params.get('activity'));}
 }
 async function loadBudget(){
@@ -218,3 +218,28 @@ $('#pair-form').onsubmit=e=>{e.preventDefault();run(async()=>{
   dirty=false;await reload();render();$('#pjum-manual').open=false;$('#receipt-notes').open=false;notice('Draf PJUM tersimpan. Hasil kelengkapan dan tombol kirim tersedia di atas.');
  }catch(error){if(current){dirty=false;await reload();render();$('#pjum-manual').open=/Jumlah halaman|rincian|Nomor kuitansi|Penerima/i.test(error.message);}progress(error.message);throw error;}finally{$('#quick-pjum').setAttribute('aria-busy','false');$('#pair-form').querySelectorAll('input').forEach(e=>e.disabled=false);}
 });};
+
+function renderReviewSummary(){
+ const box=$('#simple-pjum-review'),review=!!current?.report&&(me.finance||me.director&&new URLSearchParams(location.search).get('view')==='review')&&['pjum_submitted','pjum_checked','pjum_returned','settlement','closed'].includes(current.status);
+ document.body.classList.toggle('pjum-review',review);document.body.classList.toggle('pjum-settlement',review&&current.status==='settlement');
+ box.hidden=!review;box.replaceChildren();if(!review)return;
+ $('#advanced-workspace').open=true;$('#quick-pjum').hidden=true;$('#detail').hidden=false;document.body.classList.remove('pjum-mode');
+ $('#page-title').textContent='Pemeriksaan PJUM';$('#page-description').textContent='Periksa ringkasan dan dokumen laporan, lalu catat hasil pemeriksaan.';
+ $('#title').textContent=(current.payload.activity||'').replace(/^(?:pengajuan\s+)?(?:uang\s+muka|UM)\b[\s:–—-]*/i,'');
+ const report=current.report,difference=current.total-report.total,summary=el('div',undefined,{className:'pair-summary'});
+ for(const [label,value] of [['UM diterima',money(current.total)],['Realisasi pengeluaran',money(report.total)],[difference<0?'Kekurangan dana':'Sisa UM',money(Math.abs(difference))],['Tanggal laporan',report.report_date]]){const card=el('div',label);card.append(el('strong',value));summary.append(card);}
+ box.append(summary,el('h3','Dokumen untuk diperiksa'));
+ const documents=el('div',undefined,{className:'review-documents'}),files=(current.files||[]).filter((f,index,all)=>f.purpose==='settlement'||f.purpose==='pjum'&&(f.mime==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'?!all.slice(index+1).some(next=>next.purpose==='pjum'&&next.mime===f.mime):report.items.some(item=>item.file_id===f.id)));
+ for(const file of files){
+ const archive=current.drive?.files?.find(d=>d.file_id===file.id&&d.status==='archived'),excel=file.mime==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',label=file.purpose==='settlement'?'Bukti pengembalian sisa UM':excel?'Laporan Excel':file.mime==='application/pdf'?'PDF kuitansi':'Dokumen pendukung';
+ const card=el('article'),url=archive?.web_url||api+'/'+current.id+'/files/'+file.id+(excel?'':'?preview=1');
+ card.append(el('strong',label),el('p',file.filename),el('a',excel?(archive?'Buka Excel di Drive':'Unduh Excel'):'Lihat dokumen',{href:url,target:'_blank',rel:'noopener',className:'secondary'}));documents.append(card);
+ }
+ if(!files.length)documents.append(el('p','Dokumen laporan belum tersedia.'));box.append(documents);
+ if(difference===0)box.append(el('p','Tidak ada sisa UM yang perlu dikembalikan.',{className:'footnote'}));
+ else if(difference>0&&!files.some(f=>f.purpose==='settlement'))box.append(el('p','Bukti pengembalian sisa UM belum dilampirkan.',{className:'note'}));
+ const findings=(current.checks?.rows||[]).filter(r=>r.issues.length||r.warnings.length||r.notes?.length);
+ if(findings.length){const details=el('details');details.append(el('summary','Catatan analisis sistem · '+findings.length+' kuitansi'));for(const r of findings)details.append(el('p','Kuitansi '+r.receipt_no+': '+[...r.issues,...r.warnings,...(r.notes||[])].join('; ')));box.append(details);}
+ if(report.notes)box.append(el('p','Catatan pelapor: '+report.notes));
+ if(me.director&&current.status==='pjum_submitted')box.append(el('p','Menunggu pemeriksaan Bu Riena.',{className:'note'}));
+}
