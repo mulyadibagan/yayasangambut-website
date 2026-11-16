@@ -12,11 +12,11 @@ test('PJUM choices include own unpaid reports, exclude submitted reports and ded
  assert.equal(choices.at(-1).needsReview,true);assert.equal(choices.at(-2).requiresResolve,true);
 });
 
-test('completeness and OCR warnings stay distinct; incomplete, future and unscanned reports block sending',()=>{
+test('completeness and OCR warnings stay distinct; only incomplete and future reports block sending',()=>{
  const row={report:{items:[{}],report_date:'2026-11-16',notes:''},checks:{complete:true,rows:[{read:true,result:{error:'Unclear'},issues:[],warnings:['Manual check']}]}};
  assert.equal(pjumReadiness(row,'2026-11-16').complete,true);assert.equal(pjumReadiness(row,'2026-11-16').blocked,false);assert.equal(pjumReadiness(row,'2026-11-16').read,0);
  assert.equal(pjumReadiness(row,'2026-11-15').blocked,true);
- row.checks.rows[0].read=false;assert.equal(pjumReadiness(row,'2026-11-16').blocked,true);
+ row.checks.rows[0].read=false;row.checks.unresolved=4;assert.equal(pjumReadiness(row,'2026-11-16').blocked,false);
  row.report.notes='Pemeriksaan manual';assert.equal(pjumReadiness(row,'2026-11-16').blocked,false);
  row.checks.complete=false;assert.equal(pjumReadiness(row,'2026-11-16').blocked,true);
 });
