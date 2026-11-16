@@ -24,7 +24,7 @@ test('completeness and OCR warnings stay distinct; only incomplete and future re
 test('email compose uses the reporter account and exact private Finance link without sending',()=>{
  const row={id:'123',creator_email:'reporter@yayasangambut.org',creator_name:'Pelapor',number:'10/ARC3',payload:{activity:'Patroli'}};
  const url=new URL(pjumEmailDraft(row,row.creator_email));
- assert.equal(url.origin,'https://mail.google.com');assert.equal(url.searchParams.get('authuser'),row.creator_email);
+ assert.equal(url.searchParams.get('su'),'PJUM — Patroli — 10/ARC3');assert.equal(url.origin,'https://mail.google.com');assert.equal(url.searchParams.get('authuser'),row.creator_email);
  assert.equal(url.searchParams.get('to'),'rienaprasiddha@yayasangambut.org');
  assert.ok(url.searchParams.get('body').includes('https://staff.yayasangambut.org/finance/advances?id=123'));
  assert.equal(pjumEmailDraft(row,'other@yayasangambut.org'),null);
