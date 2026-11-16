@@ -26,3 +26,11 @@ test('ambiguous UM and mismatched PDF page counts never save a misleading report
 test('an OCR interruption preserves the saved draft and never submits it',async()=>{
  const f=fixture();await assert.rejects(()=>processPjumPair({...f.options,scan:async()=>{throw Error('Temporary failure');}}));assert.equal(f.latest.report.items.length,4);assert.equal(f.latest.status,'pjum_draft');
 });
+
+test('chosen UM takes precedence and mismatched workbook fails before resolving or uploading',async()=>{
+ const f=fixture();await assert.rejects(()=>processPjumPair({...f.options,selected:{...f.initial,number:'OTHER'}}),/berbeda dari UM yang dipilih/);
+ assert.deepEqual(f.calls,['preview']);
+ const g=fixture(),preview=g.options.preview;
+ const result=await processPjumPair({...g.options,selected:{...g.initial,requiresResolve:true},preview:async file=>({...await preview(file),um_number:''})});
+ assert.equal(result.id,g.initial.id);assert.equal(g.calls.filter(c=>Array.isArray(c)&&c[0]==='resolve').length,1);
+});

@@ -1,4 +1,6 @@
+import {pjumChoices} from '/pjum-options.js';
 const $=s=>document.querySelector(s),api='/finance/advances/api';
+let pjumOptions=[],pjumSelection=null,pjumArchive=[];
 let me,rows=[],current=null,busy=false,dirty=false;
 const labels={draft:'Draf UM',returned:'UM dikembalikan',submitted:'Pemeriksaan Keuangan',checked:'Persetujuan Direktur',approved:'Siap dicairkan',disbursed:'Menunggu PJUM',pjum_draft:'Draf PJUM',pjum_returned:'PJUM dikembalikan',pjum_submitted:'Pemeriksaan PJUM',pjum_checked:'Persetujuan PJUM',settlement:'Penyelesaian selisih',closed:'Selesai',cancelled:'Dibatalkan'};
 const money=n=>n===null?'Belum tersedia':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n||0);
@@ -23,7 +25,7 @@ function render(){
  $('#files').replaceChildren();for(const file of current?.files||[]){const d=el('div',undefined,{className:'file-row'}),a=el('a',file.filename,{href:api+'/'+current.id+'/files/'+file.id,target:'_blank',rel:'noopener'});d.append(a,el('small',({um:'Pengajuan UM',pjum:'Bukti PJUM',payment:'Bukti pencairan',settlement:'Bukti penyelesaian'}[file.purpose])+' · '+file.actor_email));$('#files').append(d);}if(!current?.files?.length)$('#files').append(el('p','Belum ada lampiran.'));
  $('#events').replaceChildren();const eventNames={created:'Draf dibuat',updated:'Draf diperbarui',submit:'UM diajukan',check:'UM diperiksa',approve:'UM disetujui',return:'UM dikembalikan',disburse:'Pencairan dicatat',report:'Draf PJUM disimpan',report_submit:'PJUM diajukan',report_check:'PJUM diperiksa',report_approve:'PJUM disetujui',report_return:'PJUM dikembalikan',settle:'Selisih diselesaikan',cancel:'Pengajuan dibatalkan',file_added:'Lampiran ditambahkan'};
  for(const event of current?.events||[]){const p=el('div',eventNames[event.action]||event.action,{className:'event'});p.append(el('small',event.actor_email+' · '+new Date(event.created_at).toLocaleString('id-ID')));if(event.snapshot.note)p.append(el('p',event.snapshot.note));$('#events').append(p);}
- $('#payment-date').value=date();$('#payment-reference').value='';$('#action-note').value='';$('#upload').value='';$('#settlement-amount').value=current?Math.abs(current.total-(current.actual??current.total)):0;totals();permissions();list();renderPairSummary();
+ $('#payment-date').value=date();$('#payment-reference').value='';$('#action-note').value='';$('#upload').value='';$('#settlement-amount').value=current?Math.abs(current.total-(current.actual??current.total)):0;totals();permissions();list();refreshPjumChoices();renderPairSummary();
 }
 function permissions(){
  const edit=editable(),rep=reportEditable(),s=current?.status,manager=me.finance||me.director;$('#um-form').querySelectorAll('input,textarea,button').forEach(e=>e.disabled=!edit);$('#save').hidden=!edit;$('#add-um').hidden=!edit;
@@ -38,7 +40,7 @@ function permissions(){
  $('#print').hidden=!current;$('#excel').hidden=!current||!!current.legacy_id;if(current)$('#excel').href=api+'/'+current.id+'/excel';
  $('#um-form').querySelectorAll('select').forEach(e=>e.disabled=!edit);if(rep)$('#upload-box').hidden=true;
 }
-async function reload(){rows=await request();list();if($('#overview-project').value)await loadOverview();}
+async function reload(){rows=await request();if(me.director||me.finance){try{pjumArchive=await request('/legacy');}catch(e){pjumArchive=[];notice('Arsip UM belum dapat dimuat. '+e.message);}}refreshPjumChoices();list();if($('#overview-project').value)await loadOverview();}
 async function saveUm(){if(!$('#um-form').reportValidity())return;const form=$('#um-form'),data=Object.fromEntries(['project_id','project','activity','location','start','end','notes','bank','account','account_name'].map(k=>[k,form.elements[k].value]));data.items=items('#um-items');current=await request(current?'/'+current.id:'',current?'PUT':'POST',{...data,...(current?{version:current.version}:{})});dirty=false;await reload();render();notice('Draf UM tersimpan.');}
 async function act(action){if(dirty)throw Error('Simpan perubahan draf sebelum melanjutkan.');const data={version:current.version,note:$('#action-note').value,evidence_reviewed:$('#evidence-reviewed').checked};if(['return','report_return'].includes(action)&&!data.note.trim())throw Error('Isi catatan perbaikan terlebih dahulu.');if(['disburse','settle'].includes(action)){data.date=$('#payment-date').value;data.reference=$('#payment-reference').value;if(action==='settle')data.amount=Number($('#settlement-amount').value);}if(action==='cancel'&&!confirm('Batalkan draf UM ini? Arsip tetap disimpan.'))return;if(['approve','report_approve'].includes(action)&&!confirm('Setujui '+(action==='approve'?'UM '+money(current.total):'PJUM '+money(current.actual))+' ini?'))return;current=await request('/'+current.id+'/'+action,'POST',data);dirty=false;await reload();render();notice('Status pengajuan diperbarui.');}
 $('#new').onclick=()=>run(async()=>{if(dirty&&!confirm('Ada draf belum disimpan. Buat pengajuan baru?'))return;current=null;dirty=false;render();$('#quick-pjum').hidden=true;});$('#refresh').onclick=()=>run(async()=>{if(dirty&&!confirm('Muat ulang dan abaikan perubahan belum disimpan?'))return;await reload();if(current){current=await request('/'+current.id);dirty=false;render();}});$('#search').oninput=list;$('#filter').onchange=list;
@@ -130,6 +132,19 @@ $('#load-legacy').onclick=()=>run(async()=>{
 });
 $('#legacy-form').onsubmit=e=>{e.preventDefault();run(async()=>{const f=e.target;if(!f.reportValidity())return;current=await request('/legacy','POST',{id:selectedLegacy.id,owner_email:f.elements.owner_email.value,paid_date:f.elements.paid_date.value,reference:f.elements.reference.value,confirm_existing_payment:f.elements.confirmed.checked});dirty=false;f.hidden=true;await reload();render();notice('UM lama terhubung. Unggah PDF kuitansi dan impor Excel PJUM.');});};
 
+function refreshPjumChoices(){
+ pjumOptions=pjumChoices(rows,pjumArchive,me);const select=$('#pjum-um');
+ select.replaceChildren(el('option',pjumOptions.length?'Pilih UM asal':'Tidak ada UM yang belum dilaporkan',{value:''}),...pjumOptions.map(r=>el('option',r.number+' · '+r.title+' · '+money(r.amount)+(r.needsReview?' · Periksa pencairan di arsip':''),{value:r.key,disabled:r.needsReview})));
+ const match=current&&pjumOptions.find(r=>r.id===current.id)||pjumSelection&&pjumOptions.find(r=>r.key===pjumSelection.key);pjumSelection=match||null;select.value=match?.key||'';
+ $('#pjum-choice-note').textContent=match?match.number+' · '+match.project+' · '+money(match.amount):pjumOptions.length?'Pilih UM yang sudah dicairkan. PJUM yang telah dikirim tidak ditampilkan.':'Belum ada UM yang dapat dilaporkan untuk akun ini. UM arsip yang belum terhubung perlu diperiksa Finance.';
+}
+$('#pjum-um').onchange=()=>run(async()=>{
+ const selected=pjumOptions.find(r=>r.key===$('#pjum-um').value);
+ if(dirty&&!confirm('Abaikan perubahan draf yang belum disimpan?')){refreshPjumChoices();return;}
+ pjumSelection=selected||null;dirty=false;current=selected?.id?await request('/'+selected.id):null;
+ if(current)render();else{$('#detail').hidden=true;$('#pair-form').hidden=false;$('#pair-result').replaceChildren();}
+ refreshPjumChoices();$('#pair-progress').textContent='';
+});
 function renderPairSummary(){
  const box=$('#pair-result');box.replaceChildren();if(!current?.report)return;
  const report=current.report,checks=current.checks,read=checks?.rows.filter(r=>r.read&&!r.result?.error).length||0,missing=checks?.rows.filter(r=>r.issues.length).length||0;
@@ -142,14 +157,14 @@ function renderPairSummary(){
 }
 $('#new-pjum').onclick=()=>run(async()=>{
  if(dirty&&!confirm('Buka pelaporan baru dan abaikan perubahan yang belum disimpan?'))return;
- current=null;dirty=false;$('#quick-pjum').hidden=false;$('#detail').hidden=true;$('#empty').hidden=false;$('#pair-form').hidden=false;$('#pair-result').replaceChildren();$('#pair-progress').textContent='';$('#quick-pjum').scrollIntoView({behavior:'smooth',block:'start'});
+ current=null;pjumSelection=null;dirty=false;await reload();$('#quick-pjum').hidden=false;$('#detail').hidden=true;$('#empty').hidden=false;$('#pair-form').hidden=false;$('#pair-result').replaceChildren();$('#pair-progress').textContent='';$('#quick-pjum').scrollIntoView({behavior:'smooth',block:'start'});
 });
 $('#pair-form').onsubmit=e=>{e.preventDefault();run(async()=>{
  const excel=$('#pair-excel').files[0],receipts=$('#pair-receipts').files[0];if(dirty)throw Error('Ada perubahan manual yang belum disimpan. Simpan rincian atau muat ulang sebelum memproses berkas.');
  const {processPjumPair}=await import('/pjum-pair.js');
  const progress=s=>$('#pair-progress').textContent=s;$('#quick-pjum').setAttribute('aria-busy','true');$('#pjum-form').querySelectorAll('input,select,textarea').forEach(e=>e.disabled=true);$('#pair-form').querySelectorAll('input').forEach(e=>e.disabled=true);
  try{
-  current=await processPjumPair({excel,receipts,selected:current&&reportEditable()?current:null,
+  current=await processPjumPair({excel,receipts,selected:current&&reportEditable()?current:pjumSelection,
    preview:async file=>{const r=await fetch(api+'/pjum_preview',{method:'POST',body:file}),p=await r.json();if(!r.ok)throw Error(p.error||'Excel belum dapat dibaca.');return p;},
    resolve:async um_number=>(current=await request('/pjum_resolve','POST',{um_number})),
    upload:async(row,file)=>{current=row;await sendFile(file);return current;},

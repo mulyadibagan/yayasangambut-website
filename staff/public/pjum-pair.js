@@ -6,8 +6,11 @@ export async function processPjumPair({excel,receipts,selected,preview,resolve,u
  if(excel.size>5*1024*1024||receipts.size>5*1024*1024)throw Error('Setiap berkas maksimal 5 MB.');
  progress('Membaca Excel PJUM…');const parsed=await preview(excel),norm=s=>String(s||'').replace(/\s/g,'').toUpperCase();
  let row;
- if(parsed.um_number)row=await resolve(parsed.um_number);
- else if(selected)row=selected;
+ if(selected){
+  if(parsed.um_number&&norm(selected.number)!==norm(parsed.um_number))throw Error('Nomor UM pada Excel berbeda dari UM yang dipilih. Periksa kembali sebelum mengunggah.');
+  row=selected.requiresResolve?await resolve(selected.number):selected;
+ }
+ else if(parsed.um_number)row=await resolve(parsed.um_number);
  else throw Error('Nomor UM asal belum ditemukan pada Excel. Pilih UM asal dari daftar, lalu proses kembali.');
  if(parsed.um_number&&norm(row.number)!==norm(parsed.um_number))throw Error('Nomor UM berbeda dari Excel.');
  progress('Menyimpan kedua berkas…');row=await upload(row,receipts);row=await upload(row,excel);
