@@ -1,3 +1,4 @@
+import {Buffer} from 'node:buffer';
 import jpeg from 'jpeg-js';
 import {PDFDocument,PDFName,PDFRawStream,PDFDict} from 'pdf-lib';
 import {fail} from './core.mjs';
@@ -62,6 +63,7 @@ export async function receiptImage(bytes,mime,page){
  return {bytes:scans[0].bytes,mime:'image/jpeg'};
 }
 export function receiptNumberCrop(bytes){
+ globalThis.Buffer??=Buffer;
  const decoded=jpeg.decode(bytes,{useTArray:true,maxResolutionInMP:12,maxMemoryUsageInMB:128});
  const left=Math.floor(decoded.width*.5),width=decoded.width-left,height=Math.max(1,Math.ceil(decoded.height*.2)),data=new Uint8Array(width*height*4);
  for(let y=0;y<height;y++)data.set(decoded.data.subarray((y*decoded.width+left)*4,(y*decoded.width+left+width)*4),y*width*4);

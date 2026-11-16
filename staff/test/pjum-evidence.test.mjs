@@ -5,7 +5,7 @@ import {registerHooks} from 'node:module';
 import {zipSync,strToU8} from 'fflate';
 const hook=registerHooks({resolve(s,c,next){if(s==='sanitize-html')return {url:'data:text/javascript,export default ()=>""',shortCircuit:true};return next(s,c);}});
 const {importPjumExcel}=await import('../src/pjum-excel.mjs');
-const {receiptChecks,receiptImage,scanReceipt}=await import('../src/pjum-evidence.mjs');
+const {receiptChecks,receiptImage,receiptNumberCrop,scanReceipt}=await import('../src/pjum-evidence.mjs');
 const {PDFDocument}=await import('pdf-lib');
 hook.deregister();
 function workbook(extra=''){
@@ -56,3 +56,5 @@ test('number retry reads a cropped top-right margin and preserves previously rea
  const result=await scanReceipt(env,bytes,'image/jpeg',1,previous);assert.equal(calls,1);assert.equal(result.receipt_no,'1');assert.equal(result.amount,previous.amount);assert.equal(result.recipient,previous.recipient);
  env.AI.run=async()=>({response:'{\"receipt_no\":null}'});const unread=await scanReceipt(env,bytes,'image/jpeg',1,previous);assert.equal(unread.receipt_no,null);assert.equal(unread.amount,previous.amount);
 });
+
+test('header JPEG encoding works when the worker has no global Buffer',async()=>{const {default:jpeg}=await import('jpeg-js');const bytes=jpeg.encode({data:new Uint8Array(40000).fill(255),width:100,height:100},90).data;const saved=globalThis.Buffer;try{delete globalThis.Buffer;const cropped=receiptNumberCrop(bytes);assert.ok(cropped.length>0);}finally{globalThis.Buffer=saved;}});
