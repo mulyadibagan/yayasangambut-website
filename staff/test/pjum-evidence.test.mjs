@@ -49,3 +49,10 @@ test('Excel file selection reaches the import API while genuinely edited report 
  runInContext("dirty=false;current={id:'sent',creator:'mul',creator_name:'Mulyadi',number:'10/ARC3',status:'pjum_submitted',total:100,actual:100,payload:{activity:'Monitoring'},report:{items:[{receipt_no:'1',date:'2026-11-01',recipient:'Tim',description:'Honor',subtotal:100,file_id:'pdf',page:1}],report_date:'2026-11-16',total:100,notes:''},checks:{complete:true,rows:[{index:0,receipt_no:'1',issues:[],warnings:[],read:true,result:{}}]},files:[{id:'pdf',purpose:'pjum',mime:'application/pdf',filename:'kuitansi.pdf'}]};rows=[current,{...current,id:'sent2',number:'11/ARC3',status:'pjum_draft'}];renderSubmittedPjum();renderPairSummary();",context);
  assert.equal(document.querySelectorAll('#submitted-pjum-list button').length,2);assert.equal(document.querySelector('#send-pjum'),null);assert.ok(document.querySelector('.pjum-report-preview').open);assert.match(document.querySelector('.pjum-saved-files a').href,/preview=1/);
 });
+
+test('number retry reads a cropped top-right margin and preserves previously read receipt fields',async()=>{
+ const {default:jpeg}=await import('jpeg-js');const data=new Uint8Array(100*100*4).fill(255);const bytes=jpeg.encode({data,width:100,height:100},90).data;let calls=0;const previous={receipt_no:null,recipient:'Seplia Pikar',date:'2026-09-28',amount:1500000,description:'Honor'};
+ const env={AI:{async run(model,input){calls++;const content=input.messages[0].content;assert.match(content[0].text,/Never infer/);const image=jpeg.decode(Buffer.from(content[1].image_url.url.split(',')[1],'base64'));assert.equal(image.width,50);assert.equal(image.height,20);return {response:'{\"receipt_no\":\"1\"}'};}}};
+ const result=await scanReceipt(env,bytes,'image/jpeg',1,previous);assert.equal(calls,1);assert.equal(result.receipt_no,'1');assert.equal(result.amount,previous.amount);assert.equal(result.recipient,previous.recipient);
+ env.AI.run=async()=>({response:'{\"receipt_no\":null}'});const unread=await scanReceipt(env,bytes,'image/jpeg',1,previous);assert.equal(unread.receipt_no,null);assert.equal(unread.amount,previous.amount);
+});
