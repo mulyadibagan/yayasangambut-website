@@ -25,7 +25,7 @@ test('missing, duplicate, future or wrong-ownership evidence never passes comple
  assert.equal(receiptChecks({items:[{...item,file_id:'another-request'}]},[file],[scan]).complete,false);
  assert.equal(receiptChecks({items:[{...item,date:'2099-01-01'}]},[file],[scan]).complete,false);
  assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,amount:1}}]).matched,0);
- assert.match(receiptChecks({items:[item]},[file],[scan],'2026-10-05').rows[0].warnings.join(),/mendahului/);
+ assert.match(receiptChecks({items:[item]},[file],[scan],'2026-10-05').rows[0].notes.join(),/mendahului/);
  assert.equal(receiptChecks({items:[item]},[file],[]).rows[0].read,false);
 });
 test('unsupported PDFs remain explicitly manual and invalid pages are rejected',async()=>{
@@ -60,3 +60,5 @@ test('number retry reads a cropped top-right margin and preserves previously rea
 test('header JPEG encoding works when the worker has no global Buffer',async()=>{const {default:jpeg}=await import('jpeg-js');const bytes=jpeg.encode({data:new Uint8Array(40000).fill(255),width:100,height:100},90).data;const saved=globalThis.Buffer;try{delete globalThis.Buffer;const cropped=receiptNumberCrop(bytes);assert.ok(cropped.length>0);}finally{globalThis.Buffer=saved;}});
 
 test('manual review is bound to the exact report row and preserves automatic comparisons',()=>{const review={index:0,key:receiptReviewKey(item),status:'matched',actor_email:'owner@example.com',created_at:'2026-11-16T00:00:00Z'};const report={items:[item],receipt_reviews:[review]};const checked=receiptChecks(report,[file],[{...scan,result:{error:'Not read'}}]);assert.equal(checked.unresolved,0);assert.equal(checked.rows[0].comparisons[0].status,'Belum terbaca');assert.equal(receiptChecks({...report,items:[{...item,subtotal:1}]},[file],[scan]).unresolved,1);assert.equal(receiptChecks({...report,receipt_reviews:[{...review,status:'needs_fix'}]},[file],[scan]).unresolved,1);});
+
+test('matching receipt fields allow submission despite wording and timing notes',()=>{const result=receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,description:'Pembayaran honor patroli'}}],'2026-10-05');assert.equal(result.unresolved,0);assert.equal(result.matched,1);assert.equal(result.rows[0].warnings.length,0);assert.equal(result.rows[0].notes.length,2);assert.ok(result.rows[0].comparisons.every(c=>c.status==='Cocok'));for(const field of ['receipt_no','recipient','date','amount']){const bad={...scan.result,[field]:field==='amount'?1:field==='date'?'2026-09-27':'Tidak cocok'};assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:bad}]).unresolved,1,field);}});
