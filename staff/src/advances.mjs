@@ -3,7 +3,7 @@ import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {advancesPage} from './advances-page.mjs';
 import {legacySource} from './advance-legacy.mjs';
-import {receiptChecks,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
+import {receiptChecks,receiptImage,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
 import {loadBudget,saveBudget,budgetPage} from './project-budget.mjs';
 
 const applicants=new Set(['mulyadi@yayasangambut.org','zamharier@yayasangambut.org','rienaprasiddha@yayasangambut.org']);
@@ -130,6 +130,7 @@ export async function advancesRoute(req,env,u){
  const [,id,action,fileId]=match,row=await read(env,id);visible(u,row);
  if(action==='files'&&fileId&&req.method==='GET'){
   const file=await q(env,'SELECT * FROM yg_advance_files WHERE id=? AND request_id=?',fileId,id).first();if(!file)fail(404,'Berkas tidak ditemukan.');const object=await env.MEDIA.get(file.storage_key);if(!object)fail(404,'Berkas belum tersedia.');
+   const imagePage=new URL(req.url).searchParams.get('image_page');if(imagePage!==null){const image=await receiptImage(new Uint8Array(await object.arrayBuffer()),file.mime,Number(imagePage));if(image.error)fail(422,image.error);return new Response(image.bytes,{headers:{'Content-Type':image.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
   return new Response(object.body,{headers:{'Content-Type':file.mime,'Content-Disposition':(new URL(req.url).searchParams.get('preview')==='1'&&['application/pdf','image/jpeg','image/png'].includes(file.mime)?"inline":"attachment")+"; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(action==='excel'&&req.method==='GET'){

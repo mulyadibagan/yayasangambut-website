@@ -27,7 +27,8 @@ export function receiptChecks(report,files,ocr,paidDate){
    const essential=String(item.description).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=4&&!['untuk','dalam','rangka','paket','desa'].includes(w));
    const description=norm(result.description);if(!result.description||essential.some(w=>!description.includes(w)))warnings.push('Uraian berbeda atau perlu diperiksa');
   }
-  rows.push({index,receipt_no:item.receipt_no||'',issues,warnings,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
+  const comparisons=[['receipt_no','Nomor kuitansi',item.receipt_no,result?.receipt_no],['recipient','Penerima',item.recipient,result?.recipient],['amount','Jumlah',item.subtotal,result?.amount],['date','Tanggal',item.date,result?.date]].map(([field,label,expected,actual])=>({field,label,expected,actual:actual??null,status:!scan||result?.error||actual===null||actual===undefined||actual===''?'Belum terbaca':(field==='amount'?actual===expected:norm(actual)===norm(expected))?'Cocok':'Berbeda'}));
+  rows.push({comparisons,index,receipt_no:item.receipt_no||'',issues,warnings,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
  }
  const unused=files.filter(f=>f.purpose==='pjum'&&f.pages).flatMap(f=>Array.from({length:f.pages},(_,i)=>({file_id:f.id,page:i+1}))).filter(o=>!used.has(o.file_id+':'+o.page));
  return {rows,unused,complete:!!rows.length&&rows.every(r=>!r.issues.length),matched:rows.filter(r=>!r.issues.length&&!r.warnings.length).length,warnings:unused.length+rows.reduce((n,r)=>n+r.warnings.length,0),disclaimer:'Pembacaan otomatis membantu pencocokan data. Tanda tangan, keabsahan bukti, dan kesesuaian kegiatan diperiksa Bagian Keuangan.'};
