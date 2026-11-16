@@ -58,7 +58,7 @@ async function setupProjects(){
  projects=await request('/projects');
  for(const id of ['#project-choice','#overview-project'])$(id).replaceChildren(el('option','Pilih proyek',{value:''}),...projects.map(p=>el('option',p.name+(p.closed?' · ditutup':''),{value:p.id,disabled:id==='#project-choice'&&p.closed})));
  const params=new URLSearchParams(location.search),id=params.get('project');
- const reportId=params.get('id');if(reportId&&/^[a-f0-9-]{36}$/.test(reportId)){current=await request('/'+reportId);dirty=false;setMode(true);render();}
+ const reportId=params.get('id');if(reportId&&/^[a-f0-9-]{36}$/.test(reportId)){current=await request('/'+reportId);dirty=false;const review=me.finance||me.director&&params.get('view')==='review';setMode(!review);render();if(review){$('#page-title').textContent='Pemeriksaan PJUM';$('#page-description').textContent=me.finance?'Periksa laporan, dokumen, dan catatan PJUM.':'Tampilan pemeriksaan untuk Direktur. Pemeriksaan Finance tetap dilakukan oleh Riena.';$('#pjum-manual').open=true;$('#receipt-notes').open=true;}}
  if(projects.some(p=>p.id===id)){$('#overview-project').value=id;await loadOverview();if(params.get('activity'))await chooseActivity(id,params.get('activity'));}
 }
 async function loadBudget(){
@@ -157,6 +157,7 @@ $('#pjum-um').onchange=()=>run(async()=>{
 function renderPairSummary(){
  const box=$('#pair-result');box.replaceChildren();if(!current?.report){$('#quick-pjum').classList.remove('pjum-viewing');$('#pjum-section-title').textContent='1. Pilih UM yang dilaporkan';$('#pair-uploads').open=true;return;}
  const report=current.report,checks=current.checks,ready=pjumReadiness(current,date()),sent=['pjum_submitted','pjum_checked','settlement','closed'].includes(current.status);$('#pair-uploads').open=false;$('#quick-pjum').classList.toggle('pjum-viewing',sent);$('#pjum-section-title').textContent=sent?'Pratinjau PJUM':'1. Pilih UM yang dilaporkan';
+ if(me.director&&sent)box.append(el('a','Tampilan pemeriksaan PJUM',{href:'/finance/advances?id='+encodeURIComponent(current.id)+'&view=review',className:'secondary'}));
  box.append(el('h2',sent?'PJUM sudah dikirim':'3. Hasil kelengkapan PJUM'));
  const heading=el('div',undefined,{className:'pjum-outcome '+(ready.complete?'complete':'incomplete')});heading.append(el('strong',ready.complete?'Berkas kuitansi lengkap: '+ready.total+' dari '+ready.total:'Masih ada kuitansi yang perlu dilengkapi'),el('p',sent?'Penerima: Riena · Bagian Keuangan':'Draf tersimpan. Penerima laporan: Riena · Bagian Keuangan.'));box.append(heading,el('p',current.number+' · '+current.payload.activity));
  const summary=el('div',undefined,{className:'pair-summary'});for(const [label,value] of [['UM dicairkan',money(current.total)],['Realisasi PJUM',money(report.total)],['Sisa / selisih',money(current.total-report.total)],['Tanggal laporan',report.report_date]]){const d=el('div',label);d.append(el('strong',value));summary.append(d);}box.append(summary);
