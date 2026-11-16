@@ -25,7 +25,7 @@ test('missing, duplicate, future or wrong-ownership evidence never passes comple
  assert.equal(receiptChecks({items:[{...item,file_id:'another-request'}]},[file],[scan]).complete,false);
  assert.equal(receiptChecks({items:[{...item,date:'2099-01-01'}]},[file],[scan]).complete,false);
  assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,amount:1}}]).matched,0);
- assert.match(receiptChecks({items:[item]},[file],[scan],'2026-10-05').rows[0].notes.join(),/mendahului/);
+ assert.equal(receiptChecks({items:[item]},[file],[scan],'2026-10-05').rows[0].notes.length,0);
  assert.equal(receiptChecks({items:[item]},[file],[]).rows[0].read,false);
 });
 test('unsupported PDFs remain explicitly manual and invalid pages are rejected',async()=>{
@@ -52,7 +52,7 @@ test('Excel file selection reaches the import API while genuinely edited report 
  assert.equal(document.querySelector('#simple-pjum-review').hidden,false);
  assert.ok(document.body.classList.contains('pjum-review'));
  assert.equal(document.querySelectorAll('#simple-pjum-review .review-documents article').length,2);
- assert.ok(document.querySelector('#simple-pjum-review').textContent.includes('Tidak ada sisa UM'));
+ assert.ok(document.querySelector('#simple-pjum-review').textContent.includes('Tidak ada sisa UM'));assert.ok(!document.querySelector('#simple-pjum-review').textContent.includes('Catatan pelapor'));
  assert.equal(document.querySelectorAll('#simple-pjum-review .pjum-comparison').length,0);
  assert.ok(document.querySelectorAll('#simple-pjum-review a')[0].href.startsWith('https://drive.google.com/'));
  runInContext("me={id:'mul',name:'Mulyadi',finance:false,director:true};location.search='?view=review';renderReviewSummary();",context);
@@ -73,4 +73,4 @@ test('header JPEG encoding works when the worker has no global Buffer',async()=>
 
 test('manual review is bound to the exact report row and preserves automatic comparisons',()=>{const review={index:0,key:receiptReviewKey(item),status:'matched',actor_email:'owner@example.com',created_at:'2026-11-16T00:00:00Z'};const report={items:[item],receipt_reviews:[review]};const checked=receiptChecks(report,[file],[{...scan,result:{error:'Not read'}}]);assert.equal(checked.unresolved,0);assert.equal(checked.rows[0].comparisons[0].status,'Belum terbaca');assert.equal(receiptChecks({...report,items:[{...item,subtotal:1}]},[file],[scan]).unresolved,1);assert.equal(receiptChecks({...report,receipt_reviews:[{...review,status:'needs_fix'}]},[file],[scan]).unresolved,1);});
 
-test('matching receipt fields allow submission despite wording and timing notes',()=>{const result=receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,description:'Pembayaran honor patroli'}}],'2026-10-05');assert.equal(result.unresolved,0);assert.equal(result.matched,1);assert.equal(result.rows[0].warnings.length,0);assert.equal(result.rows[0].notes.length,2);assert.ok(result.rows[0].comparisons.every(c=>c.status==='Cocok'));for(const field of ['receipt_no','recipient','date','amount']){const bad={...scan.result,[field]:field==='amount'?1:field==='date'?'2026-09-27':'Tidak cocok'};assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:bad}]).unresolved,1,field);}});
+test('matching receipt fields allow submission despite wording and timing notes',()=>{const result=receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,description:'Pembayaran honor patroli'}}],'2026-10-05');assert.equal(result.unresolved,0);assert.equal(result.matched,1);assert.equal(result.rows[0].warnings.length,0);assert.equal(result.rows[0].notes.length,1);assert.ok(result.rows[0].comparisons.every(c=>c.status==='Cocok'));for(const field of ['receipt_no','recipient','date','amount']){const bad={...scan.result,[field]:field==='amount'?1:field==='date'?'2026-09-27':'Tidak cocok'};assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:bad}]).unresolved,1,field);}});
