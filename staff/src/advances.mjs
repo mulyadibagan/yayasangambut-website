@@ -170,7 +170,10 @@ export async function advancesRoute(req,env,u){
   if(body.status==='matched'&&check.issues.length)fail(400,'Lengkapi data dan tautan bukti terlebih dahulu.');
   if(!check.manual&&!check.warnings.length&&check.comparisons.every(c=>c.status==='Cocok'))fail(400,'Kuitansi ini sudah cocok otomatis.');
   const note=string(body.note||'',2000,body.status==='needs_fix');
-  const review={index,key:receiptReviewKey(report.items[index]),status:body.status,note,actor_email:u.email,actor_name:u.name||u.email,created_at:now()};
+  const allowedFields=['receipt_no','recipient','amount','date','description','other'];
+  const fields=body.status==='needs_fix'&&Array.isArray(body.fields)?[...new Set(body.fields)]:[];
+  if(body.status==='needs_fix'&&(!fields.length||fields.some(f=>!allowedFields.includes(f))))fail(400,'Pilih bidang data yang perlu diperbaiki.');
+  const review={index,key:receiptReviewKey(report.items[index]),status:body.status,fields,note,actor_email:u.email,actor_name:u.name||u.email,created_at:now()};
   report.receipt_reviews=[...(report.receipt_reviews||[]).filter(r=>r.index!==index),review];
   return json(await detail(env,await mutate(env,row,u,'receipt_review',{report:JSON.stringify(report)},review)));
  }
