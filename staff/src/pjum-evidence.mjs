@@ -5,6 +5,7 @@ import {fail} from './core.mjs';
 
 export const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'});
 const norm=v=>String(v??'').normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g,'');
+export const receiptReviewKey=item=>JSON.stringify([item.file_id,item.page,item.receipt_no,item.recipient,item.date,item.subtotal,item.description]);
 export function receiptChecks(report,files,ocr,paidDate){
  const used=new Set(),numbers=new Set(),rows=[];
  for(const [index,item] of (report?.items||[]).entries()){
@@ -30,10 +31,12 @@ export function receiptChecks(report,files,ocr,paidDate){
    const description=norm(result.description);if(!result.description||essential.some(w=>!description.includes(w)))warnings.push('Uraian berbeda atau perlu diperiksa');
   }
   const comparisons=[['receipt_no','Nomor kuitansi',item.receipt_no,result?.receipt_no],['recipient','Penerima',item.recipient,result?.recipient],['amount','Jumlah',item.subtotal,result?.amount],['date','Tanggal',item.date,result?.date]].map(([field,label,expected,actual])=>({field,label,expected,actual:actual??null,status:!scan||result?.error||actual===null||actual===undefined||actual===''?'Belum terbaca':(field==='amount'?actual===expected:norm(actual)===norm(expected))?'Cocok':'Berbeda'}));
-  rows.push({comparisons,index,receipt_no:item.receipt_no||'',issues,warnings,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
+  const manual=(report.receipt_reviews||[]).find(r=>r.index===index&&r.key===receiptReviewKey(item))||null;
+  const resolved=manual?.status==='matched';
+  rows.push({manual,resolved,comparisons,index,receipt_no:item.receipt_no||'',issues,warnings,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':manual?.status==='needs_fix'?'Perlu diperbaiki':resolved?'Cocok · dikonfirmasi pelapor':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
  }
  const unused=files.filter(f=>f.purpose==='pjum'&&f.pages).flatMap(f=>Array.from({length:f.pages},(_,i)=>({file_id:f.id,page:i+1}))).filter(o=>!used.has(o.file_id+':'+o.page));
- return {rows,unused,complete:!!rows.length&&rows.every(r=>!r.issues.length),matched:rows.filter(r=>!r.issues.length&&!r.warnings.length).length,warnings:unused.length+rows.reduce((n,r)=>n+r.warnings.length,0),disclaimer:'Pembacaan otomatis membantu pencocokan data. Tanda tangan, keabsahan bukti, dan kesesuaian kegiatan diperiksa Bagian Keuangan.'};
+ return {rows,unused,complete:!!rows.length&&rows.every(r=>!r.issues.length),unresolved:rows.filter(r=>r.manual?.status==='needs_fix'||!r.resolved&&(r.warnings.length||r.comparisons.some(c=>c.status!=='Cocok'))).length,matched:rows.filter(r=>!r.issues.length&&!r.warnings.length).length,warnings:unused.length+rows.reduce((n,r)=>n+r.warnings.length,0),disclaimer:'Pembacaan otomatis membantu pencocokan data. Tanda tangan, keabsahan bukti, dan kesesuaian kegiatan diperiksa Bagian Keuangan.'};
 }
 
 export async function receiptPageCount(bytes,mime){

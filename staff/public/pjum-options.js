@@ -15,7 +15,7 @@ export function pjumReadiness(row,today){
  const report=row?.report,checks=row?.checks,total=report?.items?.length||0;
  const complete=!!total&&checks?.complete===true;
  const missing=checks?.rows?.filter(r=>r.issues.length)||[];
- const unread=checks?.rows?.filter(r=>!r.read)||[];
- const blocked=!complete||report?.report_date>today||!!(unread.length&&!report?.notes?.trim());
+ const unread=checks?.rows?.filter(r=>!r.read&&!r.resolved)||[];
+ const blocked=!!checks?.unresolved||!complete||report?.report_date>today||!!(unread.length&&!report?.notes?.trim());
  return {total,complete,missing,unread,blocked,read:checks?.rows?.filter(r=>r.read&&!r.result?.error).length||0};
 }

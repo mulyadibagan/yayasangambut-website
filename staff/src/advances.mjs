@@ -3,7 +3,7 @@ import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {advancesPage} from './advances-page.mjs';
 import {legacySource} from './advance-legacy.mjs';
-import {receiptChecks,receiptImage,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
+import {receiptReviewKey,receiptChecks,receiptImage,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
 import {loadBudget,saveBudget,budgetPage} from './project-budget.mjs';
 
 const applicants=new Set(['mulyadi@yayasangambut.org','zamharier@yayasangambut.org','rienaprasiddha@yayasangambut.org']);
@@ -161,6 +161,19 @@ export async function advancesRoute(req,env,u){
  }
  if(req.method!=='POST'&&req.method!=='PUT')fail(405,'Metode tidak didukung.');
  const body=await input(req);if(body.version!==row.version)fail(409,'Pengajuan berubah. Muat ulang.');
+ if(action==='receipt_review'&&req.method==='POST'){
+  if(!own(u,row)||!['pjum_draft','pjum_returned'].includes(row.status))fail(403,'Hanya pelapor dapat mengonfirmasi kuitansi pada draf PJUM.');
+  const data=await detail(env,row),report=data.report,index=body.index,check=data.checks?.rows[index];
+  if(!Number.isInteger(index)||!check||!report?.items[index])fail(400,'Pilih kuitansi pada laporan ini.');
+  if(!['matched','needs_fix'].includes(body.status))fail(400,'Pilih hasil pemeriksaan kuitansi.');
+  if(!check.read)fail(400,'Jalankan pembacaan otomatis terlebih dahulu.');
+  if(body.status==='matched'&&check.issues.length)fail(400,'Lengkapi data dan tautan bukti terlebih dahulu.');
+  if(!check.manual&&!check.warnings.length&&check.comparisons.every(c=>c.status==='Cocok'))fail(400,'Kuitansi ini sudah cocok otomatis.');
+  const note=string(body.note||'',2000,body.status==='needs_fix');
+  const review={index,key:receiptReviewKey(report.items[index]),status:body.status,note,actor_email:u.email,actor_name:u.name||u.email,created_at:now()};
+  report.receipt_reviews=[...(report.receipt_reviews||[]).filter(r=>r.index!==index),review];
+  return json(await detail(env,await mutate(env,row,u,'receipt_review',{report:JSON.stringify(report)},review)));
+ }
  if(action==='scan'&&req.method==='POST'){
   if(!uploadAllowed(u,row,'pjum')&&!advanceFinance(u))fail(403,'Pembacaan bukti tidak tersedia pada tahap ini.');
   if(!['disbursed','pjum_draft','pjum_returned','pjum_submitted'].includes(row.status))fail(409,'Tahap PJUM telah berubah.');
@@ -190,6 +203,7 @@ export async function advancesRoute(req,env,u){
   await proof(env,id,'pjum');if(!row.report)fail(400,'Isi rincian PJUM terlebih dahulu.');
   const data=await detail(env,row),report=data.report;
   if(!data.checks.complete)fail(400,'Lengkapi nomor kuitansi, penerima, dan halaman bukti; perbaiki nomor/halaman ganda serta tanggal pengeluaran.');
+  if(data.checks.unresolved)fail(400,'Selesaikan pemeriksaan kuitansi yang meragukan sebelum mengirim PJUM.');
   if(report.report_date>today())fail(400,'PJUM dapat diajukan mulai tanggal laporan. Simpan sebagai draf terlebih dahulu.');
   if(data.checks.rows.some(r=>!r.read)&&!report.notes.trim())fail(400,'Jalankan pemeriksaan kuitansi atau jelaskan alasan pemeriksaan manual pada catatan PJUM.');
   snapshot.checks=data.checks;snapshot.report_date=report.report_date;

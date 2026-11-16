@@ -5,7 +5,7 @@ import {registerHooks} from 'node:module';
 import {zipSync,strToU8} from 'fflate';
 const hook=registerHooks({resolve(s,c,next){if(s==='sanitize-html')return {url:'data:text/javascript,export default ()=>""',shortCircuit:true};return next(s,c);}});
 const {importPjumExcel}=await import('../src/pjum-excel.mjs');
-const {receiptChecks,receiptImage,receiptNumberCrop,scanReceipt}=await import('../src/pjum-evidence.mjs');
+const {receiptChecks,receiptImage,receiptNumberCrop,receiptReviewKey,scanReceipt}=await import('../src/pjum-evidence.mjs');
 const {PDFDocument}=await import('pdf-lib');
 hook.deregister();
 function workbook(extra=''){
@@ -58,3 +58,5 @@ test('number retry reads a cropped top-right margin and preserves previously rea
 });
 
 test('header JPEG encoding works when the worker has no global Buffer',async()=>{const {default:jpeg}=await import('jpeg-js');const bytes=jpeg.encode({data:new Uint8Array(40000).fill(255),width:100,height:100},90).data;const saved=globalThis.Buffer;try{delete globalThis.Buffer;const cropped=receiptNumberCrop(bytes);assert.ok(cropped.length>0);}finally{globalThis.Buffer=saved;}});
+
+test('manual review is bound to the exact report row and preserves automatic comparisons',()=>{const review={index:0,key:receiptReviewKey(item),status:'matched',actor_email:'owner@example.com',created_at:'2026-11-16T00:00:00Z'};const report={items:[item],receipt_reviews:[review]};const checked=receiptChecks(report,[file],[{...scan,result:{error:'Not read'}}]);assert.equal(checked.unresolved,0);assert.equal(checked.rows[0].comparisons[0].status,'Belum terbaca');assert.equal(receiptChecks({...report,items:[{...item,subtotal:1}]},[file],[scan]).unresolved,1);assert.equal(receiptChecks({...report,receipt_reviews:[{...review,status:'needs_fix'}]},[file],[scan]).unresolved,1);});
