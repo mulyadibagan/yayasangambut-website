@@ -121,7 +121,7 @@ $('#scan-receipts').onclick=()=>run(async()=>{
   const batch=pages.slice(i,i+3);$('#scan-progress').textContent='Membaca bukti '+(i+1)+'–'+Math.min(i+3,pages.length)+' dari '+pages.length+'. Tetap buka halaman ini.';
   current=await request('/'+current.id+'/scan','POST',{version:current.version,pages:batch.map(item=>({file_id:item.file_id,page:item.page}))});renderChecks();renderPairSummary();$('#pair-progress').textContent=$('#scan-progress').textContent;
  }
- $('#scan-progress').textContent='Pemeriksaan otomatis selesai. Baca catatan setiap kuitansi sebelum mengirim.';await reload();render();
+ $('#scan-progress').textContent='Pemeriksaan otomatis selesai. Baca catatan setiap kuitansi sebelum mengirim.';await reload();render();$('#pair-progress').textContent=$('#scan-progress').textContent;
 });
 let selectedLegacy=null;
 $('#load-legacy').onclick=()=>run(async()=>{
