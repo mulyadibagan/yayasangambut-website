@@ -43,7 +43,8 @@ export async function archiveAdvanceFile(env,file,deps={}){
  const url=verifyAdvanceArchive(meta,file,claim,hash,root);
  await q(env,"UPDATE yg_advance_drive SET status='archived',web_url=?,error=NULL,retry_at=0,updated_at=? WHERE file_id=? AND lease_owner=?",url,now(),file.id,owner).run();
  return {status:'archived',url};
- }catch{
+ }catch(error){
+ if(deps.onError)deps.onError(error);
  await q(env,"UPDATE yg_advance_drive SET status='error',error=?,retry_at=?,updated_at=? WHERE file_id=? AND lease_owner=?",'Arsip Drive belum berhasil. Dokumen unggahan tetap aman; coba sinkronisasi kembali.',Date.now()+300000,now(),file.id,owner).run();
  return {status:'error'};
  }finally{await q(env,'UPDATE yg_advance_drive SET lease_owner=NULL,lease_until=0 WHERE file_id=? AND lease_owner=?',file.id,owner).run();}
