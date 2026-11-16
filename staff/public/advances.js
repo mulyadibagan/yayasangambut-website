@@ -136,7 +136,7 @@ $('#legacy-form').onsubmit=e=>{e.preventDefault();run(async()=>{const f=e.target
 
 $('#view-submitted').onclick=()=>$('#submitted-pjum').scrollIntoView({behavior:'smooth',block:'start'});
 function renderSubmittedPjum(){
- const sent=rows.filter(r=>r.report&&['pjum_submitted','pjum_checked','settlement','closed'].includes(r.status)),box=$('#submitted-pjum-list');box.replaceChildren();$('#submitted-pjum').hidden=!sent.length;$('#view-submitted').hidden=!sent.length;$('#view-submitted').textContent='Laporan terkirim ('+sent.length+')';
+ const sent=rows.filter(r=>r.report&&['pjum_draft','pjum_returned','pjum_submitted','pjum_checked','settlement','closed'].includes(r.status)),box=$('#submitted-pjum-list');box.replaceChildren();$('#submitted-pjum').hidden=!sent.length;$('#view-submitted').hidden=!sent.length;$('#view-submitted').textContent='Laporan PJUM ('+sent.length+')';
  for(const r of sent){const card=el('article',undefined,{className:'submitted-pjum-card'});card.append(el('strong',r.number+' · '+r.payload.activity),el('p',r.creator_name+' · '+labels[r.status]+' · '+money(r.actual??r.report.total)));
  const b=el('button','Pratinjau laporan',{type:'button',className:'secondary'});b.onclick=()=>run(async()=>{if(dirty&&!confirm('Abaikan perubahan draf yang belum disimpan?'))return;current=await request('/'+r.id);dirty=false;setMode(true);render();$('#quick-pjum').scrollIntoView({behavior:'smooth',block:'start'});});card.append(b);box.append(card);}
 }
