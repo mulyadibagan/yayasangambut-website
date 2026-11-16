@@ -8,7 +8,7 @@ const hook=registerHooks({resolve(s,c,next){if(s==='sanitize-html')return {url:'
 const {archiveAdvanceFile,verifyAdvanceArchive}=await import('../src/advance-drive.mjs');
 hook.deregister();
 test('Drive verifies originals and retries the reserved ID without uploading a duplicate',async()=>{
- const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../migrations/0048_advance_drive.sql',import.meta.url),'utf8'));
+ const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE yg_advance_requests(id TEXT PRIMARY KEY);CREATE TABLE yg_advance_files(id TEXT PRIMARY KEY);INSERT INTO yg_advance_requests VALUES('report');INSERT INTO yg_advance_files VALUES('proof');");db.exec(readFileSync(new URL('../migrations/0048_advance_drive.sql',import.meta.url),'utf8'));
  const bytes=new TextEncoder().encode('original workbook bytes'),root='finance-folder',file={id:'proof',request_id:'report',filename:'PJUM.xlsx',purpose:'pjum',storage_key:'source',mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',size:bytes.length};
  const env={FINANCE_DRIVE_FOLDER_ID:root,DB:{prepare(sql){let a=[];return {bind(...v){a=v;return this;},async first(){return db.prepare(sql).get(...a)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...a).changes}};}};}},MEDIA:{async get(){return {async arrayBuffer(){return bytes.buffer;}};}}};
  let uploads=0,meta=null;
