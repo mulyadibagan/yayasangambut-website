@@ -1,0 +1,22 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync} from 'node:fs';
+import {registerHooks} from 'node:module';
+import {createHash} from 'node:crypto';
+const hook=registerHooks({resolve(s,c,next){if(s==='sanitize-html')return {url:'data:text/javascript,export default ()=>""',shortCircuit:true};return next(s,c);}});
+const {archiveAdvanceFile,verifyAdvanceArchive}=await import('../src/advance-drive.mjs');
+hook.deregister();
+test('Drive verifies originals and retries the reserved ID without uploading a duplicate',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../migrations/0048_advance_drive.sql',import.meta.url),'utf8'));
+ const bytes=new TextEncoder().encode('original workbook bytes'),root='finance-folder',file={id:'proof',request_id:'report',filename:'PJUM.xlsx',purpose:'pjum',storage_key:'source',mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',size:bytes.length};
+ const env={FINANCE_DRIVE_FOLDER_ID:root,DB:{prepare(sql){let a=[];return {bind(...v){a=v;return this;},async first(){return db.prepare(sql).get(...a)||null;},async run(){return {meta:{changes:db.prepare(sql).run(...a).changes}};}};}},MEDIA:{async get(){return {async arrayBuffer(){return bytes.buffer;}};}}};
+ let uploads=0,meta=null;
+ const deps={driveAccess:async()=>({access:'test',root:'existing-root'}),validFolder:async(a,r,parent)=>{assert.equal(r,root);assert.equal(parent,'existing-root');},google:async(path,options)=>{if(path.includes('generateIds'))return {ids:['fixed-drive-id']};uploads++;assert.equal(options.method,'POST');meta={mimeType:file.mime,size:String(file.size),md5Checksum:createHash('md5').update(bytes).digest('hex'),parents:[root],appProperties:{ygAdvanceFile:file.id,ygAdvanceRequest:file.request_id},webViewLink:'https://drive.google.com/file/d/fixed-drive-id/view'};return {id:'fixed-drive-id'};},fetch:async()=>meta?{ok:true,status:200,json:async()=>meta}:{ok:false,status:404}};
+ assert.equal((await archiveAdvanceFile(env,file,deps)).status,'archived');assert.equal(uploads,1);
+ assert.equal((await archiveAdvanceFile(env,file,deps)).status,'archived');assert.equal(uploads,1);
+ assert.equal(db.prepare('SELECT drive_id FROM yg_advance_drive').get().drive_id,'fixed-drive-id');
+ assert.throws(()=>verifyAdvanceArchive({...meta,md5Checksum:'wrong'},file,{},meta.md5Checksum,root));
+ meta={...meta,size:'0'};assert.equal((await archiveAdvanceFile(env,file,deps)).status,'error');assert.equal(uploads,1);
+});
+test('unconfigured Drive never triggers network or database operations',async()=>{assert.deepEqual(await archiveAdvanceFile({},{}),{enabled:false});});

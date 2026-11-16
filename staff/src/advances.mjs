@@ -1,3 +1,4 @@
+import {advanceDriveStatus,archiveAdvanceFile,syncAdvanceDrive} from './advance-drive.mjs';
 import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
 import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
@@ -39,7 +40,7 @@ function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya da
 const number=row=>row.legacy_id?JSON.parse(row.payload).legacy.number:'UM-'+row.created_at.slice(0,4)+'-'+String(row.seq).padStart(5,'0');
 function serialize(row){return {...row,number:number(row),payload:JSON.parse(row.payload),report:row.report?JSON.parse(row.report):null};}
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_advance_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-async function detail(env,row){const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...serialize(row),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
+async function detail(env,row){const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...serialize(row),drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
 async function input(req){let size=0;const chunks=[];const reader=req.body?.getReader();if(!reader)fail(400,'Data kosong.');while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>150000){await reader.cancel();fail(413,'Data terlalu besar.');}chunks.push(r.value);}try{const out=new Uint8Array(size);let n=0;for(const c of chunks){out.set(c,n);n+=c.length;}return JSON.parse(new TextDecoder().decode(out));}catch{fail(400,'Data tidak valid.');}}
 export function advanceTransition(u,row,action){
  const state=row.status;
@@ -158,9 +159,11 @@ export async function advancesRoute(req,env,u){
   if(similar.length){const hash=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b)),v=>v.toString(16).padStart(2,'0')).join(''),digest=await hash(bytes);for(const prior of similar){const object=await env.MEDIA.get(prior.storage_key);if(object){const old=object.arrayBuffer?await object.arrayBuffer():await new Response(object.body).arrayBuffer();if(await hash(old)===digest)return json(await detail(env,row));}}}
   const pages=await receiptPageCount(bytes,mime);const fid=crypto.randomUUID(),key='advances/'+id+'/'+fid,event=crypto.randomUUID(),at=now();await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
   try{const out=await env.DB.batch([q(env,'UPDATE yg_advance_requests SET version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',event,at,id,row.version),q(env,'INSERT INTO yg_advance_files(id,request_id,purpose,filename,mime,size,storage_key,actor_email,created_at,pages) SELECT ?,id,?,?,?,?,?,?,?,? FROM yg_advance_requests WHERE id=? AND last_event=?',fid,purpose,name,mime,size,key,u.email,at,pages,id,event),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,'file_added',JSON.stringify({purpose,name}),id,event)]);if(!out[0].meta.changes)fail(409,'Pengajuan berubah. Muat ulang dan unggah kembali.');}catch(e){await env.MEDIA.delete(key);throw e;}
+  if(env.FINANCE_DRIVE_FOLDER_ID)await archiveAdvanceFile(env,{id:fid,request_id:id,purpose,filename:name,mime,size,storage_key:key});
   return json(await detail(env,await read(env,id)));
  }
  if(req.method!=='POST'&&req.method!=='PUT')fail(405,'Metode tidak didukung.');
+ if(action==='drive'&&req.method==='POST'){await syncAdvanceDrive(env,id);return json(await detail(env,row));}
  const body=await input(req);if(body.version!==row.version)fail(409,'Pengajuan berubah. Muat ulang.');
  if(action==='receipt_review'&&req.method==='POST'){
   if(!own(u,row)||!['pjum_draft','pjum_returned'].includes(row.status))fail(403,'Hanya pelapor dapat mengonfirmasi kuitansi pada draf PJUM.');
