@@ -65,9 +65,9 @@ export async function receiptImage(bytes,mime,page){
 export function receiptNumberCrop(bytes){
  globalThis.Buffer??=Buffer;
  const decoded=jpeg.decode(bytes,{useTArray:true,maxResolutionInMP:12,maxMemoryUsageInMB:128});
- const left=Math.floor(decoded.width*.5),width=decoded.width-left,height=Math.max(1,Math.ceil(decoded.height*.2)),data=new Uint8Array(width*height*4);
- for(let y=0;y<height;y++)data.set(decoded.data.subarray((y*decoded.width+left)*4,(y*decoded.width+left+width)*4),y*width*4);
- return jpeg.encode({data,width,height},95).data;
+ const left=Math.floor(decoded.width*.65),width=decoded.width-left,height=Math.max(1,Math.ceil(decoded.height*.08)),pad=24,scale=2,outWidth=(width+pad*2)*scale,outHeight=(height+pad*2)*scale,data=new Uint8Array(outWidth*outHeight*4).fill(255);
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++){const pixel=decoded.data.subarray((y*decoded.width+left+x)*4,(y*decoded.width+left+x)*4+4);for(let sy=0;sy<scale;sy++)for(let sx=0;sx<scale;sx++)data.set(pixel,(((y+pad)*scale+sy)*outWidth+(x+pad)*scale+sx)*4);}
+ return jpeg.encode({data,width:outWidth,height:outHeight},95).data;
 }
 async function readReceiptNumber(env,image){
  if(image.mime!=='image/jpeg')return null;
