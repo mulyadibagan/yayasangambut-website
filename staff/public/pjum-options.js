@@ -16,6 +16,13 @@ export function pjumReadiness(row,today){
  const complete=!!total&&checks?.complete===true;
  const missing=checks?.rows?.filter(r=>r.issues.length)||[];
  const unread=checks?.rows?.filter(r=>!r.read&&!r.resolved)||[];
- const blocked=!!checks?.unresolved||!complete||report?.report_date>today||!!(unread.length&&!report?.notes?.trim());
+ const blocked=!complete||report?.report_date>today;
  return {total,complete,missing,unread,blocked,read:checks?.rows?.filter(r=>r.read&&!r.result?.error).length||0};
+}
+
+export function pjumEmailDraft(row,reporterEmail){
+ if(!row?.id||!reporterEmail||reporterEmail.toLowerCase()!==row.creator_email?.toLowerCase())return null;
+ const url=new URL('https://mail.google.com/mail/');
+ url.search=new URLSearchParams({authuser:reporterEmail,view:'cm',fs:'1',to:'rienaprasiddha@yayasangambut.org',su:'PJUM untuk pemeriksaan — '+(row.number||row.id),body:['Yth. Bu Riena,','','Mohon pemeriksaan laporan PJUM '+(row.number||row.id)+'.','Kegiatan: '+(row.payload?.activity||''),'','Laporan, Excel, kuitansi, dan catatan pemeriksaan tersedia di:','https://staff.yayasangambut.org/finance/advances?id='+encodeURIComponent(row.id),'','Terima kasih,',row.creator_name||reporterEmail].join('\n')});
+ return url.href;
 }

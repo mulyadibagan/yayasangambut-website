@@ -206,9 +206,9 @@ export async function advancesRoute(req,env,u){
   await proof(env,id,'pjum');if(!row.report)fail(400,'Isi rincian PJUM terlebih dahulu.');
   const data=await detail(env,row),report=data.report;
   if(!data.checks.complete)fail(400,'Lengkapi nomor kuitansi, penerima, dan halaman bukti; perbaiki nomor/halaman ganda serta tanggal pengeluaran.');
-  if(data.checks.unresolved)fail(400,'Selesaikan pemeriksaan kuitansi yang meragukan sebelum mengirim PJUM.');
+
   if(report.report_date>today())fail(400,'PJUM dapat diajukan mulai tanggal laporan. Simpan sebagai draf terlebih dahulu.');
-  if(data.checks.rows.some(r=>!r.read)&&!report.notes.trim())fail(400,'Jalankan pemeriksaan kuitansi atau jelaskan alasan pemeriksaan manual pada catatan PJUM.');
+
   snapshot.checks=data.checks;snapshot.report_date=report.report_date;
  }
  if(action==='report_check'){
@@ -220,5 +220,6 @@ export async function advancesRoute(req,env,u){
  if(action==='settle'){
   await proof(env,id,'settlement');if(amount(body.amount)!==Math.abs(row.total-row.actual))fail(400,'Nominal penyelesaian harus sama dengan selisih UM dan realisasi.');const settledDate=date(body.date);if(settledDate>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}))fail(400,'Tanggal penyelesaian tidak boleh di masa depan.');changes.settlement_reference=string(body.reference,160);Object.assign(snapshot,{amount:body.amount,date:settledDate,reference:changes.settlement_reference,direction:row.total>row.actual?'refund':'reimbursement'});
  }
- return json(await detail(env,await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''})));
+ const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''});
+ return json(await detail(env,updated));
 }
