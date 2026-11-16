@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {pjumChoices,pjumReadiness} from '../public/pjum-options.js';
+import {pjumChoices,pjumReadiness,pjumEmailDraft} from '../public/pjum-options.js';
 test('PJUM choices include own unpaid reports, exclude submitted reports and deduplicate adopted archives',()=>{
  const me={id:'mul',email:'mulyadi@yayasangambut.org'},base={creator:'mul',number:'UM-1',payload:{activity:'Monitoring',project:'ARC3'},total:100};
  const rows=['draft','approved','disbursed','pjum_draft','pjum_returned','pjum_submitted','closed'].map((status,i)=>({...base,id:String(i),status,...(status==='pjum_draft'?{legacy_id:'adopted'}:{})}));
@@ -19,4 +19,13 @@ test('completeness and OCR warnings stay distinct; only incomplete and future re
  row.checks.rows[0].read=false;row.checks.unresolved=4;assert.equal(pjumReadiness(row,'2026-11-16').blocked,false);
  row.report.notes='Pemeriksaan manual';assert.equal(pjumReadiness(row,'2026-11-16').blocked,false);
  row.checks.complete=false;assert.equal(pjumReadiness(row,'2026-11-16').blocked,true);
+});
+
+test('email compose uses the reporter account and exact private Finance link without sending',()=>{
+ const row={id:'123',creator_email:'reporter@yayasangambut.org',creator_name:'Pelapor',number:'10/ARC3',payload:{activity:'Patroli'}};
+ const url=new URL(pjumEmailDraft(row,row.creator_email));
+ assert.equal(url.origin,'https://mail.google.com');assert.equal(url.searchParams.get('authuser'),row.creator_email);
+ assert.equal(url.searchParams.get('to'),'rienaprasiddha@yayasangambut.org');
+ assert.ok(url.searchParams.get('body').includes('https://staff.yayasangambut.org/finance/advances?id=123'));
+ assert.equal(pjumEmailDraft(row,'other@yayasangambut.org'),null);
 });

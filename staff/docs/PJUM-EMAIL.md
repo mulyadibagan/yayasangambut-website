@@ -1,5 +1,3 @@
-# PJUM notification activation
+# PJUM email drafts
 
-The worker queues one notification atomically with submission and sends only to rienaprasiddha@yayasangambut.org. The link opens the exact report behind normal Finance access controls. OCR findings travel with the report and no longer block submission. Missing evidence and invalid/future dates still block.
-
-Email activation requires adding integrations/PjumNotifications.gs to the existing authenticated Finance Apps Script, registering sendPjumReview after webhookSecret verification in doPost, and publishing a new version of the same deployment. This external activation has not been performed. Until the bridge confirms messageId and the expected recipient, the UI explicitly shows email as unconfirmed. Never claim email delivery solely from report submission.
+No automated email delivery, background sender, or email outbox is used. Submitting makes the report available for Finance review and retains OCR findings. The reporter can then select Buka draf email ke Bu Riena to open Gmail compose in their own account, prefilled with the Finance recipient and exact authenticated report link. The reporter reviews and sends the email. Opening compose does not confirm that a Gmail draft was saved or that any email was sent.

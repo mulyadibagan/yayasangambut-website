@@ -1,4 +1,3 @@
-import {pjumNotificationStatement,sendPjumNotifications,pjumNotificationStatus} from './pjum-notifications.mjs';
 import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
 import {fail,now} from './core.mjs';
 import {financeOwner} from './finance-access.mjs';
@@ -40,7 +39,7 @@ function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya da
 const number=row=>row.legacy_id?JSON.parse(row.payload).legacy.number:'UM-'+row.created_at.slice(0,4)+'-'+String(row.seq).padStart(5,'0');
 function serialize(row){return {...row,number:number(row),payload:JSON.parse(row.payload),report:row.report?JSON.parse(row.report):null};}
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_advance_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-async function detail(env,row){const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...serialize(row),notification:row.report?await pjumNotificationStatus(env,row.id):null,files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
+async function detail(env,row){const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...serialize(row),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
 async function input(req){let size=0;const chunks=[];const reader=req.body?.getReader();if(!reader)fail(400,'Data kosong.');while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>150000){await reader.cancel();fail(413,'Data terlalu besar.');}chunks.push(r.value);}try{const out=new Uint8Array(size);let n=0;for(const c of chunks){out.set(c,n);n+=c.length;}return JSON.parse(new TextDecoder().decode(out));}catch{fail(400,'Data tidak valid.');}}
 export function advanceTransition(u,row,action){
  const state=row.status;
@@ -54,8 +53,7 @@ async function mutate(env,row,u,action,changes,snapshot={}){
  try{
   const result=await env.DB.batch([
    q(env,'UPDATE yg_advance_requests SET '+fields.map(k=>k+'=?').join(',')+',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',...fields.map(k=>changes[k]),event,at,row.id,row.version),
-   q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event),
-   ...(action==='report_submit'?[pjumNotificationStatement(env,row,event,at)]:[])
+   q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event)
   ]);if(!result[0].meta.changes)fail(409,'Pengajuan telah diubah. Muat ulang sebelum menyimpan.');
  }catch(e){if(String(e.message).includes('ADVANCE_BUDGET_EXCEEDED'))fail(409,'Pengajuan melebihi sisa pagu kegiatan atau pagu telah digunakan pengajuan lain. Muat ulang anggaran.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Referensi pembayaran sudah digunakan.');throw e;}
  return read(env,row.id);
@@ -223,6 +221,5 @@ export async function advancesRoute(req,env,u){
   await proof(env,id,'settlement');if(amount(body.amount)!==Math.abs(row.total-row.actual))fail(400,'Nominal penyelesaian harus sama dengan selisih UM dan realisasi.');const settledDate=date(body.date);if(settledDate>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}))fail(400,'Tanggal penyelesaian tidak boleh di masa depan.');changes.settlement_reference=string(body.reference,160);Object.assign(snapshot,{amount:body.amount,date:settledDate,reference:changes.settlement_reference,direction:row.total>row.actual?'refund':'reimbursement'});
  }
  const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''});
- if(action==='report_submit')await sendPjumNotifications(env,row.id);
  return json(await detail(env,updated));
 }
