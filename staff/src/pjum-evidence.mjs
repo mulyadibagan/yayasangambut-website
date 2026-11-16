@@ -18,7 +18,6 @@ export function receiptChecks(report,files,ocr,paidDate){
   const pageKey=item.file_id+':'+item.page;if(used.has(pageKey))issues.push('Halaman bukti dipakai lebih dari sekali');used.add(pageKey);
   if(item.date>today())issues.push('Tanggal pengeluaran masih di masa depan');
   if(report.report_date&&item.date>report.report_date)issues.push('Pengeluaran melewati tanggal laporan');
-  if(paidDate&&item.date<paidDate)notes.push('Pengeluaran mendahului pencairan; jelaskan talangannya');
   const scan=ocr.find(o=>o.file_id===item.file_id&&o.page===item.page),result=scan?.result;
   if(!scan)warnings.push('Bukti belum dibaca otomatis');
   else if(result.error)warnings.push(result.error);

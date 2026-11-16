@@ -228,7 +228,7 @@ function renderReviewSummary(){
  $('#title').textContent=(current.payload.activity||'').replace(/^(?:pengajuan\s+)?(?:uang\s+muka|UM)\b[\s:–—-]*/i,'');
  const report=current.report,difference=current.total-report.total,summary=el('div',undefined,{className:'pair-summary'});
  for(const [label,value] of [['UM diterima',money(current.total)],['Realisasi pengeluaran',money(report.total)],[difference<0?'Kekurangan dana':'Sisa UM',money(Math.abs(difference))],['Tanggal laporan',report.report_date]]){const card=el('div',label);card.append(el('strong',value));summary.append(card);}
- box.append(summary,el('h3','Dokumen untuk diperiksa'));
+ box.append(summary,el('p','Laporan memuat '+report.items.length+' kuitansi dengan total realisasi '+money(report.total)+'.'),el('h3','Dokumen untuk diperiksa'));
  const documents=el('div',undefined,{className:'review-documents'}),files=(current.files||[]).filter((f,index,all)=>f.purpose==='settlement'||f.purpose==='pjum'&&(f.mime==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'?!all.slice(index+1).some(next=>next.purpose==='pjum'&&next.mime===f.mime):report.items.some(item=>item.file_id===f.id)));
  for(const file of files){
  const archive=current.drive?.files?.find(d=>d.file_id===file.id&&d.status==='archived'),excel=file.mime==='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',label=file.purpose==='settlement'?'Bukti pengembalian sisa UM':excel?'Laporan Excel':file.mime==='application/pdf'?'PDF kuitansi':'Dokumen pendukung';
@@ -238,8 +238,5 @@ function renderReviewSummary(){
  if(!files.length)documents.append(el('p','Dokumen laporan belum tersedia.'));box.append(documents);
  if(difference===0)box.append(el('p','Tidak ada sisa UM yang perlu dikembalikan.',{className:'footnote'}));
  else if(difference>0&&!files.some(f=>f.purpose==='settlement'))box.append(el('p','Bukti pengembalian sisa UM belum dilampirkan.',{className:'note'}));
- const findings=(current.checks?.rows||[]).filter(r=>r.issues.length||r.warnings.length||r.notes?.length);
- if(findings.length){const details=el('details');details.append(el('summary','Catatan analisis sistem · '+findings.length+' kuitansi'));for(const r of findings)details.append(el('p','Kuitansi '+r.receipt_no+': '+[...r.issues,...r.warnings,...(r.notes||[])].join('; ')));box.append(details);}
- if(report.notes)box.append(el('p','Catatan pelapor: '+report.notes));
  if(me.director&&current.status==='pjum_submitted')box.append(el('p','Menunggu pemeriksaan Bu Riena.',{className:'note'}));
 }
