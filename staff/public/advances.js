@@ -119,7 +119,7 @@ $('#scan-receipts').onclick=()=>run(async()=>{
  if(!pages.length)throw Error('Tautkan bukti dan halaman pada rincian.');
  for(let i=0;i<pages.length;i+=3){
   const batch=pages.slice(i,i+3);$('#scan-progress').textContent='Membaca bukti '+(i+1)+'–'+Math.min(i+3,pages.length)+' dari '+pages.length+'. Tetap buka halaman ini.';
-  current=await request('/'+current.id+'/scan','POST',{version:current.version,pages:batch.map(item=>({file_id:item.file_id,page:item.page}))});renderChecks();
+  current=await request('/'+current.id+'/scan','POST',{version:current.version,pages:batch.map(item=>({file_id:item.file_id,page:item.page}))});renderChecks();renderPairSummary();$('#pair-progress').textContent=$('#scan-progress').textContent;
  }
  $('#scan-progress').textContent='Pemeriksaan otomatis selesai. Baca catatan setiap kuitansi sebelum mengirim.';await reload();render();
 });
@@ -167,7 +167,7 @@ function renderPairSummary(){
  const flagged=checks?.rows.filter(r=>r.warnings.length)||[];if(flagged.length){const d=el('details',undefined,{className:'pjum-read-notes'});d.append(el('summary','Catatan pembacaan otomatis · '+ready.read+'/'+ready.total+' terbaca'),el('p','Kelengkapan berkas berbeda dari kesesuaian isi. Catatan berikut diperiksa Riena.'));for(const r of flagged){const line=el('p','Kuitansi '+r.receipt_no+': '+r.warnings.join('; ')),i=report.items[r.index];if(i?.file_id)line.append(el('a',' Buka bukti',{href:api+'/'+current.id+'/files/'+i.file_id+'?preview=1#page='+i.page,target:'_blank',rel:'noopener'}));d.append(line);}box.append(d);}
  if(report.report_date>date())box.append(el('p','Laporan dapat dikirim mulai '+report.report_date,{className:'note'}));
  if(ready.unread.length&&!report.notes?.trim())box.append(el('p','Ada bukti yang belum dipindai. Klik Lanjutkan pemeriksaan kuitansi.',{className:'note'}));
- if(ready.blocked&&reportEditable()){const retry=el('button','Lanjutkan pemeriksaan kuitansi',{type:'button',className:'secondary'});retry.onclick=()=>$('#scan-receipts').click();box.append(retry);}
+ if((ready.blocked||checks?.rows.some(r=>!r.result?.receipt_no))&&reportEditable()){const retry=el('button','Baca ulang nomor kuitansi yang belum terbaca',{type:'button',className:'secondary'});retry.onclick=()=>$('#scan-receipts').click();box.append(retry);}
  if(reportEditable()&&current.status==='pjum_draft'){const label=el('label'),ack=el('input',undefined,{id:'preview-confirmed',type:'checkbox'});ack.onchange=()=>{$('#send-pjum').disabled=busy||dirty||ready.blocked||!ack.checked;};label.append(ack,document.createTextNode('Saya telah melihat rincian Excel dan kuitansi serta memeriksa catatan perbedaannya.'));box.append(label);const send=el('button','Kirim PJUM ke Riena',{id:'send-pjum',type:'button',disabled:true});send.onclick=()=>run(()=>{if(!$('#preview-confirmed').checked)throw Error('Lihat dokumen dan konfirmasi pemeriksaan terlebih dahulu.');return act('report_submit');});box.append(send,el('p','Laporan akan masuk ke akun Riena untuk diperiksa. Kelengkapan berkas belum merupakan persetujuan Finance.',{className:'footnote'}));}
  if(sent){const back=el('button','Laporkan PJUM lain',{type:'button',className:'secondary'});back.onclick=()=>$('#new-pjum').click();box.append(back);}
  if(sent)box.append(el('p',current.status==='pjum_submitted'?'Berhasil dikirim ke Riena — menunggu pemeriksaan.':labels[current.status],{className:'pjum-delivery'}));
