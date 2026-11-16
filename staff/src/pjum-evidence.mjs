@@ -9,7 +9,7 @@ export const receiptReviewKey=item=>JSON.stringify([item.file_id,item.page,item.
 export function receiptChecks(report,files,ocr,paidDate){
  const used=new Set(),numbers=new Set(),rows=[];
  for(const [index,item] of (report?.items||[]).entries()){
-  const issues=[],warnings=[],key=norm(item.receipt_no),file=files.find(f=>f.id===item.file_id&&f.purpose==='pjum'&&f.mime!=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const issues=[],warnings=[],notes=[],key=norm(item.receipt_no),file=files.find(f=>f.id===item.file_id&&f.purpose==='pjum'&&f.mime!=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   if(!key)issues.push('Nomor kuitansi belum diisi');else if(numbers.has(key))issues.push('Nomor kuitansi ganda');numbers.add(key);
   if(!item.recipient)issues.push('Penerima belum diisi');
   if(!file)issues.push('Bukti belum ditautkan');
@@ -18,7 +18,7 @@ export function receiptChecks(report,files,ocr,paidDate){
   const pageKey=item.file_id+':'+item.page;if(used.has(pageKey))issues.push('Halaman bukti dipakai lebih dari sekali');used.add(pageKey);
   if(item.date>today())issues.push('Tanggal pengeluaran masih di masa depan');
   if(report.report_date&&item.date>report.report_date)issues.push('Pengeluaran melewati tanggal laporan');
-  if(paidDate&&item.date<paidDate)warnings.push('Pengeluaran mendahului pencairan; jelaskan talangannya');
+  if(paidDate&&item.date<paidDate)notes.push('Pengeluaran mendahului pencairan; jelaskan talangannya');
   const scan=ocr.find(o=>o.file_id===item.file_id&&o.page===item.page),result=scan?.result;
   if(!scan)warnings.push('Bukti belum dibaca otomatis');
   else if(result.error)warnings.push(result.error);
@@ -28,12 +28,12 @@ export function receiptChecks(report,files,ocr,paidDate){
    if(result.date!==item.date)warnings.push('Tanggal berbeda atau tidak terbaca');
    if(result.amount!==item.subtotal)warnings.push('Nominal berbeda atau tidak terbaca');
    const essential=String(item.description).toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=4&&!['untuk','dalam','rangka','paket','desa'].includes(w));
-   const description=norm(result.description);if(!result.description||essential.some(w=>!description.includes(w)))warnings.push('Uraian berbeda atau perlu diperiksa');
+   const description=norm(result.description);if(!result.description||essential.some(w=>!description.includes(w)))notes.push('Uraian Excel dan hasil pembacaan berbeda; Bagian Keuangan memeriksa kesesuaian kegiatan');
   }
   const comparisons=[['receipt_no','Nomor kuitansi',item.receipt_no,result?.receipt_no],['recipient','Penerima',item.recipient,result?.recipient],['amount','Jumlah',item.subtotal,result?.amount],['date','Tanggal',item.date,result?.date]].map(([field,label,expected,actual])=>({field,label,expected,actual:actual??null,status:!scan||result?.error||actual===null||actual===undefined||actual===''?'Belum terbaca':(field==='amount'?actual===expected:norm(actual)===norm(expected))?'Cocok':'Berbeda'}));
   const manual=(report.receipt_reviews||[]).find(r=>r.index===index&&r.key===receiptReviewKey(item))||null;
   const resolved=manual?.status==='matched';
-  rows.push({manual,resolved,comparisons,index,receipt_no:item.receipt_no||'',issues,warnings,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':manual?.status==='needs_fix'?'Perlu diperbaiki':resolved?'Cocok · dikonfirmasi pelapor':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
+  rows.push({manual,resolved,comparisons,index,receipt_no:item.receipt_no||'',issues,warnings,notes,read:!!scan,result:result||null,status:issues.length?'Belum lengkap':manual?.status==='needs_fix'?'Perlu diperbaiki':resolved?'Cocok · dikonfirmasi pelapor':warnings.length?'Perlu diperiksa':'Data cocok; menunggu pemeriksaan Finance'});
  }
  const unused=files.filter(f=>f.purpose==='pjum'&&f.pages).flatMap(f=>Array.from({length:f.pages},(_,i)=>({file_id:f.id,page:i+1}))).filter(o=>!used.has(o.file_id+':'+o.page));
  return {rows,unused,complete:!!rows.length&&rows.every(r=>!r.issues.length),unresolved:rows.filter(r=>r.manual?.status==='needs_fix'||!r.resolved&&(r.warnings.length||r.comparisons.some(c=>c.status!=='Cocok'))).length,matched:rows.filter(r=>!r.issues.length&&!r.warnings.length).length,warnings:unused.length+rows.reduce((n,r)=>n+r.warnings.length,0),disclaimer:'Pembacaan otomatis membantu pencocokan data. Tanda tangan, keabsahan bukti, dan kesesuaian kegiatan diperiksa Bagian Keuangan.'};
