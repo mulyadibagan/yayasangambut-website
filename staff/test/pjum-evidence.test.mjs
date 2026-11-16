@@ -48,6 +48,18 @@ test('Excel file selection reaches the import API while genuinely edited report 
  document.querySelector('#pjum-form textarea').dispatchEvent(new Event('input',{bubbles:true}));picker.onchange();await new Promise(setImmediate);assert.equal(imports,1);assert.match(document.querySelector('#notice').textContent,/Simpan perubahan/);
  runInContext("dirty=false;current={id:'sent',creator:'mul',creator_name:'Mulyadi',number:'10/ARC3',status:'pjum_submitted',total:100,actual:100,payload:{activity:'Monitoring'},report:{items:[{receipt_no:'1',date:'2026-11-01',recipient:'Tim',description:'Honor',subtotal:100,file_id:'pdf',page:1}],report_date:'2026-11-16',total:100,notes:''},checks:{complete:true,rows:[{index:0,receipt_no:'1',issues:[],warnings:[],read:true,result:{}}]},files:[{id:'pdf',purpose:'pjum',mime:'application/pdf',filename:'kuitansi.pdf'}]};rows=[current,{...current,id:'sent2',number:'11/ARC3',status:'pjum_draft'}];renderSubmittedPjum();renderPairSummary();",context);
  assert.equal(document.querySelectorAll('#submitted-pjum-list button').length,2);assert.equal(document.querySelector('#send-pjum'),null);assert.ok(document.querySelector('.pjum-report-preview').open);assert.match(document.querySelector('.pjum-saved-files a').href,/preview=1/);
+ runInContext("me={id:'riena',name:'Riena',finance:true,director:false};current.files.push({id:'xls',purpose:'pjum',mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',filename:'laporan.xlsx'});current.drive={files:[{file_id:'pdf',status:'archived',web_url:'https://drive.google.com/file/d/proof/view'},{file_id:'xls',status:'archived',web_url:'https://docs.google.com/spreadsheets/d/report/edit'}]};renderReviewSummary();",context);
+ assert.equal(document.querySelector('#simple-pjum-review').hidden,false);
+ assert.ok(document.body.classList.contains('pjum-review'));
+ assert.equal(document.querySelectorAll('#simple-pjum-review .review-documents article').length,2);
+ assert.ok(document.querySelector('#simple-pjum-review').textContent.includes('Tidak ada sisa UM'));
+ assert.equal(document.querySelectorAll('#simple-pjum-review .pjum-comparison').length,0);
+ assert.ok(document.querySelectorAll('#simple-pjum-review a')[0].href.startsWith('https://drive.google.com/'));
+ runInContext("me={id:'mul',name:'Mulyadi',finance:false,director:true};location.search='?view=review';renderReviewSummary();",context);
+ assert.ok(document.querySelector('#simple-pjum-review').textContent.includes('Menunggu pemeriksaan Bu Riena'));
+ runInContext("location.search='';renderReviewSummary();",context);
+ assert.equal(document.body.classList.contains('pjum-review'),false);
+
 });
 
 test('number retry reads a cropped top-right margin and preserves previously read receipt fields',async()=>{
