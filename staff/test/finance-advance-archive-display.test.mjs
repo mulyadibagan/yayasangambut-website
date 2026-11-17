@@ -11,7 +11,7 @@ test('the dashboard source receives completed reports and retains one original U
  try{
   await mkdir(join(root,'app'));
   await writeFile(join(root,'app/gmail-2025-records.ts'),'export const gmail2025Records=[];');
-  await writeFile(join(root,'app/gmail-2026-records.ts'),"export const gmail2026Records=[{id:'um',type:'UM',bankStatus:'Cocok',amount:100,title:'Original'}];");
+  await writeFile(join(root,'app/gmail-2026-records.ts'),"export const gmail2026Records=[{id:'um',type:'UM',sourceEmailId:'original-email',sourceEmailSubject:'Original subject',bankStatus:'Cocok',amount:100,title:'Original'}];");
   const rows=[{id:'um',type:'UM',submitted_at:'2 Okt 2026',title:'Canonical UM',amount:100,status:'Dicairkan'},
    {id:'PJUM-WORKFLOW-r',type:'PJUM',submitted_at:'2026-11-16',title:'Report',amount:100,actual_amount:100,advance_amount:100,balance:0,parent_um_id:'um',status:'Disetujui',evidence_files:'[{"name":"Receipts.pdf","url":"https://drive.google.com/file/d/pdf/view"}]'}];
   const additions=await applyAdvanceArchiveDisplay(root,rows);
@@ -23,6 +23,7 @@ test('the dashboard source receives completed reports and retains one original U
   assert.equal(records.length,2);assert.equal(records[0].bankStatus,'Cocok');
   assert.equal(records[0].title,'Canonical UM');
   assert.equal(records[1].parentUmId,'um');assert.equal(records[1].actualAmount,100);
+  assert.equal(records[1].sourceEmailId,'');assert.equal(records[1].sourceEmailSubject,null);
   assert.equal(records[1].submissionVerified,true);assert.equal(records[1].evidenceFiles.length,1);
  }finally{await rm(root,{recursive:true,force:true});}
 });
