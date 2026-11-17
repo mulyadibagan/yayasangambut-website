@@ -34,6 +34,12 @@ test('a verified reimbursement settles an overrun once without adding another ba
  const r=integrateFinance([],[workflow],history);assert.equal(r.totals.reimbursementVerified,2000);assert.equal(r.totals.overrun,0);assert.equal(r.totals.cashOut,12000);
  const pending=integrateFinance([],[{...workflow,status:'settlement'}],history);assert.equal(pending.totals.reimbursementVerified,0);assert.equal(pending.totals.overrun,2000);
 });
+test('historical bank-return links and Finance review states use the existing authoritative IDs without requiring a new workflow',()=>{
+ const archive=[{id:'um',type:'UM',amount:100,project:'ARC3',status:'Dicairkan'},{id:'report',type:'PJUM',amount:80,actualAmount:80,advanceAmount:100,parentUmId:'um',project:'ARC3',status:'Menunggu Persetujuan'}];
+ const history={...bank,verifiedReturns:[{umId:'um',pjumId:'report',index:3,project:'ARC3',reference:'RETURN',amount:20}]};
+ const r=integrateFinance(archive,[],history);assert.equal(r.totals.pjumUnderReview,8000);assert.equal(r.totals.pjumApproved,0);assert.equal(r.totals.refundVerified,2000);assert.equal(r.totals.outstanding,8000);assert.equal(r.totals.cashIn,102000);
+ assert.equal(financeProject('Operasional YG'),financeProject('Operasional Yayasan'));
+});
 test('deduplication requires the exact official UM or PJUM number and equal amount, never only a similar title or amount',()=>{
  const a=[{id:'first',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'email-copy',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'third',type:'UM',documentNumber:'03/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'}];
  assert.equal(integrateFinance(a,[],bank).totals.umPaid,20000);

@@ -4,6 +4,7 @@ const parse=v=>typeof v==='string'?JSON.parse(v):v;
 const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={arc3:'ARC3',aramcophase3:'ARC3',aramcophaseiii:'ARC3',spmcls:'SPMCLS',spmclsriau:'SPMCLS',ppcf:'PPCF',ppcfpematangduku:'PPCF',penabulu:'PENABULU',penabulusmallgrants:'PENABULU',maearth:'MAEARTH',resto:'RESTO',restorasiimboputui:'RESTO',april:'APRIL',aprilgroup:'APRIL',aprildayun:'APRIL',dayunapril:'APRIL',core26:'CORE26',akcf26:'CORE26',aliansikolibricorefund2026:'CORE26',core25:'AK_CORE_2025',akcore2025:'AK_CORE_2025',aliansikolibricorefund2025:'AK_CORE_2025',spm25:'SPM25',spm2025:'SPM25',bpdpks:'BPDPKS',yg:'YG',sav:'YG',savingumumyg:'YG',operasionalyayasan:'YG'};
 export const financeProject=value=>{const key=norm(value).replace(/^yg/,'');return aliases[norm(value)]||aliases[key]||String(value||'Belum dialokasikan');};
+Object.assign(aliases,{operasionalyg:'YG',arc2:'ARC2',aramcophase2:'ARC2',aramcophaseii:'ARC2',arc1:'ARC1',aramcophase1:'ARC1'});
 const cents=v=>{const n=Number(v??0);if(!Number.isFinite(n)||n<0||!Number.isSafeInteger(Math.round(n*100)))throw Error('Nominal Finance tidak valid.');return Math.round(n*100);};
 const isPaid=r=>r.workflowPaid===true||r.status==='Dicairkan'||r.bankStatus==='Cocok'&&cents(r.bankAmount)===cents(r.advanceAmount??r.amount);
 const isApproved=r=>['Disetujui','Selesai'].includes(r.status);
@@ -41,31 +42,41 @@ export function integrateFinance(archive,workflows,history){
   const id='PJUM-WORKFLOW-'+row.id;
   for(const [otherId,other]of records){
    if(otherId===id||other.type!=='PJUM'||other.parentUmId!==parentId||!report.report_number||norm(other.documentNumber||other.pjumNumber)!==norm(report.report_number))continue;
-   if(cents(other.actualAmount??other.amount)===cents(row.actual))records.delete(otherId);
+   if(cents(other.actualAmount??other.amount)===cents(row.actual)){records.delete(otherId);redirect.set(otherId,id);}
    else warnings.push({id:otherId,reason:'Nomor PJUM sama tetapi nominal berbeda; perlu rekonsiliasi.'});
   }
   records.set(id,{...records.get(id),id,type:'PJUM',code:[...new Set((report.items||[]).map(i=>i.activity_code).filter(Boolean))].join(', '),parentUmId:parentId,title:p.activity,project,submitter:row.creator_name,amount:row.actual,actualAmount:row.actual,advanceAmount:row.total,balance:row.total-row.actual,documentNumber:report.report_number||number,submittedAt:report.report_date,workflowId:row.id,workflowStatus:row.status,submissionVerified:submitted,status:approved?'Disetujui':row.status==='pjum_checked'?'Menunggu Persetujuan':row.status==='pjum_submitted'?'Dilaporkan ke Riena':row.status==='pjum_returned'?'Perlu Revisi':'Draf',documentUrl:records.get(id)?.documentUrl||'/finance/advances?id='+row.id,settlementReference:row.status==='closed'?row.settlement_reference:null});
  }
- const list=[...records.values()],groups=new Map(),usedRefunds=new Set();
+ const list=[...records.values()],groups=new Map(),usedRefunds=new Set(),allocatedReturns=new Map();
  const group=value=>{const id=financeProject(value);if(!groups.has(id))groups.set(id,{id,umPaid:0,pjumApproved:0,pjumUnderReview:0,pjumDraft:0,refundVerified:0,reimbursementVerified:0,outstanding:0,overrun:0,cashIn:0,cashOut:0,netCash:0,requests:[]});return groups.get(id);};
  for(const um of list.filter(r=>r.type==='UM')){
   const g=group(um.project),reports=list.filter(p=>p.type==='PJUM'&&p.parentUmId===um.id);
-  const approved=reports.filter(isApproved),review=reports.filter(p=>!isApproved(p)&&p.submissionVerified===true);
+  const approved=reports.filter(isApproved),review=reports.filter(p=>!isApproved(p)&&!['Draf','Perlu Revisi','Ditolak','Dibatalkan'].includes(p.status)&&(p.submissionVerified===true||['Dilaporkan ke Riena','Menunggu Persetujuan'].includes(p.status)));
   const a=cents(um.advanceAmount??um.amount),realized=approved.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
   const pending=review.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0),draft=reports.filter(r=>r.status==='Draf'||r.status==='Perlu Revisi').reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
   let refund=0,reimbursement=0;
-  for(const r of approved){
+  for(const r of reports.filter(p=>!['Draf','Ditolak','Dibatalkan'].includes(p.status))){
    const shortfall=Math.max(0,cents(r.actualAmount??r.amount)-cents(r.advanceAmount??um.amount));
-   if(shortfall){
+   if(shortfall&&isApproved(r)){
     const reference=r.settlementReference||r.bankReference;
     const matched=(history?.rows||[]).filter(b=>reference&&norm(b.reference)===norm(reference)&&financeProject(b.project)===g.id&&b.debit===shortfall);
     if(matched.length===1&&!usedRefunds.has(matched[0].id)){reimbursement+=shortfall;usedRefunds.add(matched[0].id);}
     else warnings.push({id:r.id,reason:'Pelunasan kekurangan belum cocok dengan mutasi bank.'});
    }
    const expected=Math.max(0,cents(r.advanceAmount??um.amount)-cents(r.actualAmount??r.amount));if(!expected)continue;
+   const links=(history?.verifiedReturns||[]).filter(l=>(l.pjumId===r.id||redirect.get(l.pjumId)===r.id)&&(l.umId===um.id||redirect.get(l.umId)===um.id)&&financeProject(l.project)===g.id);
+   let validated=0;
+   for(const link of links){
+    const amount=cents(link.amount);
+    const matches=history.rows.filter(b=>String(b.year)==='2026'&&b.id.split(':')[1]===String(link.index)&&norm(b.reference)===norm(link.reference)&&financeProject(b.project)===g.id&&b.credit>=amount);
+    if(matches.length!==1||usedRefunds.has(matches[0].id)||validated+amount>expected)continue;
+    const bank=matches[0],claimed=allocatedReturns.get(bank.id)||0;if(claimed+amount>bank.credit)continue;
+    allocatedReturns.set(bank.id,claimed+amount);validated+=amount;
+   }
+   if(validated){refund+=validated;continue;}
    const reference=r.settlementReference||r.bankReference;
    const matched=(history?.rows||[]).filter(b=>reference&&norm(b.reference)===norm(reference)&&financeProject(b.project)===g.id&&b.credit===expected);
-   if(matched.length===1&&!usedRefunds.has(matched[0].id)){refund+=expected;usedRefunds.add(matched[0].id);}
+   if(matched.length===1&&!usedRefunds.has(matched[0].id)&&!allocatedReturns.has(matched[0].id)){refund+=expected;usedRefunds.add(matched[0].id);}
    else if(!history&&r.bankStatus==='Cocok'&&cents(r.bankAmount)===expected&&!usedRefunds.has('archive:'+reference)){refund+=expected;usedRefunds.add('archive:'+reference);}
    else warnings.push({id:r.id,reason:'Pengembalian sisa UM belum cocok dengan mutasi bank.'});
   }
@@ -97,7 +108,10 @@ export async function readIntegratedFinance(env,archive){
  if(!archive)archive=(await env.DB.prepare('SELECT * FROM finance_requests').all()).results;
  const workflows=(await env.DB.prepare('SELECT * FROM yg_advance_requests ORDER BY seq').all()).results;
  const setting=await env.DB.prepare("SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();
- return {...integrateFinance(archive,workflows,setting?JSON.parse(setting.setting_value):null),asOf:new Date().toISOString()};
+ const reconciliation=await env.DB.prepare("SELECT setting_value FROM finance_settings WHERE setting_key='finance_reconciliation_v1'").first();
+ const history=setting?JSON.parse(setting.setting_value):null;
+ if(history)history.verifiedReturns=reconciliation?(JSON.parse(reconciliation.setting_value).umReturns||[]):[];
+ return {...integrateFinance(archive,workflows,history),asOf:new Date().toISOString()};
 }
 export async function financeIntegrationRoute(req,env,user){
  if(!financeDashboardAccess(user))return new Response('Akses ditolak',{status:403});
