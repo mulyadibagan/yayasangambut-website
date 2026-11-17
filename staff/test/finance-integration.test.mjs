@@ -28,6 +28,12 @@ test('receipt upload, similar bank amount or a duplicate return reference cannot
  const no=integrateFinance([],[{...row,status:'closed'}],notMatched);assert.equal(no.totals.refundVerified,0);assert.equal(no.totals.outstanding,2000);assert.equal(no.warnings.length,1);
  const twice=integrateFinance([],[{...row,status:'closed'},{...row,id:'r2',seq:2,status:'closed'}],bank);assert.equal(twice.totals.refundVerified,2000);assert.equal(twice.totals.outstanding,2000);assert.equal(twice.totals.cashIn,102000);
 });
+test('a verified reimbursement settles an overrun once without adding another bank expense',()=>{
+ const history={...bank,rows:bank.rows.map(r=>r.reference==='RETURN'?{...r,credit:0,debit:2000}:r),coverage:[{year:'2026',opening:0,ending:88000,incoming:100000,outgoing:12000,difference:0}]};
+ const workflow={...row,status:'closed',actual:120,report:JSON.stringify({report_number:'PJUM-2026-1',total:120,items:[]})};
+ const r=integrateFinance([],[workflow],history);assert.equal(r.totals.reimbursementVerified,2000);assert.equal(r.totals.overrun,0);assert.equal(r.totals.cashOut,12000);
+ const pending=integrateFinance([],[{...workflow,status:'settlement'}],history);assert.equal(pending.totals.reimbursementVerified,0);assert.equal(pending.totals.overrun,2000);
+});
 test('deduplication requires the exact official UM or PJUM number and equal amount, never only a similar title or amount',()=>{
  const a=[{id:'first',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'email-copy',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'third',type:'UM',documentNumber:'03/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'}];
  assert.equal(integrateFinance(a,[],bank).totals.umPaid,20000);
@@ -39,6 +45,7 @@ test('cash totals reconcile by project, preserve legitimate repeats and fail clo
  assert.throws(()=>integrateFinance([],[],{...bank,rows:[...bank.rows,bank.rows[0]]}),/ganda/);
  assert.throws(()=>integrateFinance([],[],{...bank,coverage:[{difference:1}]}),/Rekonsiliasi/);
  assert.equal(integrateFinance([],[],null).cashAvailable,false);assert.equal(integrateFinance([],[],null).bankClosing,null);
+ const historical=integrateFinance([],[],{...bank,coverage:[{year:'2025',incoming:0,outgoing:0,difference:100},...bank.coverage]});assert.equal(historical.bankClosing,92000);assert.ok(historical.warnings.some(w=>w.id==='2025'&&w.difference===100));
 });
 test('integration endpoint denies staff and non-GET requests before reading any financial data',async()=>{
  const request=new Request('https://staff.yayasangambut.org/finance/integration/api');

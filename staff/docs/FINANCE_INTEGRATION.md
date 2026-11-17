@@ -15,6 +15,8 @@ nomor dokumen yang persis sama dengan nominal sama tidak dihitung dua kali.
   `finance-history.json` setelah rekonsiliasi register bank pada deployment Finance.
   Ini bukan koneksi langsung ke bank. Tanggal cakupan mutasi ditampilkan terpisah
   dari waktu pembacaan UM/PJUM.
+- Selisih rekonsiliasi tahun historis tetap ditampilkan sebagai catatan, tanpa
+  mengubah angka sumber. Selisih periode bank terakhir menghalangi penerbitan.
 - Pengembalian mengurangi kewajiban hanya jika referensi, proyek, dan nominal
   cocok dengan satu mutasi bank. Unggahan bukti saja tidak menambah kas.
 - Nilai agregat API memakai sen rupiah sebagai integer. Arus kas neto proyek

@@ -47,14 +47,21 @@ export function integrateFinance(archive,workflows,history){
   records.set(id,{...records.get(id),id,type:'PJUM',code:[...new Set((report.items||[]).map(i=>i.activity_code).filter(Boolean))].join(', '),parentUmId:parentId,title:p.activity,project,submitter:row.creator_name,amount:row.actual,actualAmount:row.actual,advanceAmount:row.total,balance:row.total-row.actual,documentNumber:report.report_number||number,submittedAt:report.report_date,workflowId:row.id,workflowStatus:row.status,submissionVerified:submitted,status:approved?'Disetujui':row.status==='pjum_checked'?'Menunggu Persetujuan':row.status==='pjum_submitted'?'Dilaporkan ke Riena':row.status==='pjum_returned'?'Perlu Revisi':'Draf',documentUrl:records.get(id)?.documentUrl||'/finance/advances?id='+row.id,settlementReference:row.status==='closed'?row.settlement_reference:null});
  }
  const list=[...records.values()],groups=new Map(),usedRefunds=new Set();
- const group=value=>{const id=financeProject(value);if(!groups.has(id))groups.set(id,{id,umPaid:0,pjumApproved:0,pjumUnderReview:0,pjumDraft:0,refundVerified:0,outstanding:0,overrun:0,cashIn:0,cashOut:0,netCash:0,requests:[]});return groups.get(id);};
+ const group=value=>{const id=financeProject(value);if(!groups.has(id))groups.set(id,{id,umPaid:0,pjumApproved:0,pjumUnderReview:0,pjumDraft:0,refundVerified:0,reimbursementVerified:0,outstanding:0,overrun:0,cashIn:0,cashOut:0,netCash:0,requests:[]});return groups.get(id);};
  for(const um of list.filter(r=>r.type==='UM')){
   const g=group(um.project),reports=list.filter(p=>p.type==='PJUM'&&p.parentUmId===um.id);
   const approved=reports.filter(isApproved),review=reports.filter(p=>!isApproved(p)&&p.submissionVerified===true);
   const a=cents(um.advanceAmount??um.amount),realized=approved.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
   const pending=review.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0),draft=reports.filter(r=>r.status==='Draf'||r.status==='Perlu Revisi').reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
-  let refund=0;
+  let refund=0,reimbursement=0;
   for(const r of approved){
+   const shortfall=Math.max(0,cents(r.actualAmount??r.amount)-cents(r.advanceAmount??um.amount));
+   if(shortfall){
+    const reference=r.settlementReference||r.bankReference;
+    const matched=(history?.rows||[]).filter(b=>reference&&norm(b.reference)===norm(reference)&&financeProject(b.project)===g.id&&b.debit===shortfall);
+    if(matched.length===1&&!usedRefunds.has(matched[0].id)){reimbursement+=shortfall;usedRefunds.add(matched[0].id);}
+    else warnings.push({id:r.id,reason:'Pelunasan kekurangan belum cocok dengan mutasi bank.'});
+   }
    const expected=Math.max(0,cents(r.advanceAmount??um.amount)-cents(r.actualAmount??r.amount));if(!expected)continue;
    const reference=r.settlementReference||r.bankReference;
    const matched=(history?.rows||[]).filter(b=>reference&&norm(b.reference)===norm(reference)&&financeProject(b.project)===g.id&&b.credit===expected);
@@ -62,8 +69,8 @@ export function integrateFinance(archive,workflows,history){
    else if(!history&&r.bankStatus==='Cocok'&&cents(r.bankAmount)===expected&&!usedRefunds.has('archive:'+reference)){refund+=expected;usedRefunds.add('archive:'+reference);}
    else warnings.push({id:r.id,reason:'Pengembalian sisa UM belum cocok dengan mutasi bank.'});
   }
-  const paid=isPaid(um);g.umPaid+=paid?a:0;g.pjumApproved+=realized;g.pjumUnderReview+=pending;g.pjumDraft+=draft;g.refundVerified+=refund;
-  g.outstanding+=paid?Math.max(0,a-realized-refund):0;g.overrun+=paid?Math.max(0,realized-a):0;
+  const paid=isPaid(um);g.umPaid+=paid?a:0;g.pjumApproved+=realized;g.pjumUnderReview+=pending;g.pjumDraft+=draft;g.refundVerified+=refund;g.reimbursementVerified+=reimbursement;
+  g.outstanding+=paid?Math.max(0,a-realized-refund):0;g.overrun+=paid?Math.max(0,realized-a-reimbursement):0;
   g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,refund,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
  }
  const linked=new Set(list.filter(r=>r.type==='UM').map(r=>r.id));
@@ -71,11 +78,14 @@ export function integrateFinance(archive,workflows,history){
  const seen=new Set();
  for(const row of history?.rows||[]){if(!row.id||seen.has(row.id))throw Error('Identitas mutasi bank ganda.');seen.add(row.id);if(!Number.isSafeInteger(row.credit)||!Number.isSafeInteger(row.debit)||row.credit<0||row.debit<0)throw Error('Nominal mutasi bank tidak valid.');const g=group(row.project);g.cashIn+=row.credit;g.cashOut+=row.debit;}
  const projects=[...groups.values()].map(g=>({...g,netCash:g.cashIn-g.cashOut})).sort((a,b)=>a.id.localeCompare(b.id));
- const keys=['umPaid','pjumApproved','pjumUnderReview','pjumDraft','refundVerified','outstanding','overrun','cashIn','cashOut','netCash'];
+ const keys=['umPaid','pjumApproved','pjumUnderReview','pjumDraft','refundVerified','reimbursementVerified','outstanding','overrun','cashIn','cashOut','netCash'];
  const totals=Object.fromEntries(keys.map(k=>[k,projects.reduce((n,p)=>n+p[k],0)]));
  const coverage=history?.coverage||[];
  for(const c of coverage){
-  if(c.difference!==0)throw Error('Rekonsiliasi mutasi bank belum cocok.');
+  if(c.difference!==0){
+   if(c===coverage.at(-1))throw Error('Rekonsiliasi mutasi bank periode terakhir belum cocok: '+c.year);
+   warnings.push({id:String(c.year),reason:'Register bank historis memiliki selisih rekonsiliasi yang belum diselesaikan.',difference:c.difference});
+  }
   const yearRows=(history?.rows||[]).filter(r=>String(r.year)===String(c.year));
   if(yearRows.reduce((n,r)=>n+r.credit,0)!==c.incoming||yearRows.reduce((n,r)=>n+r.debit,0)!==c.outgoing)throw Error('Jumlah arus kas berbeda dari register bank.');
   if(c.carryDifference)warnings.push({id:String(c.year),reason:'Saldo awal tahun berbeda dari saldo akhir tahun sebelumnya.'});
