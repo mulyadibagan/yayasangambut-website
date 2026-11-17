@@ -1,3 +1,4 @@
+import {installAdvanceArchive} from './finance-advance-archive.mjs';
 // Finance source and historical data are encrypted at rest in this public repository.
 // Decrypt only on the protected production runner; never copy into public website assets.
 import {readFile,writeFile,mkdir,copyFile,readdir} from 'node:fs/promises';
@@ -58,6 +59,7 @@ if(!old[0].results.length){
  await query('CREATE UNIQUE INDEX IF NOT EXISTS finance_ocr_file_unique ON finance_ocr_results(file_id)');
  console.log('Finance database tables verified; uploaded files will be verified through the private Worker binding.');
 }else if(old[0].results[0].source_hash!==digest)throw Error('Finance archive snapshot changed; review migration before proceeding.');
+await installAdvanceArchive(query);
 const policyFiles=(await readdir(resolve(root,'app'))).filter(name=>/^donation-policy\.(?:[cm]?js|tsx?)$/.test(name));
 if(policyFiles.length!==1)throw Error('Donation policy module is missing or ambiguous.');
 const donationPolicy=await import(pathToFileURL(resolve(root,'app',policyFiles[0])).href);
