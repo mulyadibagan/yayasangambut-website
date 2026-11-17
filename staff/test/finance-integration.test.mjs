@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {integrateFinance,financeProject,financeIntegrationRoute} from '../src/finance-integration.mjs';
+import {integrateFinance,financeProject,financeIntegrationRoute,mergeFinanceMetadata} from '../src/finance-integration.mjs';
 import {workflowArchiveRows,applyLiveFinanceIntegration} from '../scripts/finance-live-integration.mjs';
 import {stripWorkflowArchive} from '../src/finance-budget-integration.mjs';
 import {projectCommitments} from '../src/advance-projects.mjs';
@@ -40,6 +40,11 @@ test('historical bank-return links and Finance review states use the existing au
  const r=integrateFinance(archive,[],history);assert.equal(r.totals.pjumUnderReview,8000);assert.equal(r.totals.pjumApproved,0);assert.equal(r.totals.refundVerified,2000);assert.equal(r.totals.outstanding,8000);assert.equal(r.totals.cashIn,102000);
  assert.equal(financeProject('Operasional YG'),financeProject('Operasional Yayasan'));
 });
+test('reviewed source metadata retains prior bank verification while the current workflow status remains authoritative',()=>{
+ const sources=[{id:'u',type:'UM',amount:100,project:'ARC3',bankStatus:'Cocok',bankAmount:100},{id:'p',type:'PJUM',amount:80,actualAmount:80,advanceAmount:100,balance:20,parentUmId:'u',project:'ARC3',bankStatus:'Cocok',bankAmount:20,status:'Disetujui'}];
+ const archive=[{id:'u',type:'UM',amount:100,project:'ARC3',status:'Dicairkan'},{id:'p',type:'PJUM',amount:80,balance:20,actual_amount:null,parent_um_id:null,status:'Menunggu Persetujuan'}];
+ const combined=mergeFinanceMetadata(archive,sources),r=integrateFinance(combined,[],bank);assert.equal(r.totals.refundVerified,2000);assert.equal(r.totals.pjumUnderReview,8000);assert.equal(r.totals.pjumApproved,0);assert.equal(r.totals.outstanding,8000);assert.equal(r.totals.cashIn,102000);
+});
 test('deduplication requires the exact official UM or PJUM number and equal amount, never only a similar title or amount',()=>{
  const a=[{id:'first',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'email-copy',type:'UM',documentNumber:'02/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'},{id:'third',type:'UM',documentNumber:'03/YG_ARC3/11/2026',amount:100,project:'ARC3',status:'Dicairkan'}];
  assert.equal(integrateFinance(a,[],bank).totals.umPaid,20000);
@@ -78,6 +83,7 @@ test('a native UM already included in the project dossier reserves its budget on
 test('build uses the validated history snapshot and replaces the obsolete monitor without rewriting bank sources',async()=>{
  const root=await mkdtemp(join(tmpdir(),'finance-live-'));try{
   await mkdir(join(root,'app'));await writeFile(join(root,'app/finance-history.json'),JSON.stringify(bank));await writeFile(join(root,'app/layout.tsx'),'export default()=> <body><FinanceStaffTools />{children}</body>');
+  for(const year of [2025,2026])await writeFile(join(root,'app/gmail-'+year+'-records.ts'),'export const gmail'+year+'Records=[];');
   const calls=[];await applyLiveFinanceIntegration(root,async(...args)=>calls.push(args));const once=await readFile(join(root,'app/layout.tsx'),'utf8');await applyLiveFinanceIntegration(root,async()=>{});
   assert.equal(await readFile(join(root,'app/layout.tsx'),'utf8'),once);assert.equal((once.match(/<IntegratedFinance \/>/g)||[]).length,1);assert.equal(JSON.parse(calls[0][1][1]).rows.length,3);assert.equal(await readFile(join(root,'app/finance-history.json'),'utf8'),JSON.stringify(bank));
  }finally{await rm(root,{recursive:true,force:true});}

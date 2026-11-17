@@ -13,6 +13,17 @@ export function financeRecord(row){
  for(const [a,b]of Object.entries({parent_um_id:'parentUmId',advance_amount:'advanceAmount',actual_amount:'actualAmount',document_number:'documentNumber',document_url:'documentUrl',document_name:'documentName',archive_folder_url:'archiveFolderUrl',submitted_at:'submittedAt',source_email_id:'sourceEmailId',bank_status:'bankStatus',bank_amount:'bankAmount',bank_date:'bankDate',bank_reference:'bankReference'}))if(r[a]!==undefined&&r[b]===undefined)r[b]=r[a];
  return r;
 }
+export function mergeFinanceMetadata(archive,sources){
+ const records=new Map(sources.map(raw=>{const r=financeRecord(raw);return [r.id,r];}));
+ for(const raw of archive){const r=financeRecord(raw),source=records.get(r.id)||{};
+  const merged={...source,...r};
+  for(const field of ['parentUmId','advanceAmount','actualAmount','bankStatus','bankAmount','bankDate','bankReference','documentNumber','documentUrl','project'])if(merged[field]===undefined||merged[field]===null||merged[field]==='')merged[field]=source[field];
+  if(source.type==='PJUM'&&source.bankStatus==='Cocok'&&merged.bankStatus==='Cocok'&&Number(merged.bankAmount)===Number(source.bankAmount)&&Number(source.bankAmount)>0&&Number(source.bankAmount)<=Number(source.balance))merged.sourceVerifiedReturn=true;
+  records.set(r.id,merged);
+ }
+ for(const r of records.values())if(r.type==='PJUM'&&r.bankStatus==='Cocok'&&Number(r.bankAmount)>0&&Number(r.bankAmount)<=Number(r.balance))r.sourceVerifiedReturn=r.sourceVerifiedReturn===true||sources.some(s=>s.id===r.id&&s.bankStatus==='Cocok'&&Number(s.bankAmount)===Number(r.bankAmount));
+ return [...records.values()];
+}
 
 // A read model only: identifiers link the existing records; no bank transaction
 // or allocation is created from UM/PJUM amounts or uploaded transfer images.
@@ -40,12 +51,13 @@ export function integrateFinance(archive,workflows,history){
   if(!report)continue;
   const approved=['settlement','closed'].includes(row.status),submitted=['pjum_submitted','pjum_checked','settlement','closed'].includes(row.status);
   const id='PJUM-WORKFLOW-'+row.id;
+  let previousReport=records.get(id);
   for(const [otherId,other]of records){
    if(otherId===id||other.type!=='PJUM'||other.parentUmId!==parentId||!report.report_number||norm(other.documentNumber||other.pjumNumber)!==norm(report.report_number))continue;
-   if(cents(other.actualAmount??other.amount)===cents(row.actual)){records.delete(otherId);redirect.set(otherId,id);}
+   if(cents(other.actualAmount??other.amount)===cents(row.actual)){previousReport={...other,...previousReport};records.delete(otherId);redirect.set(otherId,id);}
    else warnings.push({id:otherId,reason:'Nomor PJUM sama tetapi nominal berbeda; perlu rekonsiliasi.'});
   }
-  records.set(id,{...records.get(id),id,type:'PJUM',code:[...new Set((report.items||[]).map(i=>i.activity_code).filter(Boolean))].join(', '),parentUmId:parentId,title:p.activity,project,submitter:row.creator_name,amount:row.actual,actualAmount:row.actual,advanceAmount:row.total,balance:row.total-row.actual,documentNumber:report.report_number||number,submittedAt:report.report_date,workflowId:row.id,workflowStatus:row.status,submissionVerified:submitted,status:approved?'Disetujui':row.status==='pjum_checked'?'Menunggu Persetujuan':row.status==='pjum_submitted'?'Dilaporkan ke Riena':row.status==='pjum_returned'?'Perlu Revisi':'Draf',documentUrl:records.get(id)?.documentUrl||'/finance/advances?id='+row.id,settlementReference:row.status==='closed'?row.settlement_reference:null});
+  records.set(id,{...previousReport,id,type:'PJUM',code:[...new Set((report.items||[]).map(i=>i.activity_code).filter(Boolean))].join(', '),parentUmId:parentId,title:p.activity,project,submitter:row.creator_name,amount:row.actual,actualAmount:row.actual,advanceAmount:row.total,balance:row.total-row.actual,documentNumber:report.report_number||number,submittedAt:report.report_date,workflowId:row.id,workflowStatus:row.status,submissionVerified:submitted,status:approved?'Disetujui':row.status==='pjum_checked'?'Menunggu Persetujuan':row.status==='pjum_submitted'?'Dilaporkan ke Riena':row.status==='pjum_returned'?'Perlu Revisi':'Draf',documentUrl:previousReport?.documentUrl||'/finance/advances?id='+row.id,settlementReference:row.status==='closed'?row.settlement_reference:null});
  }
  const list=[...records.values()],groups=new Map(),usedRefunds=new Set(),allocatedReturns=new Map();
  const group=value=>{const id=financeProject(value);if(!groups.has(id))groups.set(id,{id,umPaid:0,pjumApproved:0,pjumUnderReview:0,pjumDraft:0,refundVerified:0,reimbursementVerified:0,outstanding:0,overrun:0,cashIn:0,cashOut:0,netCash:0,requests:[]});return groups.get(id);};
@@ -64,6 +76,7 @@ export function integrateFinance(archive,workflows,history){
     else warnings.push({id:r.id,reason:'Pelunasan kekurangan belum cocok dengan mutasi bank.'});
    }
    const expected=Math.max(0,cents(r.advanceAmount??um.amount)-cents(r.actualAmount??r.amount));if(!expected)continue;
+   if(r.sourceVerifiedReturn===true&&r.bankStatus==='Cocok'&&cents(r.bankAmount)>0&&cents(r.bankAmount)<=expected&&!usedRefunds.has('source:'+r.id)){refund+=cents(r.bankAmount);usedRefunds.add('source:'+r.id);continue;}
    const links=(history?.verifiedReturns||[]).filter(l=>(l.pjumId===r.id||redirect.get(l.pjumId)===r.id)&&(l.umId===um.id||redirect.get(l.umId)===um.id)&&financeProject(l.project)===g.id);
    let validated=0;
    for(const link of links){
@@ -109,9 +122,11 @@ export async function readIntegratedFinance(env,archive){
  const workflows=(await env.DB.prepare('SELECT * FROM yg_advance_requests ORDER BY seq').all()).results;
  const setting=await env.DB.prepare("SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();
  const reconciliation=await env.DB.prepare("SELECT setting_value FROM finance_settings WHERE setting_key='finance_reconciliation_v1'").first();
+ const sourceMetadata=await env.DB.prepare("SELECT setting_value FROM finance_settings WHERE setting_key='finance_archive_metadata_v1'").first();
  const history=setting?JSON.parse(setting.setting_value):null;
  if(history)history.verifiedReturns=reconciliation?(JSON.parse(reconciliation.setting_value).umReturns||[]):[];
- return {...integrateFinance(archive,workflows,history),asOf:new Date().toISOString()};
+ const combined=mergeFinanceMetadata(archive,sourceMetadata?JSON.parse(sourceMetadata.setting_value):[]);
+ return {...integrateFinance(combined,workflows,history),asOf:new Date().toISOString()};
 }
 export async function financeIntegrationRoute(req,env,user){
  if(!financeDashboardAccess(user))return new Response('Akses ditolak',{status:403});

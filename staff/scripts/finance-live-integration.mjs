@@ -1,6 +1,7 @@
 import {readFile,writeFile,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
 import {integrateFinance} from '../src/finance-integration.mjs';
 
 export function workflowArchiveRows(archive,workflows){
@@ -19,6 +20,16 @@ export async function applyLiveFinanceIntegration(root,query){
  const snapshot=JSON.stringify(history),hash=createHash('sha256').update(snapshot).digest('hex');
  await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['finance_bank_history_v1',snapshot]);
  await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['finance_bank_history_meta_v1',JSON.stringify({hash,asOf:history.to,preparedAt:new Date().toISOString()})]);
+ // Preserve the reviewed bank/parent metadata used by the existing Finance
+ // dossiers. Those fields are not all stored on the original D1 request rows.
+ const sources=[];
+ for(const year of [2025,2026]){
+  const path=resolve(root,'app/gmail-'+year+'-records.ts');
+  const rows=(await import(pathToFileURL(path).href+'?live-finance-source'))['gmail'+year+'Records'];
+  if(!Array.isArray(rows)||rows.some(r=>!r.id))throw Error('Arsip sumber Finance tidak valid.');
+  sources.push(...rows);
+ }
+ await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['finance_archive_metadata_v1',JSON.stringify(sources)]);
  await copyFile(new URL('../finance-ui/integrated-finance.tsx',import.meta.url),resolve(root,'app/integrated-finance.tsx'));
  const layoutPath=resolve(root,'app/layout.tsx');let layout=await readFile(layoutPath,'utf8');
  if(!layout.includes("import IntegratedFinance from './integrated-finance'")){
