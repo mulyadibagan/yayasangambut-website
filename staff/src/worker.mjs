@@ -1,3 +1,4 @@
+import {financeIntegrationRoute,readIntegratedFinance} from './finance-integration.mjs';
 import {financeNotifications} from './finance-notifications.mjs';
 import {syncAdvanceDrive} from './advance-drive.mjs';
 import {lettersApi,letterAccess} from './letters.mjs';
@@ -281,8 +282,14 @@ async function route(req,env,ctx){
     headers.set('x-yg-finance-user',u.email);
     headers.set('oai-authenticated-user-email',u.email);
     headers.set('oai-authenticated-user-id',u.id);
+    if(url.pathname==='/finance/integration/api')return financeIntegrationRoute(req,env,u);
     if(url.pathname==='/finance/email-sync')return financeEmailSync(req,env,headers);
     const response=await env.FINANCE.fetch(new Request(req,{headers}));
+    if(req.method==='GET'&&url.pathname==='/finance/api/requests'&&response.ok&&response.headers.get('Content-Type')?.includes('application/json')){
+      const data=await response.json();if(!Array.isArray(data.requests))fail(503,'Arsip Finance belum dapat dibaca.');
+      const integrated=await readIntegratedFinance(env,data.requests);
+      return Response.json({...data,requests:integrated.records},{headers:{'Cache-Control':'private, no-store'}});
+    }
     if(!response.headers.get('Content-Type')?.includes('text/html'))return response;
     // React hydrates the Finance document, including its body and head. Its UI
     // is supplied by finance-react-shell.mjs at build time, not injected here.

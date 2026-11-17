@@ -1,3 +1,4 @@
+import {nativeAdvanceArchiveTriggers} from './finance-native-archive.mjs';
 // The bank ledger stays authoritative for cash. These projections link completed
 // legacy PJUM reports and their existing files to the main Finance archive.
 export const advanceArchiveTriggers=[
@@ -66,8 +67,9 @@ export async function installAdvanceArchive(query){
  const tables=await query("SELECT name FROM sqlite_master WHERE type='table'");
  const names=new Set(tables[0].results.map(row=>row.name));
  if(required.some(name=>!names.has(name)))return;
- for(const sql of advanceArchiveTriggers)await query(sql);
+ for(const sql of [...advanceArchiveTriggers,...nativeAdvanceArchiveTriggers])await query(sql);
  // Replay the projection from previously approved reports, retaining their
  // workflow event IDs and versions. Trigger statements run atomically per row.
  await query("UPDATE yg_advance_requests SET status=status WHERE status='closed' AND legacy_id IS NOT NULL");
+ await query("UPDATE yg_advance_requests SET status=status WHERE legacy_id IS NULL AND status IN ('disbursed','pjum_draft','pjum_returned','pjum_submitted','pjum_checked','settlement','closed')");
 }

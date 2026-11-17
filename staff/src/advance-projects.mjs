@@ -1,3 +1,4 @@
+import {stripWorkflowArchive} from './finance-budget-integration.mjs';
 import {fail} from './core.mjs';
 import {syncArchive,archiveAllocations} from './advance-sync.mjs';
 import {loadBudget} from './project-budget.mjs';
@@ -51,6 +52,10 @@ export async function projectSource(env,u,projectId){
  const archiveResponse=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+'/finance/api/requests',{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
  if(!archiveResponse.ok)fail(503,'Arsip UM belum dapat disinkronkan. Muat ulang sebelum mengajukan.');
  const archiveData=await archiveResponse.json();if(!Array.isArray(archiveData.requests))fail(503,'Format arsip UM belum dapat disinkronkan.');
+ if(archiveData.requests.some(r=>r.id?.startsWith('UM-WORKFLOW-'))){
+  const live=(await env.DB.prepare('SELECT id,legacy_id,payload,report,status FROM yg_advance_requests').all()).results;
+  const clean=stripWorkflowArchive(source,archiveData.requests,live);return syncArchive(clean.source,clean.records);
+ }
  return syncArchive(source,archiveData.requests);
 }
 export const reservedStatus=s=>!['draft','returned','cancelled'].includes(s);

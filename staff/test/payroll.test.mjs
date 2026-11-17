@@ -49,7 +49,9 @@ test('designated Finance reaches the full dashboard but cannot approve payroll',
  const created=await create(env);
  await call(env,'/'+created.id+'/approve','finance','POST',{version:1},403);
  await call(env,'','director','POST',sample,201);
- env.FINANCE={async fetch(){return Response.json({sync:{},candidates:[]});}};
+ db.exec(readFileSync(new URL('../migrations/0044_advance_requests.sql',import.meta.url),'utf8'));
+ db.exec('CREATE TABLE finance_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT)');
+ env.FINANCE={async fetch(){return Response.json({requests:[],sync:{},candidates:[]});}};
  for(const p of ['/finance','/finance/api/requests','/finance/email-sync','/finance/assets/app.js'])assert.equal((await worker.fetch(new Request(origin+p,{headers:{Cookie:'__Host-yg-session=finance'}}),env)).status,200);
  const evil=request('','finance','POST',sample);evil.headers.set('Origin','https://evil.example');assert.equal((await worker.fetch(evil,env)).status,403);
  db.prepare('UPDATE users SET disabled=1 WHERE id=?').run('finance');await call(env,'','finance','GET',null,401);

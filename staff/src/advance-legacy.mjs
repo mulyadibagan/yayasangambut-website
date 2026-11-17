@@ -10,7 +10,7 @@ export function archiveDate(value){
 
 export function legacyAdvances(records){
  if(!Array.isArray(records))fail(503,'Format arsip UM belum dapat dibaca.');
- return records.filter(r=>String(r.type||r.request_type||'').toUpperCase()==='UM').map(r=>{
+ return records.filter(r=>String(r.type||r.request_type||'').toUpperCase()==='UM'&&!String(r.id).startsWith('UM-WORKFLOW-')).map(r=>{
   const number=String(r.documentNumber||r.code||r.number||r.requestNumber||r.request_number||r.document_number||r.title||''),title=String(r.title||r.description||number),project=String(r.projectCode||r.project_code||r.project||'');
   return {id:String(r.id),number,title,code:String(r.code||''),amount:Number(r.advanceAmount??r.advance_amount??r.amount),project:advanceProjects.find(p=>p.name.toLowerCase()===project.toLowerCase())?.id||project,
    applicant:String(r.submitter||r.applicant||r.requesterName||r.requester_name||r.created_by_name||r.requester||''),

@@ -1,3 +1,4 @@
+import {workflowArchiveRows,applyLiveFinanceIntegration} from './finance-live-integration.mjs';
 import {applyAdvanceArchiveDisplay} from './finance-advance-archive-display.mjs';
 import {installAdvanceArchive} from './finance-advance-archive.mjs';
 // Finance source and historical data are encrypted at rest in this public repository.
@@ -87,9 +88,13 @@ await applyUmReturnIntegration(root,reconciliationUpdates[0].results.length?JSON
 const completedArchiveRows=await query(`SELECT f.*,
  (SELECT json_group_array(json_object('name',e.filename,'url',e.drive_url))
   FROM finance_evidence_registry e WHERE e.request_id=f.id AND e.archive_status='archived') AS evidence_files
- FROM finance_requests f WHERE f.id LIKE 'PJUM-WORKFLOW-%'
+ FROM finance_requests f WHERE (f.id LIKE 'PJUM-WORKFLOW-%' AND f.status='Disetujui')
  OR f.id IN (SELECT legacy_id FROM yg_advance_requests WHERE status='closed')`);
-const archiveAdditions=await applyAdvanceArchiveDisplay(root,completedArchiveRows[0].results);
+const liveArchive=await query('SELECT * FROM finance_requests');
+const liveWorkflows=await query('SELECT * FROM yg_advance_requests ORDER BY seq');
+const projected=new Map(completedArchiveRows[0].results.map(r=>[r.id,r]));
+for(const row of workflowArchiveRows(liveArchive[0].results,liveWorkflows[0].results))projected.set(row.id,{...projected.get(row.id),...row,evidence_files:projected.get(row.id)?.evidence_files||row.evidence_files});
+const archiveAdditions=await applyAdvanceArchiveDisplay(root,[...projected.values()]);
 await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
@@ -97,6 +102,7 @@ const documentLinks=await query('SELECT setting_value FROM finance_settings WHER
 await applyReviewDisplay(root,documentLinks[0].results.length?JSON.parse(documentLinks[0].results[0].setting_value):{receipts:[],records:[]});
 await (await import('./finance-email-telemetry.mjs')).applyEmailTelemetry(root);
 await applyFinancePresentation(root);
+await applyLiveFinanceIntegration(root,query);
 run('npm',['run','build']);
 // Verify new bank-derived donation archives independently of the fixed historical fixture.
 const updatedBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href+'?verified-updates')).bankStatement2026;

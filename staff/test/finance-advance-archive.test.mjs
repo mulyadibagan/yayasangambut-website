@@ -27,6 +27,7 @@ test('completed legacy PJUM projects once with documents and resists an email re
  const payload=JSON.stringify({activity:'Pengajuan UM Activity',legacy:{number:'UM-1'}});
  db.prepare('INSERT INTO yg_advance_requests VALUES(?,?,?,?,?,?,?,?,?,?)').run('r','um','pjum_checked',report,payload,100,100,'Owner','approved-event',9);
  const query=async(sql)=>[{results:db.prepare(sql).all()}];
+ db.exec("ALTER TABLE yg_advance_requests ADD COLUMN seq INTEGER DEFAULT 1;ALTER TABLE yg_advance_requests ADD COLUMN created_at TEXT DEFAULT '2026-01-01'");
  await installAdvanceArchive(query);
  assert.equal(db.prepare("SELECT COUNT(*) n FROM finance_requests WHERE type='PJUM'").get().n,0);
  db.exec("UPDATE yg_advance_requests SET status='closed' WHERE id='r'");
@@ -46,6 +47,18 @@ test('completed legacy PJUM projects once with documents and resists an email re
  assert.equal(db.prepare('SELECT COUNT(*) n FROM finance_files').get().n,2);
  assert.equal(db.prepare('SELECT COUNT(*) n FROM finance_audit').get().n,1);
  assert.equal(db.prepare('SELECT version FROM yg_advance_requests').get().version,9);
+ assert.equal(db.prepare('SELECT balance FROM bank_ledger').get().balance,12345.88);
+ db.prepare('INSERT INTO yg_advance_requests(id,legacy_id,status,report,payload,total,actual,creator_name,last_event,version,seq,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)').run('native',null,'pjum_draft',JSON.stringify({...JSON.parse(report),items:[{file_id:'native-pdf',activity_code:'4.1'}]}),JSON.stringify({project_id:'ARC3',activity:'Native activity'}),100,100,'Owner','event-native',1,2,'2026-01-01');
+ db.exec("INSERT INTO yg_advance_files VALUES('native-pdf','native','pjum','application/pdf','Native.pdf','2026-01-02','native-object',20,'owner');INSERT INTO yg_advance_drive VALUES('native-pdf','native','native-drive','archived','https://drive.google.com/file/d/native/view','folder');");
+ db.exec("UPDATE yg_advance_requests SET status='pjum_submitted' WHERE id='native'");
+ assert.equal(db.prepare("SELECT status FROM finance_requests WHERE id='PJUM-WORKFLOW-native'").get().status,'Dilaporkan ke Riena');
+ db.exec("UPDATE yg_advance_requests SET status='closed' WHERE id='native'");
+ assert.equal(db.prepare("SELECT parent_um_id FROM finance_requests WHERE id='PJUM-WORKFLOW-native'").get().parent_um_id,'UM-WORKFLOW-native');
+ assert.equal(db.prepare("SELECT COUNT(*) n FROM finance_files WHERE request_id='PJUM-WORKFLOW-native'").get().n,1);
+ assert.equal(db.prepare("SELECT COUNT(*) n FROM finance_evidence_registry WHERE request_id='PJUM-WORKFLOW-native'").get().n,1);
+ assert.equal(db.prepare("SELECT status FROM finance_requests WHERE id='PJUM-WORKFLOW-native'").get().status,'Disetujui');
+ await installAdvanceArchive(query);
+ assert.equal(db.prepare("SELECT COUNT(*) n FROM finance_requests WHERE id IN ('UM-WORKFLOW-native','PJUM-WORKFLOW-native')").get().n,2);
  assert.equal(db.prepare('SELECT balance FROM bank_ledger').get().balance,12345.88);
  db.close();
 });

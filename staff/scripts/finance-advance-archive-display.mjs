@@ -13,7 +13,7 @@ export async function applyAdvanceArchiveDisplay(root,rows){
    const report=row.type==='PJUM';
    if(!row.id||!Number.isFinite(row.amount)||!row.title)throw Error('Completed PJUM archive invalid.');
    const patch={id:row.id,type:row.type,code:row.code||'',title:row.title,project:row.project,
-    submitter:row.submitter,submittedAt:report&&/^\d{4}-\d{2}-\d{2}$/.test(row.submitted_at)?new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(row.submitted_at+'T00:00:00Z')):row.submitted_at,amount:row.amount,status:row.status,notes:row.notes||'',
+    documentNumber:row.document_number??null,documentUrl:row.document_url??null,submitter:row.submitter,submittedAt:report&&/^\d{4}-\d{2}-\d{2}$/.test(row.submitted_at)?new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(row.submitted_at+'T00:00:00Z')):row.submitted_at,amount:row.amount,status:row.status,notes:row.notes||'',
     ...(report?{parentUmId:row.parent_um_id,advanceAmount:row.advance_amount,actualAmount:row.actual_amount,balance:row.balance,
      pjumNumber:row.document_number,documentNumber:row.document_number,documentUrl:row.document_url,
      documentName:row.document_name,archiveFolderUrl:row.archive_folder_url,submissionVerified:true,
