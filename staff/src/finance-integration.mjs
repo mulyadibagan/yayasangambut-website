@@ -7,7 +7,7 @@ export const financeProject=value=>{const key=norm(value).replace(/^yg/,'');retu
 Object.assign(aliases,{operasionalyg:'YG',arc2:'ARC2',aramcophase2:'ARC2',aramcophaseii:'ARC2',arc1:'ARC1',aramcophase1:'ARC1'});
 const cents=v=>{const n=Number(v??0);if(!Number.isFinite(n)||n<0||!Number.isSafeInteger(Math.round(n*100)))throw Error('Nominal Finance tidak valid.');return Math.round(n*100);};
 const isPaid=r=>r.workflowPaid===true||r.status==='Dicairkan'||r.bankStatus==='Cocok'&&cents(r.bankAmount)===cents(r.advanceAmount??r.amount);
-const isApproved=r=>['Disetujui','Selesai'].includes(r.status);
+const isApproved=r=>['Disetujui','Selesai','Ditutup'].includes(r.status);
 export function financeRecord(row){
  const r={...row};
  for(const [a,b]of Object.entries({parent_um_id:'parentUmId',advance_amount:'advanceAmount',actual_amount:'actualAmount',document_number:'documentNumber',document_url:'documentUrl',document_name:'documentName',archive_folder_url:'archiveFolderUrl',submitted_at:'submittedAt',source_email_id:'sourceEmailId',bank_status:'bankStatus',bank_amount:'bankAmount',bank_date:'bankDate',bank_reference:'bankReference'}))if(r[a]!==undefined&&r[b]===undefined)r[b]=r[a];
@@ -95,7 +95,8 @@ export function integrateFinance(archive,workflows,history){
   }
   const paid=isPaid(um);g.umPaid+=paid?a:0;g.pjumApproved+=realized;g.pjumUnderReview+=pending;g.pjumDraft+=draft;g.refundVerified+=refund;g.reimbursementVerified+=reimbursement;
   g.outstanding+=paid?Math.max(0,a-realized-refund):0;g.overrun+=paid?Math.max(0,realized-a-reimbursement):0;
-  g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,refund,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
+  const reportingStatus=review.length?'Dalam pemeriksaan':reports.some(r=>r.status==='Perlu Revisi')?'Perlu revisi':reports.some(r=>r.status==='Draf')?'Draf PJUM':approved.length?'PJUM disetujui':reports.length?'Status PJUM perlu diperiksa':'PJUM belum tercatat';
+  g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,submitter:um.submitter,reportingStatus,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,refund,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
  }
  const linked=new Set(list.filter(r=>r.type==='UM').map(r=>r.id));
  for(const r of list.filter(r=>r.type==='PJUM'&&!linked.has(r.parentUmId)))warnings.push({id:r.id,reason:'PJUM belum memiliki UM asal yang cocok.'});

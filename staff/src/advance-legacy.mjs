@@ -1,5 +1,6 @@
 import {fail} from './core.mjs';
 import {advanceProjects} from './advance-projects.mjs';
+import {readIntegratedFinance} from './finance-integration.mjs';
 
 export function archiveDate(value){
  const s=String(value||'').trim();if(/^20\d{2}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
@@ -18,12 +19,10 @@ export function legacyAdvances(records){
    paid_date:archiveDate(r.bankDate||r.bank_date||r.payment_date),status:String(r.status||''),bank_amount:Number(r.bankAmount??r.bank_amount??0),
    bank_status:String(r.bankStatus||r.bank_status||''),
    reference:String(r.bankReference||r.bank_reference||r.payment_reference||''),
-   reported:records.filter(p=>String(p.type||p.request_type).toUpperCase()==='PJUM'&&(p.parentUmId||p.parent_um_id)===r.id&&(p.submissionVerified===true||['Menunggu Persetujuan','Dilaporkan ke Riena','Disetujui','Selesai'].includes(p.status))).reduce((n,p)=>n+Number(p.actualAmount??p.actual_amount??p.amount??0),0)};
+   reported:records.filter(p=>String(p.type||p.request_type).toUpperCase()==='PJUM'&&(p.parentUmId||p.parent_um_id)===r.id&&(p.submissionVerified===true||['Menunggu Persetujuan','Dilaporkan ke Riena','Disetujui','Selesai','Ditutup'].includes(p.status))).reduce((n,p)=>n+Number(p.actualAmount??p.actual_amount??p.amount??0),0)};
  }).filter(r=>r.id&&r.id!=='undefined'&&Number.isSafeInteger(r.amount)&&r.amount>0&&(r.status==='Dicairkan'||r.bank_status==='Cocok'&&r.bank_amount===r.amount));
 }
 export async function legacySource(env,u){
- if(!env.FINANCE)fail(503,'Arsip UM belum terhubung.');
- const r=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+'/finance/api/requests',{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
- if(!r.ok)fail(503,'Arsip UM belum dapat dimuat.');
- const data=await r.json();return legacyAdvances(data.requests);
+ const data=await readIntegratedFinance(env);
+ return legacyAdvances(data.records);
 }

@@ -145,7 +145,7 @@ function refreshPjumChoices(){
  pjumOptions=pjumChoices(rows,pjumArchive,me);const select=$('#pjum-um');
  select.replaceChildren(el('option',pjumOptions.length?'Pilih UM asal':'Tidak ada UM yang belum dilaporkan',{value:''}),...pjumOptions.map(r=>el('option',r.number+' · '+r.title+' · '+money(r.amount)+(r.needsReview?' · Periksa pencairan di arsip':''),{value:r.key,disabled:r.needsReview})));
  const match=current&&pjumOptions.find(r=>r.id===current.id)||pjumSelection&&pjumOptions.find(r=>r.key===pjumSelection.key);pjumSelection=match||null;select.value=match?.key||'';
- $('#pjum-choice-note').textContent=match?match.number+' · '+match.project+' · '+money(match.amount):pjumOptions.length?'Pilih UM yang sudah dicairkan. PJUM yang telah dikirim tidak ditampilkan.':'Belum ada UM yang dapat dilaporkan untuk akun ini. UM arsip yang belum terhubung perlu diperiksa Finance.';
+ $('#pjum-choice-note').textContent=match?match.number+' · '+match.project+' · '+money(match.amount):pjumOptions.length?'Daftar ini khusus UM atas nama Anda dari arsip dan pengajuan aplikasi. Pemantauan seluruh pengaju tersedia pada Ringkasan keuangan. PJUM yang telah dikirim tidak ditampilkan.':'Belum ada UM yang dapat dilaporkan untuk akun ini. UM arsip yang belum terhubung perlu diperiksa Finance.';
 }
 $('#pjum-um').onchange=()=>run(async()=>{
  const selected=pjumOptions.find(r=>r.key===$('#pjum-um').value);

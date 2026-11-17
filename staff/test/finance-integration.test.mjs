@@ -10,6 +10,16 @@ import {tmpdir} from 'node:os';
 import {DatabaseSync} from 'node:sqlite';
 const bank={to:'2026-11-17',rows:[{id:'2026:1',year:'2026',project:'Aramco Phase 3',credit:100000,debit:0,reference:'IN'},{id:'2026:2',year:'2026',project:'ARC3',credit:0,debit:10000,reference:'PAY'},{id:'2026:3',year:'2026',project:'ARC3',credit:2000,debit:0,reference:'RETURN'}],coverage:[{year:'2026',opening:0,ending:92000,incoming:102000,outgoing:10000,difference:0}]};
 const row={id:'r',seq:1,creator_name:'Owner',status:'pjum_draft',created_at:'2026-11-01',total:100,actual:80,payload:JSON.stringify({project_id:'ARC3',activity:'Activity'}),report:JSON.stringify({report_date:'2026-11-17',report_number:'PJUM-2026-1',total:80,items:[{subtotal:80}]}),payment_reference:'PAY',paid_date:'2026-11-01',settlement_reference:'RETURN'};
+
+test('historical closed PJUM is recognized and reporting status is distinct from disbursement',async()=>{
+ const {legacyAdvances}=await import('../src/advance-legacy.mjs');
+ const archive=[{id:'old',type:'UM',amount:100,project:'ARC3',status:'Dicairkan',submitter:'Owner'},{id:'report',type:'PJUM',parentUmId:'old',amount:100,project:'ARC3',status:'Ditutup'},{id:'pending',type:'UM',amount:50,project:'ARC3',status:'Dicairkan'}];
+ const data=integrateFinance(archive,[],bank);
+ assert.equal(data.totals.pjumApproved,10000);assert.equal(data.totals.outstanding,5000);
+ assert.equal(data.projects.find(p=>p.id==='ARC3').requests[0].reportingStatus,'PJUM disetujui');
+ assert.equal(data.projects.find(p=>p.id==='ARC3').requests[1].reportingStatus,'PJUM belum tercatat');
+ assert.equal(legacyAdvances(data.records).find(r=>r.id==='old').reported,100);
+});
 test('native UM, draft, checked and approved PJUM update the same project without changing bank cash',()=>{
  const before=JSON.stringify({row,bank});
  for(const [status,approved,underReview,outstanding]of [['pjum_draft',0,0,10000],['pjum_submitted',0,8000,10000],['pjum_checked',0,8000,10000],['settlement',8000,0,2000],['closed',8000,0,0]]){

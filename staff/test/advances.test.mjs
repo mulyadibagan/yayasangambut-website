@@ -50,7 +50,8 @@ test('director and finance can create their own UM; author identity cannot be sp
 
 test('legacy link is unique, keeps the original amount and never creates bank transactions or a new budget allocation',async()=>{
  const {env,db}=setup();db.exec('ALTER TABLE users ADD COLUMN email TEXT;ALTER TABLE users ADD COLUMN name TEXT;ALTER TABLE users ADD COLUMN disabled INTEGER DEFAULT 0;');for(const u of Object.values(users))db.prepare('UPDATE users SET email=?,name=? WHERE id=?').run(u.email,u.name,u.id);
- env.FINANCE={async fetch(){return Response.json({requests:[{id:'archive-10',type:'UM',code:'10/YG_ARC3/10/2026',documentNumber:'10/YG_ARC3/10/2026',bankDate:'5 Okt 2026',bankStatus:'Cocok',bankAmount:55200000,status:'Dicairkan',title:'4.1 Community Based Protection Termin 2',amount:55200000,project:'ARC3',applicant:'Mulyadi'}]});}};
+ db.exec('CREATE TABLE finance_requests(id TEXT,type TEXT,amount INTEGER,project TEXT,status TEXT,documentNumber TEXT,bankDate TEXT,bankStatus TEXT,bankAmount INTEGER,title TEXT,applicant TEXT);CREATE TABLE finance_settings(setting_key TEXT PRIMARY KEY,setting_value TEXT)');
+ db.prepare('INSERT INTO finance_requests VALUES(?,?,?,?,?,?,?,?,?,?,?)').run('archive-10','UM',55200000,'ARC3','Dicairkan','10/YG_ARC3/10/2026','5 Okt 2026','Cocok',55200000,'4.1 Community Based Protection Termin 2','Mulyadi');
  await reject(()=>call(env,'staff','/legacy'),403);
  await reject(()=>call(env,'director','/legacy','POST',{id:'archive-10',owner_email:users.director.email,paid_date:'2026-10-05',reference:'OLD-BANK',owner_email:users.staff.email}),400);
  const data={id:'archive-10',owner_email:users.director.email,paid_date:'2026-10-05',reference:'OLD-BANK',confirm_existing_payment:true};
