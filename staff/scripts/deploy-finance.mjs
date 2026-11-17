@@ -1,3 +1,4 @@
+import {applyAdvanceArchiveDisplay} from './finance-advance-archive-display.mjs';
 import {installAdvanceArchive} from './finance-advance-archive.mjs';
 // Finance source and historical data are encrypted at rest in this public repository.
 // Decrypt only on the protected production runner; never copy into public website assets.
@@ -83,6 +84,12 @@ if(reconciliationUpdates[0].results.length){
 await applyAvailableCashDisplay(root);
 await applyAdvanceBreakdown(root,reconciliationUpdates[0].results.length?JSON.parse(reconciliationUpdates[0].results[0].setting_value):{staffAllocations:[]});
 await applyUmReturnIntegration(root,reconciliationUpdates[0].results.length?JSON.parse(reconciliationUpdates[0].results[0].setting_value):{});
+const completedArchiveRows=await query(`SELECT f.*,
+ (SELECT json_group_array(json_object('name',e.filename,'url',e.drive_url))
+  FROM finance_evidence_registry e WHERE e.request_id=f.id AND e.archive_status='archived') AS evidence_files
+ FROM finance_requests f WHERE f.id LIKE 'PJUM-WORKFLOW-%'
+ OR f.id IN (SELECT legacy_id FROM yg_advance_requests WHERE status='closed')`);
+const archiveAdditions=await applyAdvanceArchiveDisplay(root,completedArchiveRows[0].results);
 await applyTerminDisplay(root);
 await applyPayrollBridge(root);
 await applyFinanceReactShell(root);
@@ -95,13 +102,14 @@ run('npm',['run','build']);
 const updatedBank=(await import(pathToFileURL(resolve(root,'app/bank-statement-2026.ts')).href+'?verified-updates')).bankStatement2026;
 const addedDonations=donationPolicy.compileDonationRecords(updatedBank.mutations)
  .filter(r=>!originalDonationIds.has(r.id)).map(r=>({id:r.id,type:r.type,amount:r.amount}));
-if(addedDonations.length){
+const addedArchives=[...addedDonations,...archiveAdditions];
+if(addedArchives.length){
  const testPath=root+'/migration-test.mjs';
  let testSource=await readFile(testPath,'utf8');
  const countCheck=/assert\.equal\(body\.requests\.length,\s*(\d+)\)/g;
  const matches=[...testSource.matchAll(countCheck)];
  if(matches.length!==1)throw Error('Archived request-count assertion anchor changed.');
- const replacement='const expectedDonations='+JSON.stringify(addedDonations)+';'
+ const replacement='const expectedDonations='+JSON.stringify(addedArchives)+';'
   +'assert.equal(new Set(body.requests.map(r=>r.id)).size,body.requests.length);'
   +'for(const expected of expectedDonations){const rows=body.requests.filter(r=>r.id===expected.id);assert.equal(rows.length,1);assert.equal(rows[0].type,expected.type);assert.equal(Number(rows[0].amount),expected.amount);}'
   +'assert.equal(body.requests.filter(r=>!expectedDonations.some(p=>p.id===r.id)).length,'+Number(matches[0][1])+')';
