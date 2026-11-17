@@ -1,6 +1,6 @@
 // The normal workflow needs exactly the workbook and the receipt bundle.
 // Saving a draft and reading evidence never submit or approve the PJUM.
-export async function processPjumPair({excel,receipts,selected,preview,resolve,upload,save,scan,progress=()=>{}}){
+export async function processPjumPair({excel,receipts,refund,selected,preview,resolve,upload,save,scan,progress=()=>{}}){
  if(!excel||!receipts)throw Error('Pilih Excel PJUM dan PDF kuitansi terlebih dahulu.');
  if(!/\.xlsx$/i.test(excel.name)||!/\.pdf$/i.test(receipts.name))throw Error('Gunakan Excel (.xlsx) dan PDF kuitansi.');
  if(excel.size>5*1024*1024||receipts.size>5*1024*1024)throw Error('Setiap berkas maksimal 5 MB.');
@@ -19,6 +19,7 @@ export async function processPjumPair({excel,receipts,selected,preview,resolve,u
  if(!proof.pages||proof.pages!==parsed.items.length)throw Error('Jumlah halaman PDF berbeda dari rincian Excel. Berkas sudah tersimpan; periksa pemetaan kuitansi pada rincian.');
  const report={items:parsed.items.map((i,n)=>({...i,file_id:proof.id,page:n+1})),report_date:row.report?.report_date||parsed.report_date||new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}),report_number:parsed.report_number,notes:row.report?.notes||''};
  progress('Menyimpan '+report.items.length+' rincian secara otomatis…');row=await save(row,report);
+ if(refund){progress('Menyimpan bukti pengembalian sisa UM.');row=await upload(row,refund,'settlement');}
  for(let i=0;i<report.items.length;i+=3){const pages=report.items.slice(i,i+3).map(({file_id,page})=>({file_id,page}));progress('Memeriksa kuitansi '+(i+1)+'–'+Math.min(i+3,report.items.length)+' dari '+report.items.length+'…');row=await scan(row,pages);}
  progress('Selesai. Draf tersimpan; periksa ringkasan sebelum mengirim.');return row;
 }

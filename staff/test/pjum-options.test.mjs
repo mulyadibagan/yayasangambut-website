@@ -29,3 +29,5 @@ test('email compose uses the reporter account and exact private Finance link wit
  assert.ok(url.searchParams.get('body').includes('https://staff.yayasangambut.org/finance/advances?id=123'));
  assert.equal(pjumEmailDraft(row,'other@yayasangambut.org'),null);
 });
+
+test('surplus requires refund evidence while zero balance remains optional',()=>{const row={total:100,report:{total:80,items:[{}],report_date:'2026-11-17'},checks:{complete:true,rows:[]},files:[]};assert.equal(pjumReadiness(row,'2026-11-17').blocked,true);assert.equal(pjumReadiness({...row,files:[{purpose:'settlement'}]},'2026-11-17').blocked,false);assert.equal(pjumReadiness({...row,total:80},'2026-11-17').blocked,false);assert.equal(pjumReadiness({...row,total:70},'2026-11-17').blocked,false);});

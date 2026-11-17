@@ -34,3 +34,5 @@ test('chosen UM takes precedence and mismatched workbook fails before resolving 
  const result=await processPjumPair({...g.options,selected:{...g.initial,requiresResolve:true},preview:async file=>({...await preview(file),um_number:''})});
  assert.equal(result.id,g.initial.id);assert.equal(g.calls.filter(c=>Array.isArray(c)&&c[0]==='resolve').length,1);
 });
+
+test('refund file is stored separately after draft saving and never becomes an expense receipt',async()=>{const f=fixture(),upload=f.options.upload;let saved=false;const save=f.options.save;const r=await processPjumPair({...f.options,refund:{name:'refund.pdf',size:20},save:async(...a)=>{saved=true;return save(...a);},upload:async(row,file,purpose)=>{if(purpose==='settlement'){assert.equal(saved,true);return {...row,files:[...row.files,{purpose,filename:file.name}]};}return upload(row,file);}});assert.equal(r.report.items.length,4);assert.equal(r.files.filter(f=>f.purpose==='settlement').length,1);});

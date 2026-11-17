@@ -172,14 +172,15 @@ function renderPairSummary(){
  const files=el('div',undefined,{className:'pjum-saved-files'});for(const mime of ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/pdf']){const f=current.files.filter(f=>f.purpose==='pjum'&&f.mime===mime).at(-1);if(f)files.append(el('a',(mime==='application/pdf'?'Pratinjau kuitansi: ':current.drive?.files?.some(d=>d.file_id===f.id&&d.status==='archived')?'Buka Excel PJUM di Drive: ':'Unduh Excel PJUM: ')+f.filename,{href:current.drive?.files?.find(d=>d.file_id===f.id&&d.status==='archived')?.web_url||api+'/'+current.id+'/files/'+f.id+(mime==='application/pdf'?'?preview=1':''),target:'_blank',rel:'noopener'}));}box.append(files);
 
  const refunds=(current.files||[]).filter(f=>f.purpose==='settlement');
- if(current.total>report.total||refunds.length){
+ if(current.total>report.total&&!refunds.length)box.append(el('p','Unggah bukti pengembalian sisa UM sebelum mengirim PJUM.',{className:'note'}));
+ if(reportEditable()||current.total>report.total||refunds.length){
  const section=el('section',undefined,{className:'panel'});section.append(el('h3','Pengembalian sisa UM'));
  section.append(el('p','Sisa dana: '+money(Math.max(0,current.total-report.total))+'. Bukti pengembalian dicatat terpisah dari biaya kegiatan dan diverifikasi oleh Riena.'));
  for(const file of refunds)section.append(el('a','Lihat bukti pengembalian: '+file.filename,{href:current.drive?.files?.find(d=>d.file_id===file.id&&d.status==='archived')?.web_url||api+'/'+current.id+'/files/'+file.id+'?preview=1',target:'_blank',rel:'noopener'}));
  if(reportEditable()&&current.total>report.total){
- const label=el('label','Bukti transfer pengembalian (opsional, JPEG)'),picker=el('input',undefined,{type:'file',accept:'.jpg,.jpeg,image/jpeg'});
- picker.onchange=()=>run(async()=>{const file=picker.files[0];if(!file)return;if(dirty)throw Error('Simpan rincian PJUM sebelum mengunggah bukti.');if(!/\.jpe?g$/i.test(file.name))throw Error('Gunakan berkas JPEG (.jpg atau .jpeg).');await sendFile(file,'settlement');dirty=false;await reload();render();notice('Bukti pengembalian tersimpan. Riena akan memverifikasinya; biaya kegiatan tetap sama.');});
- label.append(picker);section.append(label,el('p','Jika belum melakukan pengembalian, laporan tetap dapat diajukan. Bukti ini tidak menjadi kuitansi biaya.'));
+ const label=el('label','Bukti pengembalian sisa UM (PDF, JPG, PNG)'),picker=el('input',undefined,{type:'file',accept:'.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'});
+ picker.onchange=()=>run(async()=>{const file=picker.files[0];if(!file)return;if(dirty)throw Error('Simpan rincian PJUM sebelum mengunggah bukti.');if(!/\.(pdf|jpe?g|png)$/i.test(file.name))throw Error('Gunakan PDF, JPG, atau PNG.');await sendFile(file,'settlement');dirty=false;await reload();render();notice('Bukti pengembalian tersimpan. Riena akan memverifikasinya; biaya kegiatan tetap sama.');});
+ label.append(picker);section.append(label,el('p','Jika ada sisa UM, unggah bukti pengembaliannya sebelum mengirim PJUM. Jika sisa Rp0, bukti ini opsional.'));
  }
  box.append(section);
  }
@@ -209,10 +210,10 @@ $('#pair-form').onsubmit=e=>{e.preventDefault();run(async()=>{
  const {processPjumPair}=await import('/pjum-pair.js');
  const progress=s=>$('#pair-progress').textContent=s;$('#quick-pjum').setAttribute('aria-busy','true');$('#pjum-form').querySelectorAll('input,select,textarea').forEach(e=>e.disabled=true);$('#pair-form').querySelectorAll('input').forEach(e=>e.disabled=true);
  try{
-  current=await processPjumPair({excel,receipts,selected:current&&reportEditable()?current:pjumSelection,
+  current=await processPjumPair({excel,receipts,refund:$('#pair-refund').files[0],selected:current&&reportEditable()?current:pjumSelection,
    preview:async file=>{const r=await fetch(api+'/pjum_preview',{method:'POST',body:file}),p=await r.json();if(!r.ok)throw Error(p.error||'Excel belum dapat dibaca.');return p;},
    resolve:async um_number=>(current=await request('/pjum_resolve','POST',{um_number})),
-   upload:async(row,file)=>{current=row;await sendFile(file);return current;},
+   upload:async(row,file,purpose='pjum')=>{current=row;await sendFile(file,purpose);return current;},
    save:async(row,report)=>(current=await request('/'+row.id+'/report','POST',{version:row.version,...report})),
    scan:async(row,pages)=>{current=await request('/'+row.id+'/scan','POST',{version:row.version,pages});renderPairSummary();return current;},progress});
   dirty=false;await reload();render();$('#pjum-manual').open=false;$('#receipt-notes').open=false;notice('Draf PJUM tersimpan. Hasil kelengkapan dan tombol kirim tersedia di atas.');

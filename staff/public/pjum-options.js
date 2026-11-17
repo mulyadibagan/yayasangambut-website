@@ -16,7 +16,8 @@ export function pjumReadiness(row,today){
  const complete=!!total&&checks?.complete===true;
  const missing=checks?.rows?.filter(r=>r.issues.length)||[];
  const unread=checks?.rows?.filter(r=>!r.read&&!r.resolved)||[];
- const blocked=!complete||report?.report_date>today;
+ const refundMissing=!!report&&row.total>report.total&&!(row.files||[]).some(f=>f.purpose==='settlement');
+ const blocked=!complete||report?.report_date>today||refundMissing;
  return {total,complete,missing,unread,blocked,read:checks?.rows?.filter(r=>r.read&&!r.result?.error).length||0};
 }
 
