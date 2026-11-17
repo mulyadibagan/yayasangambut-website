@@ -63,7 +63,7 @@ export function integrateFinance(archive,workflows,history){
  const group=value=>{const id=financeProject(value);if(!groups.has(id))groups.set(id,{id,umPaid:0,pjumApproved:0,pjumUnderReview:0,pjumDraft:0,refundVerified:0,reimbursementVerified:0,outstanding:0,overrun:0,cashIn:0,cashOut:0,netCash:0,requests:[]});return groups.get(id);};
  for(const um of list.filter(r=>r.type==='UM')){
   const g=group(um.project),reports=list.filter(p=>p.type==='PJUM'&&p.parentUmId===um.id);
-  const approved=reports.filter(isApproved),review=reports.filter(p=>!isApproved(p)&&!['Draf','Perlu Revisi','Ditolak','Dibatalkan'].includes(p.status)&&(p.submissionVerified===true||['Dilaporkan ke Riena','Menunggu Persetujuan'].includes(p.status)));
+  const approved=reports.filter(isApproved),review=reports.filter(p=>!isApproved(p)&&!['Draf','Perlu Revisi','Ditolak','Dibatalkan'].includes(p.status)&&(p.submissionVerified===true||['Dilaporkan ke Riena','Menunggu Persetujuan','Pemeriksaan Keuangan'].includes(p.status)));
   const a=cents(um.advanceAmount??um.amount),realized=approved.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
   const pending=review.reduce((n,r)=>n+cents(r.actualAmount??r.amount),0),draft=reports.filter(r=>r.status==='Draf'||r.status==='Perlu Revisi').reduce((n,r)=>n+cents(r.actualAmount??r.amount),0);
   let refund=0,reimbursement=0;

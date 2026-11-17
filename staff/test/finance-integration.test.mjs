@@ -19,6 +19,9 @@ test('historical closed PJUM is recognized and reporting status is distinct from
  assert.equal(data.projects.find(p=>p.id==='ARC3').requests[0].reportingStatus,'PJUM disetujui');
  assert.equal(data.projects.find(p=>p.id==='ARC3').requests[1].reportingStatus,'PJUM belum tercatat');
  assert.equal(legacyAdvances(data.records).find(r=>r.id==='old').reported,100);
+ const reviewed=integrateFinance([...archive,{id:'review',type:'PJUM',parentUmId:'pending',amount:50,project:'ARC3',status:'Pemeriksaan Keuangan'}],[],bank);
+ assert.equal(reviewed.totals.pjumUnderReview,5000);assert.equal(reviewed.totals.pjumApproved,10000);
+ assert.equal(legacyAdvances(reviewed.records).find(r=>r.id==='pending').reported,50);
 });
 test('native UM, draft, checked and approved PJUM update the same project without changing bank cash',()=>{
  const before=JSON.stringify({row,bank});

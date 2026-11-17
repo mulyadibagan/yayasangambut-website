@@ -19,7 +19,7 @@ export function legacyAdvances(records){
    paid_date:archiveDate(r.bankDate||r.bank_date||r.payment_date),status:String(r.status||''),bank_amount:Number(r.bankAmount??r.bank_amount??0),
    bank_status:String(r.bankStatus||r.bank_status||''),
    reference:String(r.bankReference||r.bank_reference||r.payment_reference||''),
-   reported:records.filter(p=>String(p.type||p.request_type).toUpperCase()==='PJUM'&&(p.parentUmId||p.parent_um_id)===r.id&&(p.submissionVerified===true||['Menunggu Persetujuan','Dilaporkan ke Riena','Disetujui','Selesai','Ditutup'].includes(p.status))).reduce((n,p)=>n+Number(p.actualAmount??p.actual_amount??p.amount??0),0)};
+   reported:records.filter(p=>String(p.type||p.request_type).toUpperCase()==='PJUM'&&(p.parentUmId||p.parent_um_id)===r.id&&(p.submissionVerified===true||['Menunggu Persetujuan','Dilaporkan ke Riena','Pemeriksaan Keuangan','Disetujui','Selesai','Ditutup'].includes(p.status))).reduce((n,p)=>n+Number(p.actualAmount??p.actual_amount??p.amount??0),0)};
  }).filter(r=>r.id&&r.id!=='undefined'&&Number.isSafeInteger(r.amount)&&r.amount>0&&(r.status==='Dicairkan'||r.bank_status==='Cocok'&&r.bank_amount===r.amount));
 }
 export async function legacySource(env,u){
