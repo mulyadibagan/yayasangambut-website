@@ -8,8 +8,8 @@ export function financeLayout(source){
  if(source.includes("import FinanceStaffTools from './finance-staff-tools'"))return source;
  if(!source.includes('{children}')||!/<body\b/.test(source)||!source.includes('</body>'))throw Error('Finance React layout anchor missing.');
  source=source.replace(/<a\b(?=[^>]*href=["']\/["'])[^>]*>\s*(?:←|&larr;|&#8592;)?\s*(?:Dashboard Staf YG|Portal staf YG)\s*<\/a>/g,'');
- source="import ProjectAdvancePanel from './project-advances';\nimport FinanceStaffTools from './finance-staff-tools';\nimport './finance-staff-shell.css';\n"+source;
- source=source.replace('{children}','<FinanceStaffTools /><ProjectAdvancePanel />\n        {children}');
+ source="import FinanceNotifications from './finance-notifications';\nimport ProjectAdvancePanel from './project-advances';\nimport FinanceStaffTools from './finance-staff-tools';\nimport './finance-staff-shell.css';\nimport './finance-notifications.css';\n"+source;
+ source=source.replace('{children}','<FinanceStaffTools /><FinanceNotifications /><ProjectAdvancePanel />\n        {children}');
  source=source.replace(/metadataBase:\s*new URL\([^)]*\)/,'metadataBase: new URL("https://staff.yayasangambut.org")');
  source=source.replace(/(["'])\/favicon\.(?:svg|ico)\1/g,'"/favicon.png?v=yg-20261019-1"');
  source=source.replace(/(["'])\/og\.png\1/g,'"https://staff.yayasangambut.org/brand/yayasan-gambut-logo.png"');
@@ -17,6 +17,8 @@ export function financeLayout(source){
 }
 
 export async function applyFinanceReactShell(root){
+ await copyFile(new URL('../finance-ui/finance-notifications.tsx',import.meta.url),resolve(root,'app/finance-notifications.tsx'));
+ await copyFile(new URL('../public/finance-notifications.css',import.meta.url),resolve(root,'app/finance-notifications.css'));
  await copyFile(new URL('../finance-ui/project-advances.tsx',import.meta.url),resolve(root,'app/project-advances.tsx'));
  const layout=resolve(root,'app/layout.tsx'),dashboard=resolve(root,'app/finance-archive-dashboard.tsx');
  const source=await readFile(layout,'utf8'),page=await prepareAprilCash(root,await readFile(dashboard,'utf8'));

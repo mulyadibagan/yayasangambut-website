@@ -1,0 +1,8 @@
+.yg-finance-notifications{max-width:1400px;margin:16px auto;padding:18px 22px;border:1px solid #b8d4c5;border-left:5px solid #1b6548;border-radius:10px;background:#eff7f2;color:#183b2c;font:15px/1.5 system-ui,sans-serif}
+.yg-finance-notifications[hidden]{display:none}
+.yg-finance-notifications h2{margin:0 0 8px;font-size:18px;color:inherit}
+.yg-finance-notifications ul{list-style:none;padding:0;margin:0}
+.yg-finance-notifications li+li{border-top:1px solid #c8ddd1;margin-top:12px;padding-top:12px}
+.yg-finance-notifications p{margin:4px 0 8px}
+.yg-finance-notifications a{display:inline-block;font-weight:650;color:#175438;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:600px){.yg-finance-notifications{margin:12px;padding:16px}}

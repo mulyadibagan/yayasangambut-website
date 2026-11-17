@@ -1,3 +1,4 @@
+import {financeNotifications} from './finance-notifications.mjs';
 import {syncAdvanceDrive} from './advance-drive.mjs';
 import {lettersApi,letterAccess} from './letters.mjs';
 import {teamSizesApi,teamSizesAccess} from './team-sizes.mjs';
@@ -156,6 +157,7 @@ async function analytics(env,days,site='website'){
 }
 async function api(req,env,url,u){
   const path=url.pathname,method=req.method;
+  if(path==='/api/finance-notifications'&&method==='GET')return json(await financeNotifications(env,u));
   if(path==='/api/timesheets'||path.startsWith('/api/timesheets/'))return timesheetApi(req,env,url,u,{payload});
   if(path==='/api/surat'||path.startsWith('/api/surat/'))return lettersApi(req,env,url,u,{payload});
   if(path==='/api/team-sizes'||path.startsWith('/api/team-sizes/'))return teamSizesApi(req,env,url,u,{payload});
