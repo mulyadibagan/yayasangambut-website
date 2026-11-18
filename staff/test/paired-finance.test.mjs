@@ -10,3 +10,10 @@ test('paired rekap filters the same UM rows and totals by year, project, report 
 test('draft reports remain unreported until submitted and revised reports stay in process',()=>{
  const pending={projects:[{id:'ARC3',requests:[{...row,reports:[],reported:0},{...row,id:'draft-report',reports:[{status:'Draf'}]}]}]};assert.equal(pairedFinanceView(pending,{status:'missing'}).rows.length,2);const revised={projects:[{id:'ARC3',requests:[{...row,reports:[{status:'Perlu Revisi'}]}]}]};assert.equal(pairedFinanceView(revised,{status:'review'}).rows.length,1);assert.equal(pairedFinanceView(revised,{status:'missing'}).rows.length,0);
 });
+
+test('archived reports are complete while active reviews remain in process',()=>{
+ const rows=[{...row,id:'archive',reports:[{submitted:true,workflowStatus:null}]},{...row,id:'laptop',reports:[{submitted:true,workflowStatus:'pjum_submitted'}]},{...row,id:'checked',reports:[{submitted:true,workflowStatus:'pjum_checked'}]}];
+ const data={projects:[{id:'YG',requests:rows}]};
+ assert.deepEqual(pairedFinanceView(data,{status:'complete'}).rows.map(r=>r.id),['archive']);
+ assert.deepEqual(pairedFinanceView(data,{status:'review'}).rows.map(r=>r.id),['laptop','checked']);
+});

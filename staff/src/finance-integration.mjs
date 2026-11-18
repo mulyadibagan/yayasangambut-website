@@ -105,7 +105,7 @@ export function integrateFinance(archive,workflows,history){
   g.outstanding+=paid?Math.max(0,a-realized-refund):0;g.overrun+=paid?Math.max(0,realized-a-reimbursement):0;
   const reportingStatus=review.length?'Dalam pemeriksaan':reports.some(r=>r.status==='Perlu Revisi')?'Perlu revisi':reports.some(r=>r.status==='Draf')?'Draf PJUM':approved.length?'PJUM disetujui':reports.length?'Status PJUM perlu diperiksa':'PJUM belum tercatat';
   const reported=realized+pending;
-  const pairedReports=reports.map(r=>({id:r.id,number:r.documentNumber||r.pjumNumber||r.id,date:r.submittedAt||null,status:r.status,amount:cents(r.actualAmount??r.amount),approved:isApproved(r),submitted:isApproved(r)||review.includes(r),url:r.workflowId?'/finance/advances?id='+r.workflowId:r.documentUrl||null}));
+  const pairedReports=reports.map(r=>({id:r.id,number:r.documentNumber||r.pjumNumber||r.id,date:r.submittedAt||null,status:r.status,workflowStatus:r.workflowStatus||null,amount:cents(r.actualAmount??r.amount),approved:isApproved(r),submitted:isApproved(r)||review.includes(r),url:r.workflowId?'/finance/advances?id='+r.workflowId:r.documentUrl||null}));
   g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,submitter:um.submitter,date:um.submittedAt||null,reportingStatus,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,draft,reported,reports:pairedReports,refund,reimbursement,unaccounted:paid?Math.max(0,a-reported-refund):0,difference:paid&&pairedReports.some(r=>r.submitted)?a-reported:null,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
  }
  const linked=new Set(list.filter(r=>r.type==='UM').map(r=>r.id));
