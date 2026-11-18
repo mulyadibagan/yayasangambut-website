@@ -58,3 +58,10 @@ Filter tahun/proyek/status/pencarian menghitung total dari baris yang sama.
 pelaporan. Draf/revisi tidak dimasukkan ke reported. Tidak ada jurnal bank baru.
 PJUM historis tanpa parent hanya dipasangkan jika nomor UM resmi, proyek, dan
 nilai UM sama dengan tepat satu UM; dokumen ambigu tetap perlu rekonsiliasi.
+
+Ringkasan utama kini mengganti kartu prioritas lama dengan tiga kelompok dari
+pairedFinanceView: missing (termasuk draf yang belum dikirim), review (termasuk
+revisi laporan yang pernah dikirim), dan complete. Tautan kartu membuka rekap
+dengan filter identik. Rincian talangan, proyek, dan aktivitas dilipat secara
+default tanpa mengubah sumber angkanya.
+

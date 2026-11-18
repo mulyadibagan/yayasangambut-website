@@ -1,3 +1,4 @@
+import {applyCompactFinanceSummary} from './finance-compact-summary.mjs';
 import {readFile,writeFile,copyFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -46,5 +47,6 @@ export async function applyLiveFinanceIntegration(root,query){
   let legacy=false;try{await readFile(resolve(root,'app/um-monitor-archive.tsx'));legacy=true;}catch(e){if(e.code!=='ENOENT')throw e;}
   await writeFile(monitorPath,marker+'\n'+(legacy?"export * from './um-monitor-archive';\n":'')+"import IntegratedFinance from './integrated-finance';\nexport default function UmMonitorPanel(props:any){return <IntegratedFinance {...props} />;}\n");
  }
+ await applyCompactFinanceSummary(root);
  console.log('Live UM/PJUM and project cashflow use one validated bank register; cash ledger unchanged.');
 }
