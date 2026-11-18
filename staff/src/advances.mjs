@@ -1,3 +1,4 @@
+import {queuePjumReviewEmail,sendPjumReviewEmails} from './pjum-review-email.mjs';
 import {advanceDriveStatus,archiveAdvanceFile,syncAdvanceDrive} from './advance-drive.mjs';
 import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
 import {fail,now} from './core.mjs';
@@ -20,7 +21,7 @@ function date(v){if(typeof v!=='string'||!/^20\d{2}-\d{2}-\d{2}$/.test(v)||Numbe
 function amount(v,zero=false){if(!Number.isSafeInteger(v)||v<(zero?0:1)||v>10000000000)fail(400,'Nominal harus rupiah bulat dan tidak melebihi Rp10 miliar.');return v;}
 export function advanceInput(body,report=false){
  if(!body||typeof body!=='object'||Array.isArray(body))fail(400,'Data pengajuan tidak valid.');
- if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1–100 rincian biaya.');
+ if(!Array.isArray(body.items)||!body.items.length||body.items.length>100)fail(400,'Isi 1-100 rincian biaya.');
  let total=0;
  const items=body.items.map(row=>{
   if(!row||typeof row!=='object')fail(400,'Rincian biaya tidak valid.');
@@ -54,14 +55,15 @@ async function mutate(env,row,u,action,changes,snapshot={}){
  try{
   const result=await env.DB.batch([
    q(env,'UPDATE yg_advance_requests SET '+fields.map(k=>k+'=?').join(',')+',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',...fields.map(k=>changes[k]),event,at,row.id,row.version),
-   q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event)
+   q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event),
+   ...(action==='report_check'?[queuePjumReviewEmail(env,row,event,at,changes.note)]:[])
   ]);if(!result[0].meta.changes)fail(409,'Pengajuan telah diubah. Muat ulang sebelum menyimpan.');
  }catch(e){if(String(e.message).includes('ADVANCE_BUDGET_EXCEEDED'))fail(409,'Pengajuan melebihi sisa pagu kegiatan atau pagu telah digunakan pengajuan lain. Muat ulang anggaran.');if(String(e.message).includes('UNIQUE constraint failed'))fail(409,'Referensi pembayaran sudah digunakan.');throw e;}
  return read(env,row.id);
 }
 const uploadAllowed=(u,row,purpose)=>purpose==='um'?own(u,row)&&['draft','returned'].includes(row.status):purpose==='pjum'?own(u,row)&&['disbursed','pjum_returned','pjum_draft'].includes(row.status):purpose==='payment'?advanceFinance(u)&&row.status==='approved':purpose==='settlement'?(advanceFinance(u)&&row.status==='settlement'||own(u,row)&&['pjum_draft','pjum_returned'].includes(row.status)):false;
 async function proof(env,id,purpose){if(!await q(env,'SELECT id FROM yg_advance_files WHERE request_id=? AND purpose=?'+(purpose==='pjum'?" AND mime IN ('application/pdf','image/jpeg','image/png')":''),id,purpose).first())fail(400,'Unggah dokumen pendukung '+({pjum:'PJUM',payment:'pencairan',settlement:'penyelesaian'}[purpose]||'UM')+' terlebih dahulu.');}
-export async function advancesRoute(req,env,u){
+export async function advancesRoute(req,env,u,ctx){
  if(!advanceAccess(u))fail(403,'Pengajuan UM hanya tersedia untuk Mulyadi, Zamharir, dan Riena.');
  if(req.method!=='GET'&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
  const path=new URL(req.url).pathname,prefix='/finance/advances';
@@ -190,8 +192,8 @@ export async function advancesRoute(req,env,u){
   if(!uploadAllowed(u,row,'pjum')&&!advanceFinance(u))fail(403,'Pembacaan bukti tidak tersedia pada tahap ini.');
   if(!['disbursed','pjum_draft','pjum_returned','pjum_submitted'].includes(row.status))fail(409,'Tahap PJUM telah berubah.');
   const pages=body.pages||[{file_id:body.file_id,page:body.page}];
-  if(!Array.isArray(pages)||pages.length<1||pages.length>3)fail(400,'Periksa 1–3 halaman sekaligus.');
-  const keys=new Set();for(const p of pages){if(!p||typeof p.file_id!=='string'||!Number.isInteger(p.page)||p.page<1||p.page>100)fail(400,'Pilih bukti dan halaman 1–100.');const key=p.file_id+':'+p.page;if(keys.has(key))fail(400,'Halaman pemeriksaan berulang.');keys.add(key);}
+  if(!Array.isArray(pages)||pages.length<1||pages.length>3)fail(400,'Periksa 1-3 halaman sekaligus.');
+  const keys=new Set();for(const p of pages){if(!p||typeof p.file_id!=='string'||!Number.isInteger(p.page)||p.page<1||p.page>100)fail(400,'Pilih bukti dan halaman 1-100.');const key=p.file_id+':'+p.page;if(keys.has(key))fail(400,'Halaman pemeriksaan berulang.');keys.add(key);}
   const sources=await Promise.all(pages.map(async p=>{const file=await q(env,"SELECT * FROM yg_advance_files WHERE request_id=? AND id=? AND purpose='pjum'",row.id,p.file_id).first();if(!file||!['application/pdf','image/jpeg','image/png'].includes(file.mime))fail(400,'Pilih PDF atau gambar bukti PJUM.');if(file.pages&&p.page>file.pages)fail(400,'Halaman tidak ada pada bukti.');const cached=await q(env,'SELECT result FROM yg_advance_ocr WHERE request_id=? AND file_id=? AND page=?',row.id,file.id,p.page).first();return {...p,file,previous:cached?JSON.parse(cached.result):null,cached:cached&&!JSON.parse(cached.result).error&&JSON.parse(cached.result).receipt_number_engine==='header-crop-v1'&&String(JSON.parse(cached.result).receipt_no||'').trim()?JSON.parse(cached.result):null};}));
   const pending=sources.filter(p=>!p.cached);if(!pending.length)return json(await detail(env,row));
   const results=await Promise.all(pending.map(async p=>{const object=await env.MEDIA.get(p.file.storage_key);if(!object)fail(404,'Berkas bukti belum tersedia.');const raw=object.arrayBuffer?await object.arrayBuffer():await new Response(object.body).arrayBuffer();return {file_id:p.file_id,page:p.page,result:await scanReceipt(env,new Uint8Array(raw),p.file.mime,p.page,p.previous)};}));
@@ -231,5 +233,7 @@ export async function advancesRoute(req,env,u){
   await proof(env,id,'settlement');if(amount(body.amount)!==Math.abs(row.total-row.actual))fail(400,'Nominal penyelesaian harus sama dengan selisih UM dan realisasi.');const settledDate=date(body.date);if(settledDate>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}))fail(400,'Tanggal penyelesaian tidak boleh di masa depan.');changes.settlement_reference=string(body.reference,160);Object.assign(snapshot,{amount:body.amount,date:settledDate,reference:changes.settlement_reference,direction:row.total>row.actual?'refund':'reimbursement'});
  }
  const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''});
+ if(action==='report_check'&&ctx)ctx.waitUntil(sendPjumReviewEmails(env,id).catch(()=>{}));
  return json(await detail(env,updated));
 }
+

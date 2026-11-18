@@ -1,3 +1,4 @@
+import {sendPjumReviewEmails} from './pjum-review-email.mjs';
 import {financeIntegrationRoute,readIntegratedFinance} from './finance-integration.mjs';
 import {financeNotifications} from './finance-notifications.mjs';
 import {syncAdvanceDrive} from './advance-drive.mjs';
@@ -268,7 +269,7 @@ async function route(req,env,ctx){
       if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/',{'Set-Cookie':cookie('__Host-yg-finance-return',encodeURIComponent(financeReturnPath(url.pathname+url.search)),600)});
       throw e;
     }
-    if(url.pathname==='/finance/advances'||url.pathname.startsWith('/finance/advances/'))return advancesRoute(req,env,u);
+    if(url.pathname==='/finance/advances'||url.pathname.startsWith('/finance/advances/'))return advancesRoute(req,env,u,ctx);
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&u.email?.toLowerCase()==='zamharier@yayasangambut.org'&&advanceAccess(u)&&!financeDashboardAccess(u)&&!payrollAccess(u,env))return redirect(env.APP_ORIGIN+'/finance/advances');
     if(url.pathname==='/finance/signature'||url.pathname==='/finance/signature/api')return signatureRoute(req,env,u,readLimited);
     if(url.pathname==='/finance/invoices'||url.pathname.startsWith('/finance/invoices/'))return invoiceRoute(req,env,u,{payload,readLimited});
@@ -305,7 +306,7 @@ async function route(req,env,ctx){
       .on('img[alt="Logo Yayasan Gambut"]',{element(element){element.setAttribute('src','/brand/yayasan-gambut-logo.png');element.setAttribute('style','width:46px;height:46px;object-fit:contain');}})
       .on('meta[property="og:image"],meta[name="twitter:image"]',{element(element){element.setAttribute('content',env.APP_ORIGIN+'/brand/yayasan-gambut-logo.png');}})
       .on('body > a[href="/"]',{element(element){if((element.getAttribute('style')||'').includes('background:#123f32'))element.remove();}})
-      .on('body',{element(element){element.prepend('<nav class="yg-finance-tools" aria-label="Layanan Finance"><a class="yg-finance-portal" href="/">← Portal staf YG</a><div><a href="/finance/invoices">Invoice</a><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">↗</span></a></div></nav>',{html:true});}})
+      .on('body',{element(element){element.prepend('<nav class="yg-finance-tools" aria-label="Layanan Finance"><a class="yg-finance-portal" href="/"> Portal staf YG</a><div><a href="/finance/invoices">Invoice</a><a href="/finance/payroll">Pengajuan gaji</a><a href="/finance/email-sync">Sinkronisasi email <span aria-hidden="true">?</span></a></div></nav>',{html:true});}})
       .on('head',{element(element){element.append(`<link rel="stylesheet" href="/finance-shell.css?v=20261019-2"><link rel="icon" type="image/png" href="${brandIcon}"><link rel="apple-touch-icon" href="${brandIcon}"><meta name="theme-color" content="#123f32">`,{html:true});}})
       .transform(response);
   }
@@ -314,12 +315,13 @@ async function route(req,env,ctx){
   if(url.pathname==='/robots.txt')return new Response('User-agent: *\nDisallow: /\n');
   return env.ASSETS.fetch(req);
 }
-export default {async scheduled(event,env,ctx){ctx.waitUntil(syncInvoiceDrive(env));ctx.waitUntil(syncAdvanceDrive(env));ctx.waitUntil(syncCalendars(env));ctx.waitUntil(sendPayrollNotifications(env));ctx.waitUntil(syncTeamTimesheets(env));},async fetch(req,env,ctx){
+export default {async scheduled(event,env,ctx){ctx.waitUntil(syncInvoiceDrive(env));ctx.waitUntil(syncAdvanceDrive(env));ctx.waitUntil(syncCalendars(env));ctx.waitUntil(sendPayrollNotifications(env));ctx.waitUntil(sendPjumReviewEmails(env));ctx.waitUntil(syncTeamTimesheets(env));},async fetch(req,env,ctx){
   let r;try{r=await route(req,env,ctx);}catch(e){r=json({error:e instanceof HttpError?e.message:'Layanan sementara tidak tersedia. Coba kembali atau hubungi administrator.'},e instanceof HttpError?e.status:500);}
   const out=new Response(r.body,r);out.headers.set('X-Content-Type-Options','nosniff');out.headers.set('Referrer-Policy','same-origin');out.headers.set('X-Frame-Options','DENY');out.headers.set('X-Robots-Tag','noindex, nofollow');out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(new URL(req.url).pathname==='/finance'||new URL(req.url).pathname.startsWith('/finance/'))out.headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://drive.google.com https://lh3.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://docs.google.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; frame-src 'self' blob: https://drive.google.com https://docs.google.com; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'");
   if(!new URL(req.url).pathname.startsWith('/media/'))out.headers.set('Cache-Control','no-store');return out;
 }};
+
 
 
 
