@@ -74,3 +74,16 @@ test('header JPEG encoding works when the worker has no global Buffer',async()=>
 test('manual review is bound to the exact report row and preserves automatic comparisons',()=>{const review={index:0,key:receiptReviewKey(item),status:'matched',actor_email:'owner@example.com',created_at:'2026-11-16T00:00:00Z'};const report={items:[item],receipt_reviews:[review]};const checked=receiptChecks(report,[file],[{...scan,result:{error:'Not read'}}]);assert.equal(checked.unresolved,0);assert.equal(checked.rows[0].comparisons[0].status,'Belum terbaca');assert.equal(receiptChecks({...report,items:[{...item,subtotal:1}]},[file],[scan]).unresolved,1);assert.equal(receiptChecks({...report,receipt_reviews:[{...review,status:'needs_fix'}]},[file],[scan]).unresolved,1);});
 
 test('matching receipt fields allow submission despite wording and timing notes',()=>{const result=receiptChecks({items:[item]},[file],[{...scan,result:{...scan.result,description:'Pembayaran honor patroli'}}],'2026-10-05');assert.equal(result.unresolved,0);assert.equal(result.matched,1);assert.equal(result.rows[0].warnings.length,0);assert.equal(result.rows[0].notes.length,1);assert.ok(result.rows[0].comparisons.every(c=>c.status==='Cocok'));for(const field of ['receipt_no','recipient','date','amount']){const bad={...scan.result,[field]:field==='amount'?1:field==='date'?'2026-09-27':'Tidak cocok'};assert.equal(receiptChecks({items:[item]},[file],[{...scan,result:bad}]).unresolved,1,field);}});
+
+test('a vendor receipt can be complete when the Excel description omits the recipient',()=>{
+ const checked=receiptChecks({items:[{...item,recipient:''}]},[file],[scan]);
+ assert.equal(checked.complete,true);
+ assert.equal(checked.unresolved,1);
+ assert.equal(checked.rows[0].comparisons.find(c=>c.field==='recipient').status,'Tidak tercantum di Excel');
+ assert.equal(checked.rows[0].comparisons.find(c=>c.field==='recipient').actual,'Seplia Pikar');
+});
+
+test('OCR retains an explicit printed invoice reference from the full image',async()=>{
+ const env={AI:{async run(){return {response:JSON.stringify({receipt_no:'INV-123',recipient:'Hotel',amount:350000})};}}};
+ assert.equal((await scanReceipt(env,new Uint8Array([255,216,255]),'image/jpeg',1)).receipt_no,'INV-123');
+});

@@ -131,6 +131,12 @@ export async function advancesRoute(req,env,u){
  const [,id,action,fileId]=match,row=await read(env,id);visible(u,row);
  if(action==='files'&&fileId&&req.method==='GET'){
   const file=await q(env,'SELECT * FROM yg_advance_files WHERE id=? AND request_id=?',fileId,id).first();if(!file)fail(404,'Berkas tidak ditemukan.');const object=await env.MEDIA.get(file.storage_key);if(!object)fail(404,'Berkas belum tersedia.');
+  if(new URL(req.url).searchParams.get('recipients')==='1'){
+   if(!row.report||file.purpose!=='pjum'||file.mime!=='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')fail(400,'Excel PJUM tidak tersedia.');
+   const {pjumExcelWithRecipients}=await import('./pjum-excel.mjs');
+   const bytes=pjumExcelWithRecipients(new Uint8Array(await object.arrayBuffer()),JSON.parse(row.report).items);
+   return new Response(bytes,{headers:{'Content-Type':file.mime,'Content-Disposition':"attachment; filename*=UTF-8''"+encodeURIComponent(file.filename.replace(/\.xlsx$/i,'-penerima.xlsx')),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+  }
    const imagePage=new URL(req.url).searchParams.get('image_page');if(imagePage!==null){const image=await receiptImage(new Uint8Array(await object.arrayBuffer()),file.mime,Number(imagePage));if(image.error)fail(422,image.error);return new Response(image.bytes,{headers:{'Content-Type':image.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
   return new Response(object.body,{headers:{'Content-Type':file.mime,'Content-Disposition':(new URL(req.url).searchParams.get('preview')==='1'&&['application/pdf','image/jpeg','image/png'].includes(file.mime)?"inline":"attachment")+"; filename*=UTF-8''"+encodeURIComponent(file.filename),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
@@ -209,7 +215,7 @@ export async function advancesRoute(req,env,u){
   if(row.total>row.actual)await proof(env,id,'settlement');
   await proof(env,id,'pjum');if(!row.report)fail(400,'Isi rincian PJUM terlebih dahulu.');
   const data=await detail(env,row),report=data.report;
-  if(!data.checks.complete)fail(400,'Lengkapi nomor kuitansi, penerima, dan halaman bukti; perbaiki nomor/halaman ganda serta tanggal pengeluaran.');
+  if(!data.checks.complete)fail(400,'Lengkapi nomor kuitansi dan halaman bukti; perbaiki nomor/halaman ganda serta tanggal pengeluaran.');
 
   if(report.report_date>today())fail(400,'PJUM dapat diajukan mulai tanggal laporan. Simpan sebagai draf terlebih dahulu.');
 
