@@ -93,11 +93,23 @@ test('a native UM already included in the project dossier reserves its budget on
  const live=projectCommitments({...clean.source,archive:[]},[{...row,status:'closed',payload:{project_id:'ARC3',allocations:[{code:'1.1',amount:100}]},report:{total:80,items:[]}}]).activities[0];
  assert.equal(live.disbursed,100);assert.equal(live.reported,180);assert.equal(live.remaining,700);
 });
-test('build uses the validated history snapshot and replaces the obsolete monitor without rewriting bank sources',async()=>{
+test('build replaces the existing UM monitor and removes the duplicate layout panel without changing bank sources',async()=>{
  const root=await mkdtemp(join(tmpdir(),'finance-live-'));try{
-  await mkdir(join(root,'app'));await writeFile(join(root,'app/finance-history.json'),JSON.stringify(bank));await writeFile(join(root,'app/layout.tsx'),'export default()=> <body><FinanceStaffTools />{children}</body>');
+  await mkdir(join(root,'app'));await writeFile(join(root,'app/finance-history.json'),JSON.stringify(bank));await writeFile(join(root,'app/layout.tsx'),"import IntegratedFinance from './integrated-finance';\nexport default()=> <body><FinanceStaffTools /><IntegratedFinance />{children}</body>");await writeFile(join(root,'app/um-monitor-panel.tsx'),'export const legacyHelper=1;export default function Monitor(){return null;}');
   for(const year of [2025,2026])await writeFile(join(root,'app/gmail-'+year+'-records.ts'),'export const gmail'+year+'Records=[];');
   const calls=[];await applyLiveFinanceIntegration(root,async(...args)=>calls.push(args));const once=await readFile(join(root,'app/layout.tsx'),'utf8');await applyLiveFinanceIntegration(root,async()=>{});
-  assert.equal(await readFile(join(root,'app/layout.tsx'),'utf8'),once);assert.equal((once.match(/<IntegratedFinance \/>/g)||[]).length,1);assert.equal(JSON.parse(calls[0][1][1]).rows.length,3);assert.equal(await readFile(join(root,'app/finance-history.json'),'utf8'),JSON.stringify(bank));
+  assert.equal(await readFile(join(root,'app/layout.tsx'),'utf8'),once);assert.equal((once.match(/<IntegratedFinance \/>/g)||[]).length,0);const monitor=await readFile(join(root,'app/um-monitor-panel.tsx'),'utf8');assert.match(monitor,/<IntegratedFinance \{\.\.\.props\} \/>/);assert.match(monitor,/export \* from '.\/um-monitor-archive'/);assert.equal(await readFile(join(root,'app/um-monitor-archive.tsx'),'utf8'),'export const legacyHelper=1;export default function Monitor(){return null;}');assert.equal(JSON.parse(calls[0][1][1]).rows.length,3);assert.equal(await readFile(join(root,'app/finance-history.json'),'utf8'),JSON.stringify(bank));
  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+
+test('explicit UM number pairs a historical report only with one matching project and advance',()=>{
+ const um={id:'u',type:'UM',umNumber:'03/YG_ARC3/08/2026',amount:100,project:'ARC3',status:'Dicairkan'};
+ const report={id:'p',type:'PJUM',umNumber:um.umNumber,pjumNumber:'04/YG_ARC3/09/2026',advanceAmount:100,actualAmount:80,project:'Aramco Phase 3',status:'Pemeriksaan Keuangan'};
+ const paired=integrateFinance([um,report],[],null),r=paired.projects[0].requests[0];
+ assert.equal(r.reports.length,1);assert.equal(r.reports[0].number,report.pjumNumber);assert.equal(r.reported,8000);assert.equal(r.approved,0);assert.equal(r.unaccounted,2000);assert.equal(r.difference,2000);
+ assert.equal(report.parentUmId,undefined);
+ for(const other of [{...report,project:'PPCF'},{...report,advanceAmount:90},{...report,umNumber:'1.1'}])assert.equal(integrateFinance([um,other],[],null).records.find(x=>x.id==='p').parentUmId,undefined);
+ const ambiguous=integrateFinance([{...um,documentNumber:undefined,umNumber:undefined,code:um.umNumber},{...um,id:'u2',documentNumber:undefined,umNumber:undefined,code:um.umNumber},report],[],null);
+ assert.equal(ambiguous.records.find(x=>x.id==='p').parentUmId,undefined);
 });

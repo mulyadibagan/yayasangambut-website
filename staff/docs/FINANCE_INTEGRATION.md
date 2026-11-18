@@ -43,3 +43,18 @@ Tes meliputi UM native dan arsip, seluruh tahap PJUM, ID/nomor ganda, pencocokan
 pengembalian, pagu yang sudah masuk dossier, proyeksi dokumen idempotent, akses
 Mulyadi/Riena, jumlah per proyek, dan ledger bank yang tidak berubah. Build
 production tetap memvalidasi sumber Finance terenkripsi dan kompilasi React.
+
+## Rekap pasangan UM–PJUM
+
+Rekap menggantikan komponen monitor UM yang sudah ada, bukan menambah panel di
+layout seluruh Finance. Ringkasan utama dan arus kas tidak menerima blok tambahan.
+Satu baris memuat satu UM dicairkan dengan daftar PJUM tertaut, nominal laporan,
+status persetujuan, pengembalian terverifikasi, serta sisa pertanggungjawaban.
+Filter tahun/proyek/status/pencarian menghitung total dari baris yang sama.
+
+`reported` = realisasi disetujui + laporan terkirim yang masih diperiksa;
+`unaccounted` = maksimum nol dari UM - reported - pengembalian terverifikasi.
+`outstanding` tetap kewajiban formal sebelum persetujuan dan berbeda dari sisa
+pelaporan. Draf/revisi tidak dimasukkan ke reported. Tidak ada jurnal bank baru.
+PJUM historis tanpa parent hanya dipasangkan jika nomor UM resmi, proyek, dan
+nilai UM sama dengan tepat satu UM; dokumen ambigu tetap perlu rekonsiliasi.

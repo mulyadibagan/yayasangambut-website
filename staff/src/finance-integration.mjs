@@ -11,6 +11,7 @@ const isApproved=r=>['Disetujui','Selesai','Ditutup'].includes(r.status);
 export function financeRecord(row){
  const r={...row};
  for(const [a,b]of Object.entries({parent_um_id:'parentUmId',advance_amount:'advanceAmount',actual_amount:'actualAmount',document_number:'documentNumber',document_url:'documentUrl',document_name:'documentName',archive_folder_url:'archiveFolderUrl',submitted_at:'submittedAt',source_email_id:'sourceEmailId',bank_status:'bankStatus',bank_amount:'bankAmount',bank_date:'bankDate',bank_reference:'bankReference'}))if(r[a]!==undefined&&r[b]===undefined)r[b]=r[a];
+ if(!r.documentNumber)r.documentNumber=r.type==='PJUM'?r.pjumNumber:r.umNumber;
  return r;
 }
 export function mergeFinanceMetadata(archive,sources){
@@ -39,6 +40,13 @@ export function integrateFinance(archive,workflows,history){
   records.delete(drop.id);redirect.set(drop.id,keep.id);official.set(key,keep);
  }
  for(const r of records.values())if(redirect.has(r.parentUmId))r.parentUmId=redirect.get(r.parentUmId);
+ // Resolve only an explicit official UM number, matching project and advance.
+ // Ambiguous or incomplete email records remain unresolved; titles are never keys.
+ for(const r of records.values()){
+  if(r.type!=='PJUM'||r.parentUmId||!r.umNumber||!/[/-].*20\d{2}/.test(r.umNumber))continue;
+  const matches=[...records.values()].filter(u=>u.type==='UM'&&norm(u.documentNumber)===norm(r.umNumber)&&financeProject(u.project)===financeProject(r.project)&&cents(u.advanceAmount??u.amount)>0&&cents(u.advanceAmount??u.amount)===cents(r.advanceAmount));
+  if(matches.length===1)r.parentUmId=matches[0].id;
+ }
  for(const row of workflows){
   if(row.status==='cancelled')continue;
   const p=parse(row.payload),report=row.report?parse(row.report):null;
@@ -96,7 +104,9 @@ export function integrateFinance(archive,workflows,history){
   const paid=isPaid(um);g.umPaid+=paid?a:0;g.pjumApproved+=realized;g.pjumUnderReview+=pending;g.pjumDraft+=draft;g.refundVerified+=refund;g.reimbursementVerified+=reimbursement;
   g.outstanding+=paid?Math.max(0,a-realized-refund):0;g.overrun+=paid?Math.max(0,realized-a-reimbursement):0;
   const reportingStatus=review.length?'Dalam pemeriksaan':reports.some(r=>r.status==='Perlu Revisi')?'Perlu revisi':reports.some(r=>r.status==='Draf')?'Draf PJUM':approved.length?'PJUM disetujui':reports.length?'Status PJUM perlu diperiksa':'PJUM belum tercatat';
-  g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,submitter:um.submitter,reportingStatus,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,refund,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
+  const reported=realized+pending;
+  const pairedReports=reports.map(r=>({id:r.id,number:r.documentNumber||r.pjumNumber||r.id,date:r.submittedAt||null,status:r.status,amount:cents(r.actualAmount??r.amount),approved:isApproved(r),submitted:isApproved(r)||review.includes(r),url:r.workflowId?'/finance/advances?id='+r.workflowId:r.documentUrl||null}));
+  g.requests.push({id:um.id,number:um.documentNumber||um.code||um.id,title:um.title,submitter:um.submitter,date:um.submittedAt||null,reportingStatus,status:um.workflowStatus||um.status,amount:a,paid,approved:realized,underReview:pending,draft,reported,reports:pairedReports,refund,reimbursement,unaccounted:paid?Math.max(0,a-reported-refund):0,difference:paid&&pairedReports.some(r=>r.submitted)?a-reported:null,outstanding:paid?Math.max(0,a-realized-refund):0,url:um.workflowId?'/finance/advances?id='+um.workflowId:um.documentUrl||null});
  }
  const linked=new Set(list.filter(r=>r.type==='UM').map(r=>r.id));
  for(const r of list.filter(r=>r.type==='PJUM'&&!linked.has(r.parentUmId)))warnings.push({id:r.id,reason:'PJUM belum memiliki UM asal yang cocok.'});

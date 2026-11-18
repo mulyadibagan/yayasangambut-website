@@ -31,20 +31,20 @@ export async function applyLiveFinanceIntegration(root,query){
  }
  await query("INSERT INTO finance_settings(setting_key,setting_value) VALUES(?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value",['finance_archive_metadata_v1',JSON.stringify(sources)]);
  await copyFile(new URL('../finance-ui/integrated-finance.tsx',import.meta.url),resolve(root,'app/integrated-finance.tsx'));
+ await copyFile(new URL('../finance-ui/paired-finance.js',import.meta.url),resolve(root,'app/paired-finance.js'));
  const layoutPath=resolve(root,'app/layout.tsx');let layout=await readFile(layoutPath,'utf8');
- if(!layout.includes("import IntegratedFinance from './integrated-finance'")){
-  if(!layout.includes('<FinanceStaffTools />'))throw Error('Finance live layout anchor missing.');
-  layout="import IntegratedFinance from './integrated-finance';\n"+layout.replace('<FinanceStaffTools />','<FinanceStaffTools /><IntegratedFinance />');
-  await writeFile(layoutPath,layout);
- }
- // The old monitor used build-time imported arrays. The live panel above now
- // owns that summary, avoiding two contradictory versions of the same totals.
+ // Remove the duplicate panel from the shared layout. The existing UM/PJUM
+ // monitor is the single mount; cashflow and the main summary keep their own views.
+ layout=layout.replace(/import IntegratedFinance from ['"]\.\/integrated-finance['"];?\s*/g,'').replace(/<IntegratedFinance\s*\/>/g,'');
+ await writeFile(layoutPath,layout);
  const monitorPath=resolve(root,'app/um-monitor-panel.tsx');
  let monitor='';try{monitor=await readFile(monitorPath,'utf8');}catch(e){if(e.code!=='ENOENT')throw e;}
- const marker='// live-finance-monitor';
+ if(!monitor)throw Error('Existing UM/PJUM monitor missing.');
+ const marker='// paired-finance-monitor';
  if(!monitor.includes(marker)){
-  if(monitor)await writeFile(resolve(root,'app/um-monitor-archive.tsx'),monitor);
-  await writeFile(monitorPath,marker+'\n'+(monitor?"export * from './um-monitor-archive';\n":'')+'export default function UmMonitorPanel(_props:any){return null;}\n');
+  if(monitor&&!monitor.includes('// live-finance-monitor'))await writeFile(resolve(root,'app/um-monitor-archive.tsx'),monitor);
+  let legacy=false;try{await readFile(resolve(root,'app/um-monitor-archive.tsx'));legacy=true;}catch(e){if(e.code!=='ENOENT')throw e;}
+  await writeFile(monitorPath,marker+'\n'+(legacy?"export * from './um-monitor-archive';\n":'')+"import IntegratedFinance from './integrated-finance';\nexport default function UmMonitorPanel(props:any){return <IntegratedFinance {...props} />;}\n");
  }
  console.log('Live UM/PJUM and project cashflow use one validated bank register; cash ledger unchanged.');
 }
