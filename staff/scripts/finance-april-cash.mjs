@@ -2,6 +2,8 @@ import {writeFile,copyFile,readFile,readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 export function aprilCashEntry(source){
  if(source.includes('/* april-cash-entry */'))return source;
+ // APRIL has a dedicated tab supplied by AprilProjectShell.
+ source=source.replace('audit.projects.map(p=>','audit.projects.filter(p=>p.key!=="APRIL").map(p=>');
  const anchor='<section className="project-dossier">',start=source.indexOf(anchor);if(start<0)throw Error('Project dossier anchor missing');
  const openEnd=start+anchor.length;let depth=1,end=-1;const tags=/<\/?section\b[^>]*>/g;tags.lastIndex=openEnd;
  for(let m;(m=tags.exec(source));){if(m[0].startsWith('</'))depth--;else if(!m[0].endsWith('/>'))depth++;if(!depth){end=m.index;break;}}
