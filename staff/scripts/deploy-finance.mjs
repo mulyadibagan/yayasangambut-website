@@ -1,3 +1,4 @@
+import {applyDonationSalary} from './finance-donation-salary.mjs';
 import {workflowArchiveRows,applyLiveFinanceIntegration} from './finance-live-integration.mjs';
 import {applyAdvanceArchiveDisplay} from './finance-advance-archive-display.mjs';
 import {installAdvanceArchive} from './finance-advance-archive.mjs';
@@ -102,6 +103,7 @@ const documentLinks=await query('SELECT setting_value FROM finance_settings WHER
 await applyReviewDisplay(root,documentLinks[0].results.length?JSON.parse(documentLinks[0].results[0].setting_value):{receipts:[],records:[]});
 await (await import('./finance-email-telemetry.mjs')).applyEmailTelemetry(root);
 await applyFinancePresentation(root);
+await applyDonationSalary(root);
 await applyLiveFinanceIntegration(root,query);
 run('npm',['run','build']);
 // Verify new bank-derived donation archives independently of the fixed historical fixture.

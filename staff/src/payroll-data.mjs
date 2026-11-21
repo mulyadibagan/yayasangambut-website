@@ -1,3 +1,4 @@
+import {applySavedDonations} from './donation-ledger.mjs';
 import {staffBanks,bankStaffKey,recipientBank} from './payroll-staff-bank.mjs';
 import {staffTerms,applyStaffTerms} from './payroll-staff.mjs';
 import {canonicalStaffName,displayStaffName,staffDescription} from './payroll-identity.mjs';
@@ -58,7 +59,7 @@ export function paymentReport(source,payments){
 export async function payrollReport(env,u,source){
  source ||=await payrollSource(env,u);
  const payments=(await q(env,'SELECT p.*,r.period,r.form_meta FROM yg_payroll_payments p JOIN yg_payroll_requests r ON r.id=p.request_id ORDER BY p.paid_date,p.created_at,p.id').all()).results;
- return paymentReport(source,payments);
+ return applySavedDonations(env,paymentReport(source,payments),source);
 }
 export async function payrollDefaults(env,u,period){
  if(!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period||''))fail(400,'Periode gaji tidak valid.');

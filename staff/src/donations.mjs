@@ -1,3 +1,5 @@
+import {syncDonationDrive} from './donation-drive.mjs';
+import {ensureDonationFiles} from './donation-files.mjs';
 import {fail,imageType} from './core.mjs';
 import {financeDashboardAccess} from './finance-access.mjs';
 import {receiptImage} from './pjum-evidence.mjs';
@@ -17,7 +19,7 @@ export function donationInput(v){
   if(!['general','salary'].includes(a.kind)||a.kind==='salary'&&!Object.hasOwn(staffNames,staff)||!Number.isSafeInteger(a.amount)||a.amount<=0)fail(400,'Peruntukan atau nominal alokasi tidak valid.');
   const key=a.kind+':'+staff;if(seen.has(key))fail(400,'Gabungkan alokasi untuk penerima yang sama.');seen.add(key);return {kind:a.kind,staff,amount:a.amount};});
  if(allocations.reduce((s,a)=>s+a.amount,0)!==amount)fail(400,'Jumlah alokasi harus sama dengan nominal transfer.');
- return {amount,date,donor,reference,allocations};
+ const bankId=v.bankId||null;if(bankId&&!/^20[0-9]{2}:[0-9]+$/.test(bankId))fail(400,'Tautan mutasi tidak valid.');return {amount,date,donor,reference,allocations,bankId};
 }
 export async function extractDonation(env,bytes,mime){
  try{const image=await receiptImage(bytes,mime,1);if(image.error)return {error:image.error};
@@ -27,12 +29,17 @@ export async function extractDonation(env,bytes,mime){
  return {amount:Number.isSafeInteger(v.amount)&&v.amount>0?v.amount:null,date:typeof v.date==='string'?v.date.slice(0,10):null,donor:typeof v.donor==='string'?v.donor.slice(0,160):null,reference:typeof v.reference==='string'?v.reference.slice(0,120):null,recipient:typeof v.recipient==='string'?v.recipient.slice(0,160):null,account:typeof v.account==='string'?v.account.replace(/\D/g,'').slice(0,30):null,success:v.success===true};
  }catch{return {error:'Bukti belum terbaca otomatis. Lengkapi atau koreksi isian di bawah.'};}
 }
-export function matchDonation(p,history){
- if(!p.reference)return null;
- const ref=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
- const groups=new Map();for(const r of history?.rows||[]){if(r.date!==p.date||ref(r.reference)!==ref(p.reference)||!r.credit||r.debit)continue;const key=r.id.split(':').slice(0,2).join(':');const g=groups.get(key)||{id:key,credit:0};g.credit+=r.credit;groups.set(key,g);}
- const hits=[...groups.values()].filter(r=>r.credit===p.amount*100);return hits.length===1?hits[0].id:null;
+export function donationBankCandidates(history){
+ const groups=new Map();for(const r of history?.rows||[]){if(!r.credit||r.debit||!r.date)continue;const id=r.id.split(':').slice(0,2).join(':'),g=groups.get(id)||{id,date:r.date,reference:r.reference,description:r.description,credit:0};g.credit+=r.credit;groups.set(id,g);}return [...groups.values()];
 }
+export function matchDonation(p,history){
+ const ref=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+ const candidates=donationBankCandidates(history).filter(r=>r.date===p.date&&r.credit===p.amount*100);
+ if(p.bankId)return candidates.find(r=>r.id===p.bankId)?.id||null;
+ if(ref(p.reference).length<6)return null;
+ const hits=candidates.filter(r=>ref(r.reference)===ref(p.reference));return hits.length===1?hits[0].id:null;
+}
+
 const serialize=r=>({...r,extracted:JSON.parse(r.extracted),payload:r.payload?JSON.parse(r.payload):null});
 export async function donationPdf(row){
  const p=row.payload,doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),page=doc.addPage([595.28,841.89]);let y=790;
@@ -46,12 +53,12 @@ export async function donationPdf(row){
  y-=20;line(p.bankId?'Transaksi telah cocok dengan register mutasi bank.':'Dicatat berdasarkan bukti transfer; pencocokan mutasi bank belum selesai.',9);line('Dicatat melalui akun: '+row.creator_email,9);line('Dokumen dibuat otomatis oleh YG Finance. Riwayat revisi tersimpan.',9);
  return doc.save();
 }
-export async function donationsRoute(req,env,u,{readLimited,payload}){
+export async function donationsRoute(req,env,u,{readLimited,payload,ctx}){
  if(!financeDashboardAccess(u))fail(403,'Akses Finance diperlukan.');
  if(!['GET','HEAD'].includes(req.method)&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
  const url=new URL(req.url),base='/finance/donations',path=url.pathname;
  if(path===base&&req.method==='GET')return new Response(donationsPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
- if(path===base+'/api'&&req.method==='GET'){const rows=(await q(env,'SELECT * FROM yg_donations ORDER BY seq DESC LIMIT 100').all()).results;return json({rows:rows.map(serialize),staff:Object.entries(staffNames).map(([id,name])=>({id,name}))});}
+ if(path===base+'/api'&&req.method==='GET'){const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();const bankCandidates=donationBankCandidates(history?JSON.parse(history.setting_value):null);const rows=(await q(env,'SELECT * FROM yg_donations ORDER BY seq DESC LIMIT 100').all()).results;return json({bankCandidates,rows:await Promise.all(rows.map(async r=>({...serialize(r),archives:(await q(env,'SELECT f.purpose,f.version,d.status,d.web_url,d.error FROM yg_donation_files f LEFT JOIN yg_donation_drive d ON d.file_id=f.id WHERE f.request_id=? ORDER BY f.version',r.id).all()).results}))),staff:Object.entries(staffNames).map(([id,name])=>({id,name}))});}
  if(path===base+'/upload'&&req.method==='POST'){
   const bytes=await readLimited(req,5*1024*1024);if(bytes.length<10)fail(400,'Pilih bukti transfer.');
   const mime=new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':imageType(bytes);if(!mime)fail(400,'Gunakan PDF, JPG, PNG, atau WebP.');
@@ -60,20 +67,24 @@ export async function donationsRoute(req,env,u,{readLimited,payload}){
   const id=crypto.randomUUID(),key='donations/'+id,extracted=await extractDonation(env,bytes,mime);
   await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
   try{await q(env,'INSERT INTO yg_donations(id,seq,file_hash,object_key,mime,extracted,creator_email) SELECT ?,COALESCE(MAX(seq),0)+1,?,?,?,?,? FROM yg_donations',id,hash,key,mime,JSON.stringify(extracted),u.email).run();}catch(e){await env.MEDIA.delete(key);const existing=await q(env,'SELECT * FROM yg_donations WHERE file_hash=?',hash).first();if(existing)return json({row:serialize(existing),duplicate:true});throw e;}
+  ctx?.waitUntil(syncDonationDrive(env,id).catch(()=>{}));
   return json({row:serialize(await q(env,'SELECT * FROM yg_donations WHERE id=?',id).first())});
  }
- const m=path.match(/^\/finance\/donations\/([a-f0-9-]{36})(?:\/(proof|receipt))?$/);if(!m)fail(404,'Halaman tidak ditemukan.');
+ const m=path.match(/^\/finance\/donations\/([a-f0-9-]{36})(?:\/(proof|receipt|archive))?$/);if(!m)fail(404,'Halaman tidak ditemukan.');
  const row=await q(env,'SELECT * FROM yg_donations WHERE id=?',m[1]).first();if(!row)fail(404,'Donasi tidak ditemukan.');
+ if(req.method==='POST'&&m[2]==='archive'){await q(env,"UPDATE yg_donation_drive SET retry_at=0 WHERE request_id=? AND status='error'",row.id).run();await syncDonationDrive(env,row.id);return json({ok:true});}
  if(req.method==='GET'&&m[2]==='proof'){const file=await env.MEDIA.get(row.object_key);if(!file)fail(404,'Bukti tidak ditemukan.');return new Response(file.body,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
- if(req.method==='GET'&&m[2]==='receipt'){if(!row.payload)fail(409,'Lengkapi pencatatan donasi terlebih dahulu.');return new Response(await donationPdf(serialize(row)),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Kuitansi_Donasi_'+row.seq+'_v'+row.version+'.pdf"','Cache-Control':'private, no-store'}});}
+ if(req.method==='GET'&&m[2]==='receipt'){if(!row.payload)fail(409,'Lengkapi pencatatan donasi terlebih dahulu.');await ensureDonationFiles(env,row.id);const saved=await q(env,"SELECT storage_key FROM yg_donation_files WHERE request_id=? AND purpose='receipt' AND version=?",row.id,row.version).first();const object=saved?await env.MEDIA.get(saved.storage_key):null;if(!object)fail(503,'Kuitansi sedang disiapkan. Coba kembali.');return new Response(object.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Kuitansi_Donasi_'+row.seq+'_v'+row.version+'.pdf"','Cache-Control':'private, no-store'}});}
  if(req.method==='PUT'&&!m[2]){
   const body=await payload(req),p=donationInput(body);if(body.version!==row.version)fail(409,'Data telah berubah. Muat ulang.');
   const others=(await q(env,'SELECT id,payload FROM yg_donations WHERE payload IS NOT NULL AND id<>?',row.id).all()).results;
   if(p.reference&&others.some(r=>{const x=JSON.parse(r.payload);return x.date===p.date&&x.amount===p.amount&&x.reference===p.reference;}))fail(409,'Transfer ini sudah dicatat pada laporan donasi lain.');
-  const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();p.bankId=matchDonation(p,history?JSON.parse(history.setting_value):null);
+  const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();const requestedBank=p.bankId;p.bankId=matchDonation(p,history?JSON.parse(history.setting_value):null);if(requestedBank&&!p.bankId)fail(409,'Mutasi yang dipilih tidak cocok dengan tanggal dan nominal donasi.');
   const data=JSON.stringify(p),event=crypto.randomUUID(),transferKey=p.reference?[p.date,p.amount,p.reference.toLowerCase().replace(/[^a-z0-9]/g,'')].join('|'):null;
   const result=await env.DB.batch([q(env,'UPDATE yg_donations SET payload=?,transfer_key=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND version=?',data,transferKey,row.id,row.version),q(env,'INSERT INTO yg_donation_events(id,donation_id,version,actor_email,payload) SELECT ?,id,version,?,payload FROM yg_donations WHERE id=? AND version=? AND payload=?',event,u.email,row.id,row.version+1,data)]);
   if(!result[0].meta.changes)fail(409,'Data telah berubah. Muat ulang.');
+  await ensureDonationFiles(env,row.id).catch(()=>{});
+  ctx?.waitUntil(syncDonationDrive(env,row.id).catch(()=>{}));
   return json({row:serialize(await q(env,'SELECT * FROM yg_donations WHERE id=?',row.id).first())});
  }
  fail(405,'Metode tidak didukung.');
