@@ -1,33 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {liveDonationSalary} from '../scripts/finance-donation-salary.mjs';
+import {liveSalaryRows,liveSalaryPosition} from '../finance-ui/donation-salary-data.js';
 import {transformSync} from 'esbuild';
-test('live salary display reads the same payment report and keeps the historical fallback',()=>{
- const fixture=`"use client";
- function panel(){
+const fixture=`"use client";
+function panel(){
   const [effectiveSalaryStaff,setEffectiveSalaryStaff]=useState([]);
+  const policyMonth='2026-11',year=2026,savingData={rows:[]};
+  const canonicalSalaryName=name=>name;
   useEffect(()=>{fetch('/finance/payroll/api/report').then(data=>{setEffectiveSalaryStaff(data.staff);});},[]);
-  const view=useMemo(()=>{return {};}, [savingData, year, effectiveSalaryStaff]);
-  return <Historical />;
- }`;
- const patched=liveDonationSalary(fixture);assert.ok(patched.startsWith('"use client";'));assert.ok(patched.includes('setLiveDonationReport(data)'));assert.ok(patched.includes('? <DonationSalaryPanel'));assert.ok(patched.includes(': (<Historical />)'));assert.equal(liveDonationSalary(patched),patched);
- assert.throws(()=>liveDonationSalary('unrelated'),/anchor changed/);
-});
-test('async donation arrival executes every original hook before switching the rendered salary table',()=>{
- const fixture=`"use client";
- function panel(){
-  const [effectiveSalaryStaff,setEffectiveSalaryStaff]=useState([]);
-  const policyMonth='2026-11',year=2026,savingData={};
-  useEffect(()=>{fetch('/finance/payroll/api/report').then(data=>{setEffectiveSalaryStaff(data.staff);});},[]);
-  const view=useMemo(()=>{return {};}, [savingData, year, effectiveSalaryStaff]);
+  const view=useMemo(()=>{const rows=savingData.rows;return {rows};}, [savingData, year, effectiveSalaryStaff]);
   const later=useMemo(()=>42,[]);
-  return <Historical value={later}/>;
- }`;
- const patched=liveDonationSalary(fixture).replace(/import DonationSalaryPanel[^\n]*\n/,'');
- const js=transformSync(patched,{loader:'tsx',jsxFactory:'jsx',format:'cjs'}).code;
- let hooks=0,stateCalls=0,live=null;
- const useState=v=>{hooks++;const i=stateCalls++;return [i===0?live:v,()=>{}];},useMemo=f=>{hooks++;return f();},useEffect=()=>{hooks++;};
- const render=new Function('useState','useMemo','useEffect','jsx','DonationSalaryPanel','Historical',js+';return panel;')(useState,useMemo,useEffect,(type,props)=>({type,props}),'live','historical');
- assert.equal(render().type,'historical');const before=hooks;
- hooks=0;stateCalls=0;live={donations:[{id:'one'}],staff:[]};assert.equal(render().type,'live');assert.equal(hooks,before);assert.equal(hooks,6);
+  return <Historical value={later} rows={view.rows}/>;
+}`;
+test('refreshes original salary inputs without replacing markup or changing hook order',()=>{
+ const patched=liveDonationSalary(fixture);
+ assert.ok(patched.includes('return <Historical value={later} rows={view.rows}/>;'));
+ assert.ok(!patched.includes('DonationSalaryPanel'));assert.equal(liveDonationSalary(patched),patched);
+ const js=transformSync(patched.replace(/import \{liveSalaryRows[^\n]*\n/,''),{loader:'tsx',jsxFactory:'jsx',format:'cjs'}).code;
+ let hooks=0,states=0,report=null;
+ const render=new Function('useState','useMemo','useEffect','jsx','Historical','liveSalaryRows',js+';return panel;')(()=>{hooks++;return [states++===0?report:[],()=>{}];},f=>{hooks++;return f();},()=>{hooks++;},(type,props)=>({type,props}),'original',liveSalaryRows);
+ assert.equal(render().type,'original');const before=hooks;hooks=states=0;
+ report={sourceAsOf:'2026-11-19',staff:[],issues:[]};assert.equal(render().type,'original');assert.equal(hooks,before);
+});
+test('applies the donation difference once and preserves historical rows and years',()=>{
+ const rows=[{year:2026,staff:'Z',claimAmount:78.2,paidAmount:46.875},{year:2026,staff:'R',carryForward:-14.3565,claimAmount:56.75,paidAmount:60.5}];
+ const report={sourceAsOf:'2026-11-19',bookBalance:552.811,generalSaving:322.194,salaryReserve:36.825,issues:[],staff:[{id:'z',name:'Z',opening:0,allocation:83.7,paid:46.875,usage:0,position:36.825},{id:'r',name:'R',opening:-14.3565,allocation:64.75,paid:60.5,usage:0,position:-10.1065}]};
+ const result=liveSalaryRows(rows,report,2026);assert.equal(result.length,4);assert.equal(result[2].claimAmount,5.5);assert.equal(result[3].claimAmount,8);
+ assert.equal(liveSalaryRows(result,report,2026).length,4);assert.equal(rows.length,2);assert.equal(liveSalaryRows(rows,report,2025),rows);
+ assert.equal(liveSalaryPosition({},report,2026).ygAdvance,10.1065);
+ assert.equal(liveSalaryRows(rows,{...report,issues:[{}]},2026),rows);
 });
