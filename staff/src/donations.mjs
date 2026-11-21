@@ -5,9 +5,9 @@ import {fail,imageType} from './core.mjs';
 import {financeDashboardAccess} from './finance-access.mjs';
 import {receiptImage} from './pjum-evidence.mjs';
 import {validDate} from './payroll-data.mjs';
-import {staffNames,canonicalStaffName,displayStaffName} from './payroll-identity.mjs';
-import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
-import {terbilang} from './payroll-print.mjs';
+import {staffNames,canonicalStaffName} from './payroll-identity.mjs';
+import {RECEIPT_PURPOSE} from './donation-receipt.mjs';
+export {donationPdf} from './donation-receipt.mjs';
 import {donationsPage} from './donations-page.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const json=v=>Response.json(v,{headers:{'Cache-Control':'private, no-store'}});
@@ -43,18 +43,6 @@ export function matchDonation(p,history){
 }
 
 const serialize=r=>({...r,extracted:JSON.parse(r.extracted),payload:r.payload?JSON.parse(r.payload):null});
-export async function donationPdf(row){
- const p=row.payload,doc=await PDFDocument.create(),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold),page=doc.addPage([595.28,841.89]);let y=790;
- const safe=s=>String(s).replace(/[^\x20-\x7e\xa0-\xff]/g,' ');
- const line=(s,size=11,b=false)=>{for(const part of safe(s).match(/.{1,78}(?:\s|$)|.{1,78}/g)||['']){page.drawText(part.trim(),{x:48,y,size,font:b?bold:font,color:rgb(.08,.22,.17)});y-=size+9;}};
- const money=n=>'Rp'+new Intl.NumberFormat('id-ID').format(n);
- doc.setTitle('Kuitansi penerimaan donasi '+row.seq);doc.setAuthor('Yayasan Gambut');
- line('YAYASAN GAMBUT',17,true);line('KUITANSI PENERIMAAN DONASI',14,true);line('Nomor: DON/'+row.created_at.slice(0,4)+'/'+String(row.seq).padStart(5,'0'));line('Revisi: '+row.version);y-=15;
- line('Telah diterima dari: '+p.donor);line('Tanggal transfer: '+p.date);line('Sejumlah: '+money(p.amount),13,true);line('Terbilang: '+terbilang(p.amount)+' rupiah');line('Referensi transfer: '+(p.reference||'-'));y-=12;line('Peruntukan:',11,true);
- for(const a of p.allocations)line((a.kind==='general'?'Kas umum YG':'Saving gaji '+displayStaffName(a.staff))+': '+money(a.amount));
- y-=20;line(p.bankId?'Transaksi telah cocok dengan register mutasi bank.':'Dicatat berdasarkan bukti transfer; pencocokan mutasi bank belum selesai.',9);line('Dicatat melalui akun: '+row.creator_email,9);line('Dokumen dibuat otomatis oleh YG Finance. Riwayat revisi tersimpan.',9);
- return doc.save();
-}
 export async function donationsRoute(req,env,u,{readLimited,payload,ctx}){
  if(!financeDashboardAccess(u))fail(403,'Akses Finance diperlukan.');
  if(!['GET','HEAD'].includes(req.method)&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
@@ -76,7 +64,7 @@ export async function donationsRoute(req,env,u,{readLimited,payload,ctx}){
  const row=await q(env,'SELECT * FROM yg_donations WHERE id=?',m[1]).first();if(!row)fail(404,'Donasi tidak ditemukan.');
  if(req.method==='POST'&&m[2]==='archive'){await q(env,"UPDATE yg_donation_drive SET retry_at=0 WHERE request_id=? AND status='error'",row.id).run();await syncDonationDrive(env,row.id);return json({ok:true});}
  if(req.method==='GET'&&m[2]==='proof'){const file=await env.MEDIA.get(row.object_key);if(!file)fail(404,'Bukti tidak ditemukan.');return new Response(file.body,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
- if(req.method==='GET'&&m[2]==='receipt'){if(!row.payload)fail(409,'Lengkapi pencatatan donasi terlebih dahulu.');await ensureDonationFiles(env,row.id);const saved=await q(env,"SELECT storage_key FROM yg_donation_files WHERE request_id=? AND purpose='receipt' AND version=?",row.id,row.version).first();const object=saved?await env.MEDIA.get(saved.storage_key):null;if(!object)fail(503,'Kuitansi sedang disiapkan. Coba kembali.');return new Response(object.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Kuitansi_Donasi_'+row.seq+'_v'+row.version+'.pdf"','Cache-Control':'private, no-store'}});}
+ if(req.method==='GET'&&m[2]==='receipt'){if(!row.payload)fail(409,'Lengkapi pencatatan donasi terlebih dahulu.');await ensureDonationFiles(env,row.id);ctx?.waitUntil(syncDonationDrive(env,row.id).catch(()=>{}));const saved=await q(env,"SELECT storage_key FROM yg_donation_files WHERE request_id=? AND purpose=? AND version=?",row.id,RECEIPT_PURPOSE,row.version).first();const object=saved?await env.MEDIA.get(saved.storage_key):null;if(!object)fail(503,'Kuitansi sedang disiapkan. Coba kembali.');return new Response(object.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Kwitansi_Penerimaan_'+row.seq+'_v'+row.version+'.pdf"','Cache-Control':'private, no-store'}});}
  if(req.method==='PUT'&&!m[2]){
   const body=await payload(req),people=await donationStaff(env),p=donationInput(body,people.map(s=>s.id));if(body.version!==row.version)fail(409,'Data telah berubah. Muat ulang.');
   const others=(await q(env,'SELECT id,payload FROM yg_donations WHERE payload IS NOT NULL AND id<>?',row.id).all()).results;
