@@ -1,3 +1,4 @@
+import {donationsRoute} from './donations.mjs';
 import {sendPjumReviewEmails} from './pjum-review-email.mjs';
 import {financeIntegrationRoute,readIntegratedFinance} from './finance-integration.mjs';
 import {financeNotifications} from './finance-notifications.mjs';
@@ -269,6 +270,7 @@ async function route(req,env,ctx){
       if(e instanceof HttpError && e.status===401 && pageRequest)return redirect(env.APP_ORIGIN+'/',{'Set-Cookie':cookie('__Host-yg-finance-return',encodeURIComponent(financeReturnPath(url.pathname+url.search)),600)});
       throw e;
     }
+    if(url.pathname==='/finance/donations'||url.pathname.startsWith('/finance/donations/'))return donationsRoute(req,env,u,{readLimited,payload});
     if(url.pathname==='/finance/advances'||url.pathname.startsWith('/finance/advances/'))return advancesRoute(req,env,u,ctx);
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&u.email?.toLowerCase()==='zamharier@yayasangambut.org'&&advanceAccess(u)&&!financeDashboardAccess(u)&&!payrollAccess(u,env))return redirect(env.APP_ORIGIN+'/finance/advances');
     if(url.pathname==='/finance/signature'||url.pathname==='/finance/signature/api')return signatureRoute(req,env,u,readLimited);
