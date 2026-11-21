@@ -121,12 +121,23 @@ if(addedArchives.length){
   +'assert.equal(body.requests.filter(r=>!expectedDonations.some(p=>p.id===r.id)).length,'+Number(matches[0][1])+')';
  await writeFile(testPath,testSource.replace(countCheck,()=>replacement));
 }
+const integrationPath=root+'/migration-test.mjs';
+const integrationSource=await readFile(integrationPath,'utf8');
+await writeFile(integrationPath,integrationSource.replace("assert.equal(home.status,200);","if(home.status===500)await fs.writeFile('home-response.txt',await home.clone().text());assert.equal(home.status,200);"));
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
 if(checked.status!==0){
  const testLines=(await readFile(root+'/migration-test.mjs','utf8')).split('\n');
  const shape=JSON.parse(await readFile(root+'/app/closing-august-2026.json','utf8')).projects;
  const schema=Object.fromEntries(Object.entries(shape[0]||{}).map(([field,value])=>[field,Array.isArray(value)?'array':typeof value]));
- const diagnostic=JSON.stringify({testContext:testLines.slice(16,29),projectFields:schema});
+ const appDir=resolve(root,'app');
+ const snippets={};
+ for(const f of await readdir(appDir)){
+  if(!/\.(tsx|ts|jsx|js)$/.test(f)||/bank-statement|finance-history|archive-data/.test(f))continue;
+  const lines=(await readFile(resolve(appDir,f),'utf8')).split('\n').filter(l=>/\.projects\.map|\.projects\.filter|projectMeta\[|projectLabels\[|projectInfo\[/.test(l));
+  if(lines.length)snippets[f]=lines.map(l=>l.slice(0,4500)).slice(0,25);
+ }
+ const response=(await readFile(root+'/home-response.txt','utf8').catch(()=>'' )).slice(-4000);
+ const diagnostic=JSON.stringify({testContext:testLines.slice(16,29),projectFields:schema,snippets,response});
  await query('INSERT OR REPLACE INTO finance_settings (setting_key,setting_value) VALUES (?,?)',['private_build_check_context',diagnostic]);
  throw Error('Private finance integration checks failed.');
 }
