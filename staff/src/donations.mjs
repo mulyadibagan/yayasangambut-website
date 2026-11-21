@@ -1,4 +1,5 @@
 import {syncDonationDrive} from './donation-drive.mjs';
+import {donationStaff} from './donation-staff.mjs';
 import {ensureDonationFiles} from './donation-files.mjs';
 import {fail,imageType} from './core.mjs';
 import {financeDashboardAccess} from './finance-access.mjs';
@@ -10,13 +11,14 @@ import {terbilang} from './payroll-print.mjs';
 import {donationsPage} from './donations-page.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const json=v=>Response.json(v,{headers:{'Cache-Control':'private, no-store'}});
-export function donationInput(v){
+export function donationInput(v,allowedStaff=Object.keys(staffNames)){
+ const allowed=new Set(allowedStaff.map(canonicalStaffName));
  const amount=Number(v?.amount);if(!Number.isSafeInteger(amount)||amount<=0||amount>10000000000)fail(400,'Nominal donasi tidak valid.');
  const date=validDate(v.date),donor=String(v.donor||'').trim(),reference=String(v.reference||'').trim();
  if(!donor||donor.length>160||reference.length>120)fail(400,'Nama pengirim atau referensi tidak valid.');
  if(!Array.isArray(v.allocations)||!v.allocations.length||v.allocations.length>20)fail(400,'Isi peruntukan donasi.');
  const seen=new Set(),allocations=v.allocations.map(a=>{const staff=a.kind==='salary'?canonicalStaffName(a.staff):'';
-  if(!['general','salary'].includes(a.kind)||a.kind==='salary'&&!Object.hasOwn(staffNames,staff)||!Number.isSafeInteger(a.amount)||a.amount<=0)fail(400,'Peruntukan atau nominal alokasi tidak valid.');
+  if(!['general','salary'].includes(a.kind)||a.kind==='salary'&&!allowed.has(staff)||!Number.isSafeInteger(a.amount)||a.amount<=0)fail(400,'Peruntukan atau nominal alokasi tidak valid.');
   const key=a.kind+':'+staff;if(seen.has(key))fail(400,'Gabungkan alokasi untuk penerima yang sama.');seen.add(key);return {kind:a.kind,staff,amount:a.amount};});
  if(allocations.reduce((s,a)=>s+a.amount,0)!==amount)fail(400,'Jumlah alokasi harus sama dengan nominal transfer.');
  const bankId=v.bankId||null;if(bankId&&!/^20[0-9]{2}:[0-9]+$/.test(bankId))fail(400,'Tautan mutasi tidak valid.');return {amount,date,donor,reference,allocations,bankId};
@@ -58,7 +60,7 @@ export async function donationsRoute(req,env,u,{readLimited,payload,ctx}){
  if(!['GET','HEAD'].includes(req.method)&&req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Asal permintaan tidak valid.');
  const url=new URL(req.url),base='/finance/donations',path=url.pathname;
  if(path===base&&req.method==='GET')return new Response(donationsPage(),{headers:{'Content-Type':'text/html; charset=utf-8'}});
- if(path===base+'/api'&&req.method==='GET'){const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();const bankCandidates=donationBankCandidates(history?JSON.parse(history.setting_value):null);const rows=(await q(env,'SELECT * FROM yg_donations ORDER BY seq DESC LIMIT 100').all()).results;return json({bankCandidates,rows:await Promise.all(rows.map(async r=>({...serialize(r),archives:(await q(env,'SELECT f.purpose,f.version,d.status,d.web_url,d.error FROM yg_donation_files f LEFT JOIN yg_donation_drive d ON d.file_id=f.id WHERE f.request_id=? ORDER BY f.version',r.id).all()).results}))),staff:Object.entries(staffNames).map(([id,name])=>({id,name}))});}
+ if(path===base+'/api'&&req.method==='GET'){const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();const bankCandidates=donationBankCandidates(history?JSON.parse(history.setting_value):null);const rows=(await q(env,'SELECT * FROM yg_donations ORDER BY seq DESC LIMIT 100').all()).results;return json({bankCandidates,rows:await Promise.all(rows.map(async r=>({...serialize(r),archives:(await q(env,'SELECT f.purpose,f.version,d.status,d.web_url,d.error FROM yg_donation_files f LEFT JOIN yg_donation_drive d ON d.file_id=f.id WHERE f.request_id=? ORDER BY f.version',r.id).all()).results}))),staff:await donationStaff(env)});}
  if(path===base+'/upload'&&req.method==='POST'){
   const bytes=await readLimited(req,5*1024*1024);if(bytes.length<10)fail(400,'Pilih bukti transfer.');
   const mime=new TextDecoder().decode(bytes.slice(0,5))==='%PDF-'?'application/pdf':imageType(bytes);if(!mime)fail(400,'Gunakan PDF, JPG, PNG, atau WebP.');
@@ -76,7 +78,7 @@ export async function donationsRoute(req,env,u,{readLimited,payload,ctx}){
  if(req.method==='GET'&&m[2]==='proof'){const file=await env.MEDIA.get(row.object_key);if(!file)fail(404,'Bukti tidak ditemukan.');return new Response(file.body,{headers:{'Content-Type':row.mime,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
  if(req.method==='GET'&&m[2]==='receipt'){if(!row.payload)fail(409,'Lengkapi pencatatan donasi terlebih dahulu.');await ensureDonationFiles(env,row.id);const saved=await q(env,"SELECT storage_key FROM yg_donation_files WHERE request_id=? AND purpose='receipt' AND version=?",row.id,row.version).first();const object=saved?await env.MEDIA.get(saved.storage_key):null;if(!object)fail(503,'Kuitansi sedang disiapkan. Coba kembali.');return new Response(object.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Kuitansi_Donasi_'+row.seq+'_v'+row.version+'.pdf"','Cache-Control':'private, no-store'}});}
  if(req.method==='PUT'&&!m[2]){
-  const body=await payload(req),p=donationInput(body);if(body.version!==row.version)fail(409,'Data telah berubah. Muat ulang.');
+  const body=await payload(req),people=await donationStaff(env),p=donationInput(body,people.map(s=>s.id));if(body.version!==row.version)fail(409,'Data telah berubah. Muat ulang.');
   const others=(await q(env,'SELECT id,payload FROM yg_donations WHERE payload IS NOT NULL AND id<>?',row.id).all()).results;
   if(p.reference&&others.some(r=>{const x=JSON.parse(r.payload);return x.date===p.date&&x.amount===p.amount&&x.reference===p.reference;}))fail(409,'Transfer ini sudah dicatat pada laporan donasi lain.');
   const history=await q(env,"SELECT setting_value FROM finance_settings WHERE setting_key='finance_bank_history_v1'").first();const requestedBank=p.bankId;p.bankId=matchDonation(p,history?JSON.parse(history.setting_value):null);if(requestedBank&&!p.bankId)fail(409,'Mutasi yang dipilih tidak cocok dengan tanggal dan nominal donasi.');
