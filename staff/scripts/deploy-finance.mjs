@@ -122,7 +122,14 @@ if(addedArchives.length){
  await writeFile(testPath,testSource.replace(countCheck,()=>replacement));
 }
 const checked=spawnSync('node',['migration-test.mjs'],{cwd:root,stdio:'inherit',env:{...process.env,FINANCE_PRIVATE_DATA:root+'/private'}});
-if(checked.status!==0)throw Error('Private finance integration checks failed.');
+if(checked.status!==0){
+ const testLines=(await readFile(root+'/migration-test.mjs','utf8')).split('\n');
+ const shape=JSON.parse(await readFile(root+'/app/closing-august-2026.json','utf8')).projects;
+ const schema=Object.fromEntries(Object.entries(shape[0]||{}).map(([field,value])=>[field,Array.isArray(value)?'array':typeof value]));
+ const diagnostic=JSON.stringify({testContext:testLines.slice(16,29),projectFields:schema});
+ await query('INSERT OR REPLACE INTO finance_settings (setting_key,setting_value) VALUES (?,?)',['private_build_check_context',diagnostic]);
+ throw Error('Private finance integration checks failed.');
+}
 const migrationFiles=[];
 await mkdir(root+'/dist/client/_migration/uploads',{recursive:true});
 for(const [index,file] of tables.finance_files.rows.entries()){
