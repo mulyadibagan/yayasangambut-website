@@ -16,7 +16,18 @@ export function reconcileBankUpdates(bank, snapshot, updates){
   if(!r||!Number.isInteger(r.archiveIndex)||typeof r.postedAt!=='string'||typeof r.description!=='string'||typeof r.reference!=='string'||![r.debit,r.credit,r.balance].every(n=>Number.isFinite(n)&&n>=0)||!(r.debit>0 ^ r.credit>0)||!Array.isArray(u.allocations)||!u.allocations.length)fail();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(u.asOf)||typeof u.period!=='string'||typeof u.source!=='string'||typeof u.note!=='string')fail();
   if(u.allocations.some(a=>a.bucket==='APRIL')&&!s.projects.some(p=>p.key==='APRIL')){
-   s.projects.push({key:'APRIL',name:'APRIL Dayun',label:'APRIL Dayun',opening:0,incoming:0,outgoing:0,balance:0,bankIndexes:[],bankTransactionCount:0});
+   // Older snapshots predate this project. Preserve the snapshot's field types
+   // for report components that iterate activity lists or format numeric totals.
+   function emptyField(value){
+    if(Array.isArray(value))return [];
+    if(value===null)return null;
+    if(typeof value==='object')return Object.fromEntries(Object.entries(value).map(([key,item])=>[key,emptyField(item)]));
+    if(typeof value==='number')return 0;
+    if(typeof value==='boolean')return false;
+    return '';
+   }
+   const fields=Object.assign({},...s.projects.map(emptyField));
+   s.projects.push({...fields,key:'APRIL',name:'APRIL Dayun',label:'APRIL Dayun',opening:0,incoming:0,outgoing:0,balance:0,bankIndexes:[],bankTransactionCount:0});
   }
   if(u.allocations.some(a=>!(['STAFF_PENDING','YG'].includes(a.bucket)||s.projects.some(p=>p.key===a.bucket))||!Number.isFinite(a.amount))||u.allocations.reduce((n,a)=>n+cents(a.amount),0)!==cents(r.credit)-cents(r.debit))fail();
   if(new Set(u.allocations.map(a=>a.bucket)).size!==u.allocations.length)fail();
