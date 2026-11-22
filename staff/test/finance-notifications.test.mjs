@@ -27,3 +27,19 @@ test('only Director sees pending checked reports, including earlier reviews, wit
  assert.deepEqual((await financeNotifications(env,director)).map(row=>row.id),['new']);
  db.close();
 });
+
+test('Finance receives saved recent donations with direct links; drafts and older records stay out',async()=>{
+ const db=new DatabaseSync(':memory:');
+ db.exec("CREATE TABLE yg_donations(id TEXT,seq INTEGER,payload TEXT,updated_at TEXT)");
+ const insert=db.prepare('INSERT INTO yg_donations VALUES(?,?,?,?)');
+ insert.run('saved',1,JSON.stringify({donor:'Donor',amount:1000000}),new Date().toISOString().slice(0,19).replace('T',' '));
+ insert.run('draft',2,null,new Date().toISOString());
+ insert.run('old',3,JSON.stringify({donor:'Old',amount:100}), '2020-01-01');
+ const env={DB:{prepare(sql){return {async all(){return {results:db.prepare(sql).all()};}};}}};
+ const finance={email:'rienaprasiddha@yayasangambut.org',role:'staff'};
+ const rows=await financeNotifications(env,finance);
+ assert.equal(rows.length,1);assert.equal(rows[0].kind,'donation');
+ assert.equal(rows[0].total,1000000);assert.equal(rows[0].href,'/finance/donations?id=saved');
+ assert.deepEqual(await financeNotifications(env,{...finance,disabled:true}),[]);
+ db.close();
+});

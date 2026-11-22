@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useState} from 'react';
 
-type Notification={id:string,number:string,applicant:string,total:number,note:string,href:string};
+type Notification={id:string,number:string,applicant:string,total:number,note:string,href:string,title?:string,actionLabel?:string};
 export default function FinanceNotifications(){
  const [items,setItems]=useState<Notification[]>([]);
  useEffect(()=>{
@@ -23,11 +23,11 @@ export default function FinanceNotifications(){
  },[]);
  if(!items.length)return null;
  return <section className="yg-finance-notifications" aria-label="Notifikasi Finance" aria-live="polite">
-  <h2>Notifikasi Finance · {items.length} PJUM menunggu persetujuan Anda</h2>
+  <h2>Notifikasi Finance · {items.length} pemberitahuan</h2>
   <ul>{items.map(item=><li key={item.id}>
-   <strong>PJUM {item.number} selesai diperiksa Finance</strong>
+   <strong>{item.title||`PJUM ${item.number} selesai diperiksa Finance`}</strong>
    <p>{item.applicant} · {new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(item.total)}{item.note?' · '+item.note:''}</p>
-   <a href={item.href}>Buka untuk persetujuan</a>
+   <a href={item.href}>{item.actionLabel||'Buka untuk persetujuan'}</a>
   </li>)}</ul>
  </section>;
 }
