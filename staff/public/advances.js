@@ -57,6 +57,9 @@ function permissions(){
  sheetLink.hidden=!linkedDayunDraft;
  if(linkedDayunDraft)sheetLink.href='https://docs.google.com/spreadsheets/d/1eEe3SyFtocAXLpm98VcdREhFLLceoRpO/edit';
  else sheetLink.removeAttribute('href');
+ const printSheet=linkedDayunDraft&&['draft','returned','submitted','checked','approved'].includes(current.status);
+ $('#print').textContent=printSheet?'Cetak UM dari Excel':'Cetak UM / PJUM';
+ $('#print').dataset.workbook=printSheet?sheetLink.href:'';
  $('#print').hidden=!current;$('#excel').hidden=!current||!!current.legacy_id;if(current)$('#excel').href=linkedDayunDraft?'https://drive.google.com/uc?export=download&id=1eEe3SyFtocAXLpm98VcdREhFLLceoRpO':api+'/'+current.id+'/excel';
  $('#um-form').querySelectorAll('select').forEach(e=>e.disabled=!edit);if(rep)$('#upload-box').hidden=true;
 }
@@ -67,7 +70,7 @@ $('#new').onclick=()=>run(async()=>{if(dirty&&!confirm('Ada draf belum disimpan.
 $('#add-um').onclick=()=>{addItem('#um-items');dirty=true;};$('#add-pjum').onclick=()=>{addItem('#pjum-items',{},true);dirty=true;};$('#um-form').onsubmit=e=>{e.preventDefault();run(saveUm);};$('#um-form').addEventListener('input',()=>dirty=true);$('#pjum-form').addEventListener('input',e=>{if(e.target.type!=='file')dirty=true;});
 $('#pjum-form').onsubmit=e=>{e.preventDefault();run(async()=>{if(!$('#pjum-form').reportValidity())return;current=await request('/'+current.id+'/report','POST',{version:current.version,items:items('#pjum-items'),report_date:$('#pjum-form').elements.report_date.value,report_number:$('#pjum-form').elements.report_number.value,notes:$('#pjum-form').elements.notes.value});dirty=false;await reload();render();notice('Draf PJUM tersimpan.');});};
 $('#upload').onchange=()=>run(async()=>{const file=$('#upload').files[0];if(!file)return;if(dirty)throw Error('Simpan draf sebelum mengunggah lampiran.');if(file.size>5*1024*1024)throw Error('Berkas maksimal 5 MB.');const response=await fetch(api+'/'+current.id+'/files?'+new URLSearchParams({purpose:$('#purpose').value,name:file.name,version:current.version}),{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});const out=await response.json();if(!response.ok)throw Error(out.error||'Unggah belum berhasil.');current=out;render();notice('Dokumen tersimpan.');});
-$('#print').onclick=()=>{if(dirty){notice('Simpan draf sebelum mencetak.');return;}window.print();};window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+$('#print').onclick=()=>{if(dirty){notice('Simpan draf sebelum mencetak.');return;}const file=$('#print').dataset.workbook;if(file){window.open(file,'_blank','noopener,noreferrer');notice('Di spreadsheet, pilih File → Cetak.');return;}window.print();};window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 run(async()=>{me=await request('/me');$('#account').textContent=me.name;$('#dashboard').hidden=!me.dashboard;$('#payroll').hidden=!me.payroll;await reload();await setupProjects();$('#legacy-panel').hidden=!(me.director||me.finance);$('#new').disabled=false;}).catch(e=>notice(e.message));
 
 let projects=[],activeBudget=null;
