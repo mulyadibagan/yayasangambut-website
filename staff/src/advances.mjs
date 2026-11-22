@@ -32,6 +32,52 @@ async function applicantAccount(env,user){
  return record?.account?{bank:record.bank||'',account:record.account,account_name:record.account_name||name}:null;
 }
 export const advanceAccess=u=>!!u&&!u.disabled&&applicants.has(u.email?.toLowerCase());
+
+const dayunRequestId='23763bf4-7376-4219-87fd-b783fe1858a1';
+const dayunWorkbookId='1eEe3SyFtocAXLpm98VcdREhFLLceoRpO';
+async function syncDayunReview(env,row){
+ const {driveAccess}=await import('./agenda-drive.mjs');
+ const {unzipSync,zipSync,strFromU8,strToU8}=await import('fflate');
+ const {access}=await driveAccess(env);
+ const headers={Authorization:'Bearer '+access};
+ const fileUrl=id=>'https://www.googleapis.com/drive/v3/files/'+id+'?alt=media&supportsAllDrives=true';
+ const workbook=await fetch(fileUrl(dayunWorkbookId),{headers});
+ if(!workbook.ok||!workbook.headers.get('etag'))throw Error('Excel Drive belum dapat disinkronkan.');
+ const files=unzipSync(new Uint8Array(await workbook.arrayBuffer()));
+ const drawing='xl/drawings/drawing1.xml',rels='xl/drawings/_rels/drawing1.xml.rels';
+ let shapes=strFromU8(files[drawing]),links=strFromU8(files[rels]);
+ const anchor=shapes.match(/<xdr:oneCellAnchor>[\s\S]*?<\/xdr:oneCellAnchor>/)?.[0];
+ if(!anchor)throw Error('Format gambar Excel berubah.');
+ const events=(await detail(env,row)).events;
+ const submission=events.filter(e=>e.action==='submit').at(-1);
+ const returned=events.filter(e=>e.action==='return').at(-1);
+ const current=submission&&(!returned||returned.version<submission.version);
+ for(const [action,email,asset,col,id] of [
+ ['check','rienaprasiddha@yayasangambut.org','1IKf9J2tf_mOUuae5UGnBmu0Q3YsyD0pw',2,801],
+ ['approve','mulyadi@yayasangambut.org','1NqmkpEVt1U2yuwfyPV9K1I_hRfzf6sEB',4,802]]){
+  const name='yg-review-'+action,ref='rIdYG'+id;
+  shapes=shapes.replace(/<xdr:oneCellAnchor>[\s\S]*?<\/xdr:oneCellAnchor>/g,part=>part.includes('name="'+name+'"')?'':part);
+  links=links.replace(/<Relationship\s[^>]*\/>/g,part=>part.includes('Id="'+ref+'"')?'':part);
+  delete files['xl/media/'+name+'.png'];
+  const event=current&&events.find(e=>e.version>submission.version&&e.action===action&&e.actor_email.toLowerCase()===email);
+  if(!event)continue;
+  const image=await fetch(fileUrl(asset),{headers});
+  if(!image.ok)throw Error('Gambar tanda tangan belum dapat dibaca.');
+  const bytes=new Uint8Array(await image.arrayBuffer());
+  if(bytes[0]!==137||bytes[1]!==80)throw Error('Gambar tanda tangan tidak valid.');
+  files['xl/media/'+name+'.png']=bytes;
+  const dimensions=new DataView(bytes.buffer),w=dimensions.getUint32(16),h=dimensions.getUint32(20),scale=Math.min(140/w,80/h);
+  const shape=anchor.replace(/<xdr:col>\d+/, '<xdr:col>'+col).replace(/<xdr:row>\d+/,'<xdr:row>25').replace(/<xdr:ext [^>]+\/>/,'<xdr:ext cx="'+Math.round(w*scale*9525)+'" cy="'+Math.round(h*scale*9525)+'"/>').replace(/<xdr:cNvPr [^>]+\/>/,'<xdr:cNvPr id="'+id+'" name="'+name+'"/>').replace(/r:embed="[^"]+"/,'r:embed="'+ref+'"');
+  shapes=shapes.replace('</xdr:wsDr>',shape+'</xdr:wsDr>');
+  links=links.replace('</Relationships>','<Relationship Id="'+ref+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/'+name+'.png"/></Relationships>');
+ }
+ files[drawing]=strToU8(shapes);files[rels]=strToU8(links);
+ const latest=await read(env,row.id);
+ if(latest.version!==row.version)return;
+ const saved=await fetch('https://www.googleapis.com/upload/drive/v3/files/'+dayunWorkbookId+'?uploadType=media&supportsAllDrives=true',{method:'PATCH',headers:{...headers,'If-Match':workbook.headers.get('etag'),'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:zipSync(files)});
+ if(!saved.ok)throw Error('Perubahan Excel belum tersimpan di Drive.');
+}
+
 export const advanceFinance=u=>advanceAccess(u)&&u.email.toLowerCase()==='rienaprasiddha@yayasangambut.org';
 const director=u=>advanceAccess(u)&&financeOwner(u);
 const manager=u=>director(u)||advanceFinance(u);
@@ -192,7 +238,7 @@ export async function advancesRoute(req,env,u,ctx){
   return json(await detail(env,await read(env,id)));
  }
  if(req.method!=='POST'&&req.method!=='PUT')fail(405,'Metode tidak didukung.');
- if(action==='drive'&&req.method==='POST'){await syncAdvanceDrive(env,id);return json(await detail(env,row));}
+ if(action==='drive'&&req.method==='POST'){if(id===dayunRequestId)await syncDayunReview(env,row);await syncAdvanceDrive(env,id);return json(await detail(env,row));}
  const body=await input(req);if(body.version!==row.version)fail(409,'Pengajuan berubah. Muat ulang.');
  if(action==='receipt_review'&&req.method==='POST'){
   if(!own(u,row)||!['pjum_draft','pjum_returned'].includes(row.status))fail(403,'Hanya pelapor dapat mengonfirmasi kuitansi pada draf PJUM.');
@@ -256,6 +302,9 @@ export async function advancesRoute(req,env,u,ctx){
  }
  const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''});
  if(action==='report_check'&&ctx)ctx.waitUntil(sendPjumReviewEmails(env,id).catch(()=>{}));
+ if(id===dayunRequestId&&['check','approve','return'].includes(action)){
+  try{await syncDayunReview(env,updated);}catch{ return json({...await detail(env,updated),workbookSyncWarning:'Status UM tersimpan. Sinkronisasi tanda tangan Excel perlu diulangi.'}); }
+ }
  return json(await detail(env,updated));
 }
 
