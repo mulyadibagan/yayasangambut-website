@@ -25,6 +25,13 @@ export function advanceExcel(template,request){
  if(total!==request.total)throw Error('Total UM tidak sesuai rincian tersimpan.');
  const event=action=>request.events?.filter(e=>e.action===action).at(-1),checked=event('check'),approved=event('approve'),submitted=event('submit');
  n+=2;row(n,[cell('B'+n,'Diajukan oleh,',19),cell('C'+n,'Diperiksa oleh,',19),cell('E'+n,'Disetujui oleh,',20)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
+ const signed=submitted?.actor_email && submitted.actor_email.toLowerCase()===request.creator_email.toLowerCase() && !['draft','returned','cancelled'].includes(request.status) && !(request.events||[]).some(e=>e.action==='return'&&e.version>submitted.version);
+ if(signed){
+  row(n+1,[cell('B'+(n+1),'Ditandatangani secara elektronik oleh',19)]);
+  row(n+2,[cell('B'+(n+2),request.creator_name,19)]);
+  row(n+3,[cell('B'+(n+3),submitted.actor_email,19)]);
+  row(n+4,[cell('B'+(n+4),new Intl.DateTimeFormat('id-ID',{dateStyle:'medium',timeStyle:'medium',timeZone:'Asia/Jakarta'}).format(new Date(submitted.created_at))+' WIB · v'+submitted.version,19)]);
+ }
  n+=5;row(n,[cell('B'+n,'Nama: '+request.creator_name,19),cell('C'+n,'Nama: Riena Rachmatillah',18),cell('E'+n,'Nama: Mulyadi',6)],30);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
  n++;row(n,[cell('B'+n,'Posisi: '+(request.creator_email.startsWith('mulyadi@')?'Direktur':request.creator_email.startsWith('riena')?'Finance':'Staf'),19),cell('C'+n,'Posisi: Finance',18),cell('E'+n,'Posisi: Direktur',6)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
  n++;row(n,[cell('B'+n,'Tgl: '+day(submitted?.created_at),19),cell('C'+n,'Tgl: '+day(checked?.created_at),19),cell('E'+n,'Tgl: '+day(approved?.created_at),6)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
