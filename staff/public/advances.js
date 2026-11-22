@@ -55,9 +55,9 @@ function permissions(){
  }
  const linkedDayunDraft=current?.number==='UM-2026-00005'&&current.payload?.project_id==='APRIL';
  sheetLink.hidden=!linkedDayunDraft;
- if(linkedDayunDraft)sheetLink.href='https://docs.google.com/spreadsheets/d/16QLX4CCVzoMyn8IByT-6_9LCFzNhNeuJt5RkMV2Ag08/edit';
+ if(linkedDayunDraft)sheetLink.href='https://docs.google.com/spreadsheets/d/1eEe3SyFtocAXLpm98VcdREhFLLceoRpO/edit';
  else sheetLink.removeAttribute('href');
- $('#print').hidden=!current;$('#excel').hidden=!current||!!current.legacy_id;if(current)$('#excel').href=api+'/'+current.id+'/excel';
+ $('#print').hidden=!current;$('#excel').hidden=!current||!!current.legacy_id;if(current)$('#excel').href=linkedDayunDraft?'https://drive.google.com/uc?export=download&id=1eEe3SyFtocAXLpm98VcdREhFLLceoRpO':api+'/'+current.id+'/excel';
  $('#um-form').querySelectorAll('select').forEach(e=>e.disabled=!edit);if(rep)$('#upload-box').hidden=true;
 }
 async function reload(){rows=await request();if(me.director||me.finance){try{pjumArchive=await request('/legacy');}catch(e){pjumArchive=[];notice('Arsip UM belum dapat dimuat. '+e.message);}}refreshPjumChoices();renderSubmittedPjum();list();if($('#overview-project').value)await loadOverview();}
