@@ -45,7 +45,13 @@ export async function projectSource(env,u,projectId){
  // Deliberately return only activity codes, approved ceilings and commitment
  // totals to the three authorized applicants. No bank ledger or other staff data.
  let activities;
- if(configured)activities=configured.activities;
+ if(configured){
+  activities=configured.activities.map(activity=>{
+   const lines=configured.activityDetails?.[activity.code]||[];
+   const total=lines.reduce((sum,line)=>sum+line.quantity*line.times*line.days*line.rate,0);
+   return {...activity,detailLines:total===activity.periodBudget?lines:[]};
+  });
+ }
  else {const response=await env.FINANCE.fetch(new Request(env.APP_ORIGIN+project.url,{headers:{'x-yg-finance-user':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-email':env.ADMIN_EMAIL||u.email,'oai-authenticated-user-id':u.id}}));
  if(!response.ok)fail(503,'Rincian anggaran proyek belum dapat dibaca.');activities=parseProjectActivities(await response.text());}
  const source={...project,...(configured?{liveBudget:true,budgetSummary:{servicesTotal:configured.servicesTotal,annualActivitiesTotal:configured.annualActivitiesTotal,periodTotal:configured.periodTotal,contractStart:configured.contractStart,contractEnd:configured.contractEnd,periodStart:configured.periodStart,periodEnd:configured.periodEnd}}:{}),activities,unconfigured:!activities.length,missingBudget:!activities.length||activities.some(a=>a.budget===null),asOf:new Date().toISOString()};

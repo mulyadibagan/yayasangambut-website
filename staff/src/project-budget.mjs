@@ -28,8 +28,10 @@ export async function loadBudget(env){
  return row?{...JSON.parse(row.payload),version:row.version,updatedAt:row.updated_at}:null;
 }
 export async function saveBudget(env,u,body){
- const data=budgetInput(body),at=now(),payload=JSON.stringify(data),version=body.version+1;
+ const data=budgetInput(body),at=now(),version=body.version+1;
  const old=await loadBudget(env);if((old?.version||0)!==body.version)fail(409,'Anggaran telah berubah. Muat ulang sebelum menyimpan.');
+ if(old?.activityDetails&&old.periodStart===data.periodStart&&old.periodEnd===data.periodEnd)data.activityDetails=old.activityDetails;
+ const payload=JSON.stringify(data);
  const update=body.version?env.DB.prepare('UPDATE yg_project_budgets SET version=?,payload=?,updated_by=?,updated_at=? WHERE project_id=? AND version=?').bind(version,payload,u.email,at,'APRIL',body.version):env.DB.prepare('INSERT OR IGNORE INTO yg_project_budgets(project_id,version,payload,updated_by,updated_at) VALUES(?,?,?,?,?)').bind('APRIL',version,payload,u.email,at);
  const results=await env.DB.batch([update,env.DB.prepare('INSERT INTO yg_project_budget_history(project_id,version,payload,actor,created_at) SELECT project_id,version,payload,updated_by,updated_at FROM yg_project_budgets WHERE project_id=? AND version=? AND updated_at=?').bind('APRIL',version,at)]);
  if(!results[0].meta.changes)fail(409,'Anggaran telah berubah. Muat ulang sebelum menyimpan.');

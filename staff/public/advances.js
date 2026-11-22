@@ -86,10 +86,27 @@ async function chooseActivity(project,code){
 }
 function fillActivity(){
  const code=$('#activity-choice').value,a=activeBudget?.activities.find(x=>x.code===code);if(!a)return;
- const f=$('#um-form'),codes=[...$('#um-items').querySelectorAll('[data-key="activity_code"]')];const empty=codes.find(input=>!input.value);if(empty)empty.value=code;else if(!codes.some(input=>input.value===code))addItem('#um-items',{activity_code:code});
+ const f=$('#um-form'),codes=[...$('#um-items').querySelectorAll('[data-key="activity_code"]')];const lines=a.detailLines||[];
+ if(lines.length){
+  const blank=Array.from($('#um-items').children).filter(tr=>{
+   const val=k=>tr.querySelector('[data-key="'+k+'"]').value;
+   return (!val('activity_code')||val('activity_code')===code)&&!val('description')&&!Number(val('rate'));
+  });
+  const hasItems=codes.some(input=>input.value===code&&!blank.includes(input.closest('tr')));
+  if(!hasItems){blank.forEach(tr=>tr.remove());for(const line of lines)addItem('#um-items',{...line,activity_code:code});}
+ }else {
+ const empty=codes.find(input=>!input.value);if(empty)empty.value=code;else if(!codes.some(input=>input.value===code))addItem('#um-items',{activity_code:code});
+ }
  const selected=[...new Set([...$('#um-items').querySelectorAll('[data-key="activity_code"]')].map(input=>input.value).filter(Boolean))];
  f.elements.activity.value=selected.map(key=>key+' · '+(activeBudget.activities.find(x=>x.code===key)?.name||key)).join('; ').slice(0,240);
- $('#budget-info').textContent='Pagu '+money(a.budget)+' · Terdahulu '+money(a.legacyCommitted)+' · Sedang diproses '+money(a.pending)+' · Sudah dicairkan '+money(a.disbursed)+' · Sisa '+money(a.remaining);dirty=true;
+ $('#budget-info').textContent='Pagu '+money(a.budget)+' · Terdahulu '+money(a.legacyCommitted)+' · Sedang diproses '+money(a.pending)+' · Sudah dicairkan '+money(a.disbursed)+' · Sisa '+money(a.remaining);
+ if(lines.length){
+  const details=el('details'),list=el('ul');details.open=true;
+  details.append(el('summary','Rincian anggaran termin · '+lines.length+' komponen'));
+  for(const line of lines)list.append(el('li',line.description+' — '+line.quantity+' '+line.unit+' × '+line.times+' '+line.frequencyUnit+' × '+line.days+' '+line.durationUnit+' × '+money(line.rate)+' = '+money(line.quantity*line.times*line.days*line.rate)));
+  details.append(list);$('#budget-info').append(details);
+ }
+ dirty=true;
 }
 $('#project-choice').onchange=()=>run(loadBudget);$('#activity-choice').onchange=fillActivity;$('#overview-project').onchange=()=>run(loadOverview);
 $('#excel').onclick=e=>{if(dirty){e.preventDefault();notice('Simpan perubahan draf sebelum mengunduh Excel.');}};
