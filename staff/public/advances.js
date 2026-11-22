@@ -47,6 +47,11 @@ function permissions(){
  $('#actions').replaceChildren();const add=(action,label)=>{const b=el('button',label);b.onclick=()=>run(()=>act(action));$('#actions').append(b);};
  if(current&&own()){if(['draft','returned'].includes(s)){add('submit','Ajukan UM');add('cancel','Batalkan draf');}if(s==='pjum_draft'&&!document.body.classList.contains('pjum-mode'))add('report_submit','Kirim PJUM ke Riena');}
  if(own()&&s==='submitted')$('#actions').append(el('a','Buka draf email ke Finance',{href:umReviewDraft(current),target:'_blank',rel:'noopener',className:'secondary'}));
+ if(current?.id==='23763bf4-7376-4219-87fd-b783fe1858a1'&&(me.finance||me.director)&&!['draft','submitted'].includes(s)){
+  const sync=el('button','Sinkronkan tanda tangan Excel',{type:'button',className:'secondary'});
+  sync.onclick=()=>run(async()=>{current=await request('/'+current.id+'/drive','POST',{});render();notice('Tanda tangan Excel sudah disinkronkan.');});
+  $('#actions').append(sync);
+ }
  if(me.finance){if(s==='submitted'){add('check','Selesai diperiksa');add('return','Kembalikan UM');}if(s==='approved')add('disburse','Simpan pencairan');if(s==='pjum_submitted'){add('report_check','PJUM selesai diperiksa');add('report_return','Kembalikan PJUM');}if(s==='settlement')add('settle','Simpan penyelesaian');}
  if(me.director){if(s==='checked'){add('approve','Setujui UM');add('return','Kembalikan UM');}if(s==='pjum_checked'){add('report_approve','Setujui PJUM');add('report_return','Kembalikan PJUM');}}
  let sheetLink=$('#um-sheet-preview');
@@ -77,7 +82,7 @@ async function act(action){if(dirty)throw Error('Simpan perubahan draf sebelum m
  if(draftTab)draftTab.opener=null;
  try{current=await request('/'+current.id+'/'+action,'POST',data);}catch(error){draftTab?.close();throw error;}
  if(draftTab&&!draftTab.closed)draftTab.location.replace(umReviewDraft(current));
- dirty=false;await reload();render();notice(action==='report_submit'?'PJUM tersimpan untuk pemeriksaan Riena. Buka draf email jika ingin mengirim pemberitahuan.':'Status pengajuan diperbarui.');}
+ dirty=false;await reload();render();notice(current.workbookSyncWarning||(action==='report_submit'?'PJUM tersimpan untuk pemeriksaan Riena. Buka draf email jika ingin mengirim pemberitahuan.':'Status pengajuan diperbarui.'));}
 $('#new').onclick=()=>run(async()=>{if(dirty&&!confirm('Ada draf belum disimpan. Buat pengajuan baru?'))return;setMode(false);current=null;dirty=false;render();$('#quick-pjum').hidden=true;});$('#refresh').onclick=()=>run(async()=>{if(dirty&&!confirm('Muat ulang dan abaikan perubahan belum disimpan?'))return;await reload();if(current){current=await request('/'+current.id);dirty=false;render();}});$('#search').oninput=list;$('#filter').onchange=list;
 $('#add-um').onclick=()=>{addItem('#um-items');dirty=true;};$('#add-pjum').onclick=()=>{addItem('#pjum-items',{},true);dirty=true;};$('#um-form').onsubmit=e=>{e.preventDefault();run(saveUm);};$('#um-form').addEventListener('input',()=>dirty=true);$('#pjum-form').addEventListener('input',e=>{if(e.target.type!=='file')dirty=true;});
 $('#pjum-form').onsubmit=e=>{e.preventDefault();run(async()=>{if(!$('#pjum-form').reportValidity())return;current=await request('/'+current.id+'/report','POST',{version:current.version,items:items('#pjum-items'),report_date:$('#pjum-form').elements.report_date.value,report_number:$('#pjum-form').elements.report_number.value,notes:$('#pjum-form').elements.notes.value});dirty=false;await reload();render();notice('Draf PJUM tersimpan.');});};
