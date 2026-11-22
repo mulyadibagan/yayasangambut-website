@@ -2,13 +2,35 @@ import {queuePjumReviewEmail,sendPjumReviewEmails} from './pjum-review-email.mjs
 import {advanceDriveStatus,archiveAdvanceFile,syncAdvanceDrive} from './advance-drive.mjs';
 import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
 import {fail,now} from './core.mjs';
+import {staffBank} from './payroll-staff-bank.mjs';
+import {payrollSource,staffKey} from './payroll-data.mjs';
 import {financeOwner} from './finance-access.mjs';
 import {advancesPage} from './advances-page.mjs';
 import {legacySource} from './advance-legacy.mjs';
 import {receiptReviewKey,receiptChecks,receiptImage,scanReceipt,receiptPageCount,today} from './pjum-evidence.mjs';
 import {loadBudget,saveBudget,budgetPage} from './project-budget.mjs';
 
-const applicants=new Set(['mulyadi@yayasangambut.org','zamharier@yayasangambut.org','rienaprasiddha@yayasangambut.org']);
+const applicantNames=new Map([
+ ['mulyadi@yayasangambut.org','Mulyadi'],
+ ['zamharier@yayasangambut.org','Zamharir'],
+ ['rienaprasiddha@yayasangambut.org','Riena Rachmatillah']
+]);
+const applicants=new Set(applicantNames.keys());
+async function applicantAccount(env,user){
+ const name=applicantNames.get(user.email.toLowerCase());
+ let record=await staffBank(env,name);
+ if(!record?.account){
+  const history=await q(env,`SELECT item.value AS recipient FROM yg_payroll_requests r,json_each(r.items) item
+   WHERE r.cancelled_at IS NULL AND json_extract(item.value,'$.staff_id')=?
+   AND length(trim(json_extract(item.value,'$.account')))>0 ORDER BY r.created_at DESC LIMIT 1`,staffKey(name)).first();
+  if(history)record=JSON.parse(history.recipient);
+ }
+ if(!record?.account){
+  try{record=(await payrollSource(env,user)).profiles?.profiles?.[name];}
+  catch(error){if(error.status!==503)throw error;}
+ }
+ return record?.account?{bank:record.bank||'',account:record.account,account_name:record.account_name||name}:null;
+}
 export const advanceAccess=u=>!!u&&!u.disabled&&applicants.has(u.email?.toLowerCase());
 export const advanceFinance=u=>advanceAccess(u)&&u.email.toLowerCase()==='rienaprasiddha@yayasangambut.org';
 const director=u=>advanceAccess(u)&&financeOwner(u);
@@ -75,7 +97,7 @@ export async function advancesRoute(req,env,u,ctx){
   if(req.method==='POST')return json(await saveBudget(env,u,await input(req)));
   fail(405,'Metode tidak didukung.');
  }
- if(path===prefix+'/api/me'&&req.method==='GET')return json({id:u.id,name:u.name,email:u.email,director:director(u),finance:advanceFinance(u),payroll:manager(u),dashboard:manager(u)});
+ if(path===prefix+'/api/me'&&req.method==='GET')return json({id:u.id,name:u.name,email:u.email,director:director(u),finance:advanceFinance(u),payroll:manager(u),dashboard:manager(u),recipient:await applicantAccount(env,u)});
  if(path===prefix+'/api/projects'&&req.method==='GET')return json(advanceProjects);
  if(path===prefix+'/api/pjum_preview'&&req.method==='POST'){
   const {importPjumExcel}=await import('./pjum-excel.mjs');return json(importPjumExcel(await binary(req)));
