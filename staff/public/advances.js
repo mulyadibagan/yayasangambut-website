@@ -48,6 +48,15 @@ function permissions(){
  if(current&&own()){if(['draft','returned'].includes(s)){add('submit','Ajukan UM');add('cancel','Batalkan draf');}if(s==='pjum_draft'&&!document.body.classList.contains('pjum-mode'))add('report_submit','Kirim PJUM ke Riena');}
  if(me.finance){if(s==='submitted'){add('check','Selesai diperiksa');add('return','Kembalikan UM');}if(s==='approved')add('disburse','Simpan pencairan');if(s==='pjum_submitted'){add('report_check','PJUM selesai diperiksa');add('report_return','Kembalikan PJUM');}if(s==='settlement')add('settle','Simpan penyelesaian');}
  if(me.director){if(s==='checked'){add('approve','Setujui UM');add('return','Kembalikan UM');}if(s==='pjum_checked'){add('report_approve','Setujui PJUM');add('report_return','Kembalikan PJUM');}}
+ let sheetLink=$('#um-sheet-preview');
+ if(!sheetLink){
+  sheetLink=el('a','Pratinjau dan edit di Google Sheets',{id:'um-sheet-preview',className:'secondary',target:'_blank',rel:'noopener noreferrer'});
+  $('#excel').before(sheetLink);
+ }
+ const linkedDayunDraft=current?.number==='UM-2026-00005'&&current.payload?.project_id==='APRIL';
+ sheetLink.hidden=!linkedDayunDraft;
+ if(linkedDayunDraft)sheetLink.href='https://docs.google.com/spreadsheets/d/16QLX4CCVzoMyn8IByT-6_9LCFzNhNeuJt5RkMV2Ag08/edit';
+ else sheetLink.removeAttribute('href');
  $('#print').hidden=!current;$('#excel').hidden=!current||!!current.legacy_id;if(current)$('#excel').href=api+'/'+current.id+'/excel';
  $('#um-form').querySelectorAll('select').forEach(e=>e.disabled=!edit);if(rep)$('#upload-box').hidden=true;
 }
