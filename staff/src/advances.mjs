@@ -217,7 +217,10 @@ export async function advancesRoute(req,env,u,ctx){
   const request=await detail(env,row);
   const {advanceSignatures}=await import('./advance-signatures.mjs');
   const bytes=advanceExcel(new Uint8Array(await template.arrayBuffer()),request,await advanceSignatures(env,request));
-  return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+number(row)+'.xlsx"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+  const {advanceFilename}=await import('./advance-filename.mjs');
+  const sequence=request.payload.project_id==='APRIL'?await q(env,"SELECT COUNT(*) AS ordinal FROM yg_advance_requests WHERE seq<=? AND json_extract(payload,'$.project_id')='APRIL'",row.seq).first():null;
+  const filename=advanceFilename(request,sequence?.ordinal);
+  return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+filename+'"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(!action&&req.method==='GET')return json(await detail(env,row));
  if(action==='import_excel'&&req.method==='POST'){
