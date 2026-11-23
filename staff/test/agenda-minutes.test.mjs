@@ -10,6 +10,27 @@ async function setup(){const db=new DatabaseSync(':memory:');for(const f of ['00
 const request=(path,user='writer',method='GET',body)=>new Request(origin+path,{method,headers:{Origin:origin,Cookie:'__Host-yg-session='+user,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});
 const sample={title:'Undangan pelatihan',kind:'event',start_at:'2026-10-20T08:00',end_at:'2026-10-20T16:00',participant_ids:['writer','rasid'],participants:'Writer, Rasid',status:'scheduled'};
 
+test('project manager can read team MoM but cannot edit it',async()=>{
+ const {env}=await setup();
+ env.AGENDA_PROJECT_MANAGER_EMAIL='other@yayasangambut.org';
+ const call=(path,user,method,body)=>worker.fetch(request(path,user,method,body),env);
+ const agenda=await (await call('/api/agendas','writer','POST',sample)).json();
+ const unrelated=await (await call('/api/agendas','writer','POST',{...sample,participant_ids:[]})).json();
+ const path='/api/agenda-minutes/'+agenda.id;
+ const notes={body:'<p>Catatan tim</p>',status:'draft',version:0};
+ assert.equal((await call(path,'rasid','PUT',notes)).status,200);
+ assert.equal((await call('/api/agenda-minutes/'+unrelated.id,'writer','PUT',notes)).status,200);
+ const list=await (await call('/api/agenda-minutes?scope=all','other')).json();
+ assert.deepEqual(list.minutes.map(m=>m.agenda_id),[agenda.id]);
+ const detail=await (await call(path,'other')).json();
+ assert.equal(detail.minutes.body,notes.body);
+ assert.equal(detail.history.length,1);
+ assert.equal((await call(path,'other','PUT',{...notes,version:1})).status,403);
+ assert.equal((await call('/api/agenda-minutes/'+unrelated.id,'other')).status,403);
+ assert.equal((await call('/api/agendas/'+agenda.id,'writer','DELETE',{version:agenda.version})).status,200);
+ assert.equal((await call(path,'other')).status,403);
+});
+
 test('MoM preserves structured long text, sanitizes HTML and keeps private revision history',async()=>{
  const {env}=await setup();const a=await(await worker.fetch(request('/api/agendas','writer','POST',sample),env)).json();const path='/api/agenda-minutes/'+a.id;
  assert.equal((await worker.fetch(request(path,'other'),env)).status,403);

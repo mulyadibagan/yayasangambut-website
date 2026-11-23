@@ -6,6 +6,20 @@ import {driveApi,driveStatus,drivePreviewUrl,storeDriveFile,migrateDriveFile} fr
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const member=(a,u)=>a.creator===u.id||JSON.parse(a.participant_ids).includes(u.id);
 const projectTeamEmails=new Set(['zamharier@yayasangambut.org','rajaalpian@yayasangambut.org','rasid@yayasangambut.org']);
+export async function agendaProjectAccess(env,u,people){
+ const email=env.AGENDA_PROJECT_MANAGER_EMAIL?.trim().toLowerCase();
+ if(!email||u.email?.toLowerCase()!==email)return {projectManager:false,team:[]};
+ people??=await teamPeople(env);
+ const projectManager=people.some(p=>p.id===u.id&&p.email.toLowerCase()===email);
+ return {projectManager,team:projectManager?people.filter(p=>projectTeamEmails.has(p.email.toLowerCase())):[]};
+}
+export function agendaReadScope(ids){
+ const placeholders=ids.map(()=>'?').join(',');
+ return `AND (creator IN (${placeholders}) OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value IN (${placeholders}))) `;
+}
+export function canReadProjectAgenda(a,team){
+ return !a.deleted&&team.some(p=>member(a,p));
+}
 export function agendaInput(input){
  const text=(key,max)=>{const v=String(input[key]??'').trim();if(v.length>max)fail(400,'Isian '+key+' terlalu panjang.');return v;};
  const a={title:text('title',200),kind:text('kind',20),kind_custom:text('kind_custom',120),program:text('program',120),location:text('location',200),coordinator:text('coordinator',160),start_at:text('start_at',16),end_at:text('end_at',16),participants:text('participants',1000),description:text('description',10000),results:text('results',10000),status:text('status',20)||'scheduled'};
@@ -17,13 +31,12 @@ export async function agendaApi(req,env,url,u,{payload,readLimited}){
  const director=taskDirector(u,env),path=url.pathname,method=req.method;
  if(path==='/api/agendas/drive'||path.startsWith('/api/agendas/drive/'))return driveApi(req,env,url,u);
  const people=await teamPeople(env);
- const projectManager=Boolean(env.AGENDA_PROJECT_MANAGER_EMAIL&&people.some(p=>p.id===u.id&&p.email.toLowerCase()===env.AGENDA_PROJECT_MANAGER_EMAIL.trim().toLowerCase()));
- const team=projectManager?people.filter(p=>projectTeamEmails.has(p.email.toLowerCase())):[];
- const read=async id=>{const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');if(!director&&!member(a,u)&&!(method==='GET'&&!a.deleted&&team.some(p=>member(a,p))))fail(403,'Agenda ini tidak termasuk kegiatan Anda.');return a;};
+ const {projectManager,team}=await agendaProjectAccess(env,u,people);
+ const read=async id=>{const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');if(!director&&!member(a,u)&&!(method==='GET'&&canReadProjectAgenda(a,team)))fail(403,'Agenda ini tidak termasuk kegiatan Anda.');return a;};
  if(path==='/api/agendas'&&method==='GET'){
   const all=director&&url.searchParams.get('scope')==='all',trash=url.searchParams.get('trash')==='1';
-  const ids=[u.id,...(trash?[]:team.map(p=>p.id))],placeholders=ids.map(()=>'?').join(',');
-  const scope=all?'':`AND (creator IN (${placeholders}) OR EXISTS(SELECT 1 FROM json_each(participant_ids) WHERE value IN (${placeholders}))) `;
+  const ids=[u.id,...(trash?[]:team.map(p=>p.id))];
+  const scope=all?'':agendaReadScope(ids);
   const agendas=(await q(env,'SELECT team_agendas.*,users.name AS creatorName FROM team_agendas JOIN users ON users.id=creator WHERE deleted=? '+scope+'ORDER BY start_at DESC',Number(trash),...(all?[]:[...ids,...ids])).all()).results;
   return Response.json({director,projectManager,people,agendas});
  }

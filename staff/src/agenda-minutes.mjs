@@ -1,6 +1,7 @@
 import sanitizeHtml from 'sanitize-html';
 import {fail,now} from './core.mjs';
 import {taskDirector} from './tasks.mjs';
+import {agendaProjectAccess,agendaReadScope,canReadProjectAgenda} from './agendas.mjs';
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 export function minutesInput(input){
  if(typeof input.body!=='string'||input.body.length>180000)fail(400,'Isi MoM maksimal 180.000 karakter.');
@@ -12,13 +13,16 @@ export function minutesInput(input){
 }
 export async function minutesApi(req,env,url,u,{payload}){
  const director=taskDirector(u,env),all=director&&url.searchParams.get('scope')==='all';
+ const {team}=req.method==='GET'?await agendaProjectAccess(env,u):{team:[]};
  if(url.pathname==='/api/agenda-minutes'&&req.method==='GET'){
-  const rows=(await q(env,`SELECT m.agenda_id,m.status,m.version FROM agenda_minutes m JOIN team_agendas a ON a.id=m.agenda_id WHERE a.deleted=0 ${all?'':'AND (a.creator=? OR EXISTS(SELECT 1 FROM json_each(a.participant_ids) WHERE value=?))'}`,...(all?[]:[u.id,u.id])).all()).results;
+  const ids=[u.id,...team.map(p=>p.id)];
+  const rows=(await q(env,`SELECT m.agenda_id,m.status,m.version FROM agenda_minutes m JOIN team_agendas a ON a.id=m.agenda_id WHERE a.deleted=0 ${all?'':agendaReadScope(ids)}`,...(all?[]:[...ids,...ids])).all()).results;
   return Response.json({minutes:rows});
  }
  const id=/^\/api\/agenda-minutes\/([a-z0-9-]+)$/.exec(url.pathname)?.[1];if(!id)fail(404,'MoM tidak ditemukan.');
  const a=await q(env,'SELECT * FROM team_agendas WHERE id=?',id).first();if(!a)fail(404,'Agenda tidak ditemukan.');
- if(!director&&a.creator!==u.id&&!JSON.parse(a.participant_ids).includes(u.id))fail(403,'MoM hanya untuk peserta agenda dan Direktur.');
+ const member=director||a.creator===u.id||JSON.parse(a.participant_ids).includes(u.id);
+ if(!member&&!canReadProjectAgenda(a,team))fail(403,'Anda tidak memiliki akses ke MoM ini.');
  const read=()=>q(env,'SELECT m.*,u.name AS author FROM agenda_minutes m JOIN users u ON u.id=m.updated_by WHERE agenda_id=?',id).first();
  if(req.method==='GET')return Response.json({minutes:await read(),history:(await q(env,'SELECT h.*,u.name AS author FROM agenda_minutes_history h JOIN users u ON u.id=h.actor WHERE agenda_id=? ORDER BY version DESC LIMIT 20',id).all()).results});
  if(req.method!=='PUT')fail(405,'Metode tidak didukung.');

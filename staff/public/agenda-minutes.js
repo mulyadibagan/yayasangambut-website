@@ -24,7 +24,8 @@ export function minutesUI({user,api,esc,notice,onSaved}){
   $('[data-close]').onclick=close;
   const show=edit=>{$('[data-editor]').hidden=!edit;$('[data-reader]').hidden=edit;$('[data-edit]').setAttribute('aria-pressed',String(edit));$('[data-read]').setAttribute('aria-pressed',String(!edit));if(!edit&&dirty)$('[data-body]').innerHTML=$('[data-content]').innerHTML;};
   $('[data-read]').onclick=()=>show(false);$('[data-edit]').onclick=()=>show(true);
-  const canEdit=!a.deleted&&(!current||current.status!=='final'||user.taskDirector||current.updated_by===user.id||a.creator===user.id);$('[data-edit]').disabled=!canEdit;
+  const member=user.taskDirector||a.creator===user.id||JSON.parse(a.participant_ids).includes(user.id);
+  const canEdit=member&&!a.deleted&&(!current||current.status!=='final'||user.taskDirector||current.updated_by===user.id||a.creator===user.id);$('[data-edit]').disabled=!canEdit;
   $('[data-content]').oninput=()=>dirty=true;$('[data-state]').onchange=()=>dirty=true;
   $('[data-content]').onpaste=e=>{e.preventDefault();document.execCommand('insertHTML',false,safePaste(e.clipboardData.getData('text/html'),e.clipboardData.getData('text/plain')));dirty=true;};
   modal.querySelectorAll('[data-cmd],[data-block]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{$('[data-content]').focus();document.execCommand(b.dataset.cmd||'formatBlock',false,b.dataset.block||null);dirty=true;};});
