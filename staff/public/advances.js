@@ -46,6 +46,10 @@ function permissions(){
  $('#review').hidden=!(manager&&['submitted','checked','pjum_submitted','pjum_checked'].includes(s));$('#payment').hidden=!(me.finance&&['approved','settlement'].includes(s));$('#payment-title').textContent=s==='settlement'?(current.total>current.actual?'Catat pengembalian sisa UM':'Catat pelunasan kekurangan'):'Catat pencairan '+money(current?.total);$('#settlement-amount-label').hidden=s!=='settlement';
  $('#actions').replaceChildren();const add=(action,label)=>{const b=el('button',label);b.onclick=()=>run(()=>act(action));$('#actions').append(b);};
  if(current&&own()){if(['draft','returned'].includes(s)){add('submit','Ajukan UM');add('cancel','Batalkan draf');}if(s==='pjum_draft'&&!document.body.classList.contains('pjum-mode'))add('report_submit','Kirim PJUM ke Riena');}
+ if(own()&&s==='submitted'){
+  const rename=el('button','Perbaiki nama kegiatan',{type:'button',className:'secondary'});
+  rename.onclick=()=>{if($('#title-correction'))return;const box=el('div',undefined,{id:'title-correction'}),label=el('label','Nama kegiatan sesuai ToR'),input=el('input',undefined,{type:'text',maxLength:500,ariaLabel:'Nama kegiatan sesuai ToR'}),save=el('button','Simpan nama kegiatan',{type:'button'});input.value=current.payload.activity;label.append(input);save.onclick=()=>run(async()=>{current=await request('/'+current.id+'/title','POST',{version:current.version,activity:input.value});await reload();render();notice('Nama kegiatan diperbarui. Anggaran dan tahap pemeriksaan tetap.');});box.append(label,save);$('#actions').append(box);input.focus();};$('#actions').append(rename);
+ }
  if(own()&&s==='submitted')$('#actions').append(el('a','Buka draf email ke Finance',{href:umReviewDraft(current),target:'_blank',rel:'noopener',className:'secondary'}));
  if(current?.id==='23763bf4-7376-4219-87fd-b783fe1858a1'&&(me.finance||me.director)&&!['draft','submitted'].includes(s)){
   const sync=el('button','Sinkronkan tanda tangan Excel',{type:'button',className:'secondary'});

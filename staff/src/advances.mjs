@@ -271,6 +271,13 @@ export async function advancesRoute(req,env,u,ctx){
   const out=await env.DB.batch([q(env,'UPDATE yg_advance_requests SET version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',event,at,row.id,row.version),...results.map(p=>q(env,'INSERT INTO yg_advance_ocr(request_id,file_id,page,result,created_at) SELECT id,?,?,?,? FROM yg_advance_requests WHERE id=? AND last_event=? ON CONFLICT(request_id,file_id,page) DO UPDATE SET result=excluded.result,created_at=excluded.created_at',p.file_id,p.page,JSON.stringify(p.result),at,row.id,event)),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,'receipt_read',JSON.stringify({pages:results}),row.id,event)]);if(!out[0].meta.changes)fail(409,'Draf telah berubah. Muat ulang.');
   return json(await detail(env,await read(env,row.id)));
  }
+ if(action==='title'&&req.method==='POST'){
+  if(!own(u,row)||row.status!=='submitted')fail(403,'Hanya pengaju dapat memperbaiki nama kegiatan saat pemeriksaan UM.');
+  const activity=string(body.activity,500),data=JSON.parse(row.payload);
+  if(activity===data.activity)return json(await detail(env,row));
+  const previous=data.activity;data.activity=activity;
+  return json(await detail(env,await mutate(env,row,u,'title_updated',{payload:JSON.stringify(data)},{previous,activity})));
+ }
  if(!action&&req.method==='PUT'){
   if(!own(u,row)||!['draft','returned'].includes(row.status))fail(403,'Hanya pengaju yang dapat menyunting draf UM.');const data=await linkAdvanceProject(env,u,advanceInput(body));return json(await detail(env,await mutate(env,row,u,'updated',{payload:JSON.stringify(data),total:data.total},data)));
  }
