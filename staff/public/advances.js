@@ -76,11 +76,20 @@ function permissions(){
 async function reload(){rows=await request();if(me.director||me.finance){try{pjumArchive=await request('/legacy');}catch(e){pjumArchive=[];notice('Arsip UM belum dapat dimuat. '+e.message);}}refreshPjumChoices();renderSubmittedPjum();list();if($('#overview-project').value)await loadOverview();}
 async function saveUm(){if(!$('#um-form').reportValidity())return;const form=$('#um-form'),data=Object.fromEntries(['project_id','project','activity','location','start','end','notes','bank','account','account_name'].map(k=>[k,form.elements[k].value]));data.items=items('#um-items');current=await request(current?'/'+current.id:'',current?'PUT':'POST',{...data,...(current?{version:current.version}:{})});dirty=false;await reload();render();notice('Draf UM tersimpan.');}
 function umReviewDraft(row){
- const url=new URL('https://mail.google.com/mail/'); const code=row.payload.allocations?.[0]?.code||row.payload.items?.[0]?.activity_code||'';
- const activity=row.payload.project_id==='APRIL'&&code?code+' '+row.payload.activity.replace(/^\d+(?:\.\d+)*\s*[·:\-]\s*/,'').split(':')[0]:row.payload.activity;
- url.search=new URLSearchParams({authuser:me.email,view:'cm',fs:'1',to:'rienaprasiddha@yayasangambut.org',
-  su:'Pengajuan UM '+(row.document_number||row.number)+' — '+activity,
-  body:['Yth. Bu Riena,','','Bersama ini saya mengajukan UM '+(row.document_number||row.number)+' untuk diperiksa dan diproses lebih lanjut.','Kegiatan: '+row.payload.activity,'Tanggal: '+row.payload.start+' s.d. '+row.payload.end,'Lokasi: '+row.payload.location,'Jumlah: '+money(row.total),...(row.download_filename?['','Nama file: '+row.download_filename]:[]),'','Buka pengajuan: '+location.origin+'/finance/advances?id='+encodeURIComponent(row.id),'','Terima kasih,',row.creator_name].join('\n')});
+ const url=new URL('https://mail.google.com/mail/'),p=row.payload;
+ const code=p.allocations?.[0]?.code||p.items?.[0]?.activity_code||'';
+ const activity=p.activity.replace(/^\d+(?:\.\d+)*\s*[·:\-]\s*/,'').split(':')[0];
+ const april=p.project_id==='APRIL'&&row.document_number;
+ const subject=april?'Pengajuan UM No. '+row.document_number.split(' ')[0]+' – '+activity+' – APRIL Dayun':'Pengajuan UM '+row.number+' – '+activity;
+ const formatDate=s=>new Date(s+'T12:00:00Z').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
+ const director=me.email?.toLowerCase()==='mulyadi@yayasangambut.org';
+ const body=['Dear Buk Riena,','',
+  'Bersama email ini saya mengajukan uang muka '+(row.document_number||row.number)+' sebesar '+money(row.total)+' untuk kegiatan '+p.activity+', yang dilaksanakan pada '+formatDate(p.start)+' s.d. '+formatDate(p.end)+' di '+p.location+', dalam program '+p.project+'.','',
+  'Mohon dokumen pengajuan UM dapat diperiksa dan diproses sesuai ketentuan keuangan Yayasan Gambut.','',
+  'Dokumen pengajuan UM: '+location.origin+'/finance/advances?id='+encodeURIComponent(row.id),
+  ...(row.download_filename?['Nama file Excel: '+row.download_filename]:[]),'',
+  'Best Regards,',director?'Mulyadi S.P.':row.creator_name,director?'Director | Yayasan Gambut':'Yayasan Gambut','Website: www.yayasangambut.org'].join('\n');
+ url.search=new URLSearchParams({authuser:me.email,view:'cm',fs:'1',to:'rienaprasiddha@yayasangambut.org',su:subject,body});
  return url.href;
 }
 async function act(action){if(dirty)throw Error('Simpan perubahan draf sebelum melanjutkan.');const data={version:current.version,note:$('#action-note').value,evidence_reviewed:$('#evidence-reviewed').checked};if(['return','report_return'].includes(action)&&!data.note.trim())throw Error('Isi catatan perbaikan terlebih dahulu.');if(['disburse','settle'].includes(action)){data.date=$('#payment-date').value;data.reference=$('#payment-reference').value;if(action==='settle')data.amount=Number($('#settlement-amount').value);}if(action==='cancel'&&!confirm('Batalkan draf UM ini? Arsip tetap disimpan.'))return;if(['approve','report_approve'].includes(action)&&!confirm('Setujui '+(action==='approve'?'UM '+money(current.total):'PJUM '+money(current.actual))+' ini?'))return;const draftTab=action==='submit'?window.open('about:blank','_blank'):null;
