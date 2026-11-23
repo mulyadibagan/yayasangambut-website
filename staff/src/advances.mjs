@@ -214,7 +214,9 @@ export async function advancesRoute(req,env,u,ctx){
   const template=await env.ASSETS.fetch(new Request(env.APP_ORIGIN+'/um-template-yg.xlsx'));
   if(!template.ok)fail(503,'Template Excel UM belum tersedia.');
   const {advanceExcel}=await import('./advance-excel.mjs');
-  const bytes=advanceExcel(new Uint8Array(await template.arrayBuffer()),await detail(env,row));
+  const request=await detail(env,row);
+  const {advanceSignatures}=await import('./advance-signatures.mjs');
+  const bytes=advanceExcel(new Uint8Array(await template.arrayBuffer()),request,await advanceSignatures(env,request));
   return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+number(row)+'.xlsx"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(!action&&req.method==='GET')return json(await detail(env,row));

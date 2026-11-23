@@ -3,7 +3,7 @@ import {unzipSync,zipSync,strFromU8,strToU8} from 'fflate';
 const xml=v=>String(v??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&apos;');
 const cell=(ref,value,style=19,formula)=>`<c r="${ref}" s="${style}"${formula||typeof value==='number'?'':' t="inlineStr"'}>${formula?`<f>${xml(formula)}</f><v>${value}</v>`:typeof value==='number'?`<v>${value}</v>`:`<is><t xml:space="preserve">${xml(value)}</t></is>`}</c>`;
 const day=s=>/^\d{4}-\d{2}-\d{2}/.test(s||'')?new Date(s.slice(0,10)+'T12:00:00Z').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}):'';
-export function advanceExcel(template,request){
+export function advanceExcel(template,request,signatures={}){
  const p=request.payload,files=unzipSync(template),rows=[],merges=[];
  const row=(n,cells,height=22)=>rows.push(`<row r="${n}" ht="${height}" customHeight="1">${cells.join('')}</row>`);
  for(let n=1;n<=7;n++)row(n,[],18);
@@ -26,7 +26,10 @@ export function advanceExcel(template,request){
  const event=action=>request.events?.filter(e=>e.action===action).at(-1),checked=event('check'),approved=event('approve'),submitted=event('submit');
  n+=2;row(n,[cell('B'+n,'Diajukan oleh,',19),cell('C'+n,'Diperiksa oleh,',19),cell('E'+n,'Disetujui oleh,',20)]);merges.push('C'+n+':D'+n,'E'+n+':J'+n);
  const signed=submitted?.actor_email && submitted.actor_email.toLowerCase()===request.creator_email.toLowerCase() && !['draft','returned','cancelled'].includes(request.status) && !(request.events||[]).some(e=>e.action==='return'&&e.version>submitted.version);
- if(signed){
+ const signatureRow=n;
+ if(signed&&signatures.applicant){
+  for(let offset=1;offset<=4;offset++)row(n+offset,[],22);
+ }else if(signed){
   row(n+1,[cell('B'+(n+1),'Ditandatangani secara elektronik oleh',19)]);
   row(n+2,[cell('B'+(n+2),request.creator_name,19)]);
   row(n+3,[cell('B'+(n+3),submitted.actor_email,19)]);
@@ -42,5 +45,16 @@ export function advanceExcel(template,request){
  n++;row(n,[cell('B'+n,'Dokumen pengajuan uang muka Yayasan Gambut.',19)],30);merges.push('B'+n+':J'+n);
  let sheet=strFromU8(files['xl/worksheets/sheet1.xml']).replace('<sheetData></sheetData>','<sheetData>'+rows.join('')+'</sheetData><mergeCells count="'+merges.length+'">'+merges.map(ref=>'<mergeCell ref="'+ref+'"/>').join('')+'</mergeCells>');
  files['xl/worksheets/sheet1.xml']=strToU8(sheet);files['xl/workbook.xml']=strToU8(strFromU8(files['xl/workbook.xml']).replace('PUM!$A$1:$J$43','PUM!$A$1:$J$'+n));
+ const images=[...(signed&&signatures.applicant?[{bytes:signatures.applicant,col:1,row:signatureRow}]:[]),...(approved&&signatures.approver?[{bytes:signatures.approver,col:4,row:signatureRow}]:[])];
+ for(const [i,image] of images.entries()){
+  const name='um-signature-'+i+'.png',rel='rIdUmSignature'+i;
+  const view=new DataView(image.bytes.buffer,image.bytes.byteOffset,image.bytes.byteLength);
+  const width=view.getUint32(16),height=view.getUint32(20),scale=Math.min(170/width,80/height),cx=Math.round(width*scale*9525),cy=Math.round(height*scale*9525);
+  files['xl/media/'+name]=image.bytes;
+  const anchor='<xdr:oneCellAnchor><xdr:from><xdr:col>'+image.col+'</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'+image.row+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="'+cx+'" cy="'+cy+'"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="'+(100+i)+'" name="Tanda tangan UM '+i+'"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="'+rel+'"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>';
+  const drawing='xl/drawings/drawing1.xml',rels='xl/drawings/_rels/drawing1.xml.rels';
+  files[drawing]=strToU8(strFromU8(files[drawing]).replace('</xdr:wsDr>',anchor+'</xdr:wsDr>'));
+  files[rels]=strToU8(strFromU8(files[rels]).replace('</Relationships>','<Relationship Id="'+rel+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/'+name+'"/></Relationships>'));
+ }
  return zipSync(files,{level:6});
 }
