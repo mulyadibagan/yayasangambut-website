@@ -78,8 +78,8 @@ async function saveUm(){if(!$('#um-form').reportValidity())return;const form=$('
 function umReviewDraft(row){
  const url=new URL('https://mail.google.com/mail/');
  url.search=new URLSearchParams({authuser:me.email,view:'cm',fs:'1',to:'rienaprasiddha@yayasangambut.org',
-  su:'Pemeriksaan UM '+row.number+' — '+row.payload.activity,
-  body:['Yth. Bu Riena,','','Mohon pemeriksaan pengajuan UM '+row.number+'.','Kegiatan: '+row.payload.activity,'Jumlah: '+money(row.total),'','Buka pengajuan: '+location.origin+'/finance/advances?id='+encodeURIComponent(row.id),'','Terima kasih,',row.creator_name].join('\n')});
+  su:'Pemeriksaan UM '+(row.document_number||row.number)+' — '+row.payload.activity,
+  body:['Yth. Bu Riena,','','Mohon pemeriksaan pengajuan UM '+(row.document_number||row.number)+'.','Kegiatan: '+row.payload.activity,'Tanggal: '+row.payload.start+' s.d. '+row.payload.end,'Lokasi: '+row.payload.location,'Jumlah: '+money(row.total),...(row.download_filename?['','Nama file: '+row.download_filename]:[]),'','Buka pengajuan: '+location.origin+'/finance/advances?id='+encodeURIComponent(row.id),'','Terima kasih,',row.creator_name].join('\n')});
  return url.href;
 }
 async function act(action){if(dirty)throw Error('Simpan perubahan draf sebelum melanjutkan.');const data={version:current.version,note:$('#action-note').value,evidence_reviewed:$('#evidence-reviewed').checked};if(['return','report_return'].includes(action)&&!data.note.trim())throw Error('Isi catatan perbaikan terlebih dahulu.');if(['disburse','settle'].includes(action)){data.date=$('#payment-date').value;data.reference=$('#payment-reference').value;if(action==='settle')data.amount=Number($('#settlement-amount').value);}if(action==='cancel'&&!confirm('Batalkan draf UM ini? Arsip tetap disimpan.'))return;if(['approve','report_approve'].includes(action)&&!confirm('Setujui '+(action==='approve'?'UM '+money(current.total):'PJUM '+money(current.actual))+' ini?'))return;const draftTab=action==='submit'?window.open('about:blank','_blank'):null;

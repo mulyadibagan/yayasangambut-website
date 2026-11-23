@@ -1,3 +1,4 @@
+import {advanceFilename} from './advance-filename.mjs';
 import {queuePjumReviewEmail,sendPjumReviewEmails} from './pjum-review-email.mjs';
 import {advanceDriveStatus,archiveAdvanceFile,syncAdvanceDrive} from './advance-drive.mjs';
 import {advanceProjects,projectSource,projectCommitments,linkAdvanceProject} from './advance-projects.mjs';
@@ -109,7 +110,7 @@ function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya da
 const number=row=>row.legacy_id?JSON.parse(row.payload).legacy.number:'UM-'+row.created_at.slice(0,4)+'-'+String(row.seq).padStart(5,'0');
 function serialize(row){return {...row,number:number(row),payload:JSON.parse(row.payload),report:row.report?JSON.parse(row.report):null};}
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_advance_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-async function detail(env,row){const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...serialize(row),drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
+async function detail(env,row){const record=serialize(row);let documentMeta={};if(record.payload.project_id==='APRIL'){const sequence=await q(env,"SELECT COUNT(*) AS ordinal FROM yg_advance_requests WHERE seq<=? AND json_extract(payload,'$.project_id')='APRIL'",row.seq).first();documentMeta={document_number:String(sequence.ordinal).padStart(2,'0')+' YG-APRDYN',download_filename:advanceFilename(record,sequence.ordinal)};}const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...record,...documentMeta,drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
 async function input(req){let size=0;const chunks=[];const reader=req.body?.getReader();if(!reader)fail(400,'Data kosong.');while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>150000){await reader.cancel();fail(413,'Data terlalu besar.');}chunks.push(r.value);}try{const out=new Uint8Array(size);let n=0;for(const c of chunks){out.set(c,n);n+=c.length;}return JSON.parse(new TextDecoder().decode(out));}catch{fail(400,'Data tidak valid.');}}
 export function advanceTransition(u,row,action){
  const state=row.status;
@@ -217,9 +218,7 @@ export async function advancesRoute(req,env,u,ctx){
   const request=await detail(env,row);
   const {advanceSignatures}=await import('./advance-signatures.mjs');
   const bytes=advanceExcel(new Uint8Array(await template.arrayBuffer()),request,await advanceSignatures(env,request));
-  const {advanceFilename}=await import('./advance-filename.mjs');
-  const sequence=request.payload.project_id==='APRIL'?await q(env,"SELECT COUNT(*) AS ordinal FROM yg_advance_requests WHERE seq<=? AND json_extract(payload,'$.project_id')='APRIL'",row.seq).first():null;
-  const filename=advanceFilename(request,sequence?.ordinal);
+  const filename=request.download_filename||advanceFilename(request);
   return new Response(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':'attachment; filename="'+filename+'"','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }
  if(!action&&req.method==='GET')return json(await detail(env,row));
