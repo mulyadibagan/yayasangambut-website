@@ -80,7 +80,7 @@ function umReviewDraft(row){
  const code=p.allocations?.[0]?.code||p.items?.[0]?.activity_code||'';
  const activity=p.activity.replace(/^\d+(?:\.\d+)*\s*[·:\-]\s*/,'').split(':')[0];
  const april=p.project_id==='APRIL'&&row.document_number;
- const subject=april?'Pengajuan UM No. '+row.document_number.split(' ')[0]+' – '+activity+' – APRIL Dayun':'Pengajuan UM '+row.number+' – '+activity;
+ const subject=april?'Pengajuan UM No. '+row.document_number+' – '+activity+' – APRIL Dayun':'Pengajuan UM '+row.number+' – '+activity;
  const formatDate=s=>new Date(s+'T12:00:00Z').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
  const director=me.email?.toLowerCase()==='mulyadi@yayasangambut.org';
  const body=['Dear Buk Riena,','',

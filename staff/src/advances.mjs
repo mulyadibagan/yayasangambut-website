@@ -110,7 +110,16 @@ function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya da
 const number=row=>row.legacy_id?JSON.parse(row.payload).legacy.number:'UM-'+row.created_at.slice(0,4)+'-'+String(row.seq).padStart(5,'0');
 function serialize(row){return {...row,number:number(row),payload:JSON.parse(row.payload),report:row.report?JSON.parse(row.report):null};}
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_advance_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-async function detail(env,row){const record=serialize(row);let documentMeta={};if(record.payload.project_id==='APRIL'){const sequence=await q(env,"SELECT COUNT(*) AS ordinal FROM yg_advance_requests WHERE seq<=? AND json_extract(payload,'$.project_id')='APRIL'",row.seq).first();documentMeta={document_number:String(sequence.ordinal).padStart(2,'0')+' YG-APRDYN',download_filename:advanceFilename(record,sequence.ordinal)};}const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...record,...documentMeta,drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
+const aprilOrdinal="CASE WHEN json_extract(payload,'$.project_id')='APRIL' AND legacy_id IS NULL THEN (SELECT COUNT(*) FROM yg_advance_requests a WHERE a.seq<=yg_advance_requests.seq AND json_extract(a.payload,'$.project_id')='APRIL') END AS april_ordinal";
+async function numberedAdvance(env,row){
+ const record=serialize(row);
+ if(row.legacy_id||record.payload.project_id!=='APRIL')return record;
+ const ordinal=row.april_ordinal??(await q(env,'SELECT '+aprilOrdinal+' FROM yg_advance_requests WHERE id=?',row.id).first()).april_ordinal;
+ const [year,month]=row.created_at.slice(0,7).split('-');
+ const document_number=String(ordinal).padStart(2,'0')+'/YG-APRDYN/'+month+'/'+year;
+ return {...record,number:document_number,document_number,download_filename:advanceFilename(record,ordinal)};
+}
+async function detail(env,row){const record=await numberedAdvance(env,row);const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...record,drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
 async function input(req){let size=0;const chunks=[];const reader=req.body?.getReader();if(!reader)fail(400,'Data kosong.');while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>150000){await reader.cancel();fail(413,'Data terlalu besar.');}chunks.push(r.value);}try{const out=new Uint8Array(size);let n=0;for(const c of chunks){out.set(c,n);n+=c.length;}return JSON.parse(new TextDecoder().decode(out));}catch{fail(400,'Data tidak valid.');}}
 export function advanceTransition(u,row,action){
  const state=row.status;
@@ -152,7 +161,7 @@ export async function advancesRoute(req,env,u,ctx){
  if(path===prefix+'/api/pjum_resolve'&&req.method==='POST'){
   const body=await input(req),normalize=s=>String(s||'').replace(/\s/g,'').toUpperCase(),um=normalize(string(body.um_number,160));
   const requests=(await q(env,'SELECT * FROM yg_advance_requests WHERE creator=?',u.id).all()).results;
-  const matches=requests.filter(r=>normalize(number(r))===um);if(matches.length>1)fail(409,'Nomor UM memiliki lebih dari satu catatan. Pilih UM yang sesuai.');
+  const numbered=await Promise.all(requests.map(r=>numberedAdvance(env,r)));const matches=requests.filter((r,i)=>normalize(number(r))===um||normalize(numbered[i].number)===um);if(matches.length>1)fail(409,'Nomor UM memiliki lebih dari satu catatan. Pilih UM yang sesuai.');
   if(matches.length===1){if(!uploadAllowed(u,matches[0],'pjum'))fail(409,'PJUM untuk UM ini sudah dikirim atau belum dapat dilaporkan.');return json(await detail(env,matches[0]));}
   if(!manager(u))fail(400,'UM belum ditemukan pada pengajuan Anda. Minta Finance menghubungkan UM arsip terlebih dahulu.');
   const legacy=(await legacySource(env,u)).filter(r=>normalize(r.number)===um);if(legacy.length!==1)fail(400,'Nomor UM pada Excel belum cocok dengan arsip. Pilih UM asal atau periksa nomor pada Excel.');
@@ -190,7 +199,7 @@ export async function advancesRoute(req,env,u,ctx){
   return json(projectCommitments(source,records,url.searchParams.get('exclude')));
  }
  if(path===prefix+'/api'){
-  if(req.method==='GET'){const rows=(await q(env,'SELECT * FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;return json(rows.map(serialize));}
+  if(req.method==='GET'){const rows=(await q(env,'SELECT *, '+aprilOrdinal+' FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;return json(await Promise.all(rows.map(row=>numberedAdvance(env,row))));}
   if(req.method==='POST'){
    const data=await linkAdvanceProject(env,u,advanceInput(await input(req))),id=crypto.randomUUID(),event=crypto.randomUUID(),at=now();
    await env.DB.batch([q(env,'INSERT INTO yg_advance_requests(id,creator,creator_email,creator_name,payload,total,last_event,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)',id,u.id,u.email,u.name,JSON.stringify(data),data.total,event,at,at),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) VALUES(?,?,?,?,1,?,?)',event,id,u.email,'created',JSON.stringify(data),at)]);
