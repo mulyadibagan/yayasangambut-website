@@ -52,6 +52,33 @@ export function professionalCopy(source){
  return source;
 }
 
+
+export function replaceProjectIncomeCard(source){
+ const title=/PENERIMAAN (?:PROJECT|PROYEK)(?=\s*[·{<])/g;
+ const headings=[...source.matchAll(title)];
+ if(!headings.length)return source;
+ const ranges=[],stack=[];
+ for(const tag of source.matchAll(/<(\/?)(section|div|article)\b[^<>]*>/g)){
+  const [markup,closing,name]=tag;
+  if(!closing&&!markup.endsWith('/>'))stack.push({name,start:tag.index});
+  if(closing&&stack.at(-1)?.name===name){
+   const element=stack.pop(),end=tag.index+markup.length;
+   ranges.push({...element,end});
+  }
+ }
+ const matches=headings.map(heading=>ranges
+  .filter(({start,end})=>start<heading.index&&end>heading.index&&
+   /transaksi teridentifikasi|buka rincian/i.test(source.slice(start,end)))
+  .sort((a,b)=>(a.end-a.start)-(b.end-b.start))[0]).filter(Boolean);
+ if(!matches.length)throw Error('Project income card layout requires review');
+ if(matches.length!==1)throw Error('Project income card location is ambiguous');
+ const [{start,end}]=matches;
+ const updated=source.slice(0,start)+'<ProjectIncomeSummary />'+source.slice(end);
+ // Place the import after any leading Next.js directive.
+ const directive=updated.match(/^(?:\s*['"]use (?:client|server)['"];?\s*)+/)?.[0]||'';
+ return directive+"import {ProjectIncomeSummary} from './finance-history-report';\n"+updated.slice(directive.length);
+}
+
 export async function applyFinancePresentation(root){
  const before=await fingerprint(root),app=resolve(root,'app');
  for(const name of await readdir(app)){
@@ -66,7 +93,7 @@ export async function applyFinancePresentation(root){
    source=source.replace('import PendingStaffAllocation',"import PayrollPaymentsPanel from './payroll-payments-panel';\nimport PendingStaffAllocation").replace('<PendingStaffAllocation />','<PayrollPaymentsPanel /><PendingStaffAllocation />');
   }
   if(name==='salary-balance-enhancer.tsx')source=compactSalaryTable(source);
-  await writeFile(resolve(app,name),professionalCopy(source));
+  await writeFile(resolve(app,name),replaceProjectIncomeCard(professionalCopy(source)));
  }
  const after=await fingerprint(root);
  if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Presentation altered source data');
