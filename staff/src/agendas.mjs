@@ -6,12 +6,14 @@ import {driveApi,driveStatus,drivePreviewUrl,storeDriveFile,migrateDriveFile} fr
 const q=(env,sql,...args)=>env.DB.prepare(sql).bind(...args);
 const member=(a,u)=>a.creator===u.id||JSON.parse(a.participant_ids).includes(u.id);
 const projectTeamEmails=new Set(['zamharier@yayasangambut.org','rajaalpian@yayasangambut.org','rasid@yayasangambut.org']);
+const zamharirTeamEmails=new Set(['rafimerbamas@yayasangambut.org','rasid@yayasangambut.org','rajaalpian@yayasangambut.org','hamidi@yayasangambut.org','utara@yayasangambut.org']);
 export async function agendaProjectAccess(env,u,people){
- const email=env.AGENDA_PROJECT_MANAGER_EMAIL?.trim().toLowerCase();
- if(!email||u.email?.toLowerCase()!==email)return {projectManager:false,team:[]};
+ const email=u.email?.toLowerCase();
+ const teamEmails=email==='zamharier@yayasangambut.org'?zamharirTeamEmails:projectTeamEmails;
+ if(!email||(teamEmails===projectTeamEmails&&email!==env.AGENDA_PROJECT_MANAGER_EMAIL?.trim().toLowerCase()))return {projectManager:false,team:[]};
  people??=await teamPeople(env);
  const projectManager=people.some(p=>p.id===u.id&&p.email.toLowerCase()===email);
- return {projectManager,team:projectManager?people.filter(p=>projectTeamEmails.has(p.email.toLowerCase())):[]};
+ return {projectManager,team:projectManager?people.filter(p=>teamEmails.has(p.email.toLowerCase())):[]};
 }
 export function agendaReadScope(ids){
  const placeholders=ids.map(()=>'?').join(',');
