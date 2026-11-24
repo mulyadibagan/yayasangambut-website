@@ -1,7 +1,7 @@
 'use client';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import source from './finance-history.json';
-import {summarize} from './finance-history-policy.js';
+import {summarize,summarizeProjectReceipts} from './finance-history-policy.js';
 import './finance-history.css';
 const money=(n:number)=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',minimumFractionDigits:2,maximumFractionDigits:2}).format(n/100);
 const date=(s:string)=>!s?'Tanggal belum pasti':new Intl.DateTimeFormat('id-ID',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(s+'T00:00:00Z'));
@@ -31,17 +31,65 @@ function CashBreakdown({rows,group,onSelect}:{rows:any[],group:string,onSelect:(
  })}</div>;
 }
 
+
+export function ProjectIncomeSummary(){
+ const [year,setYear]=useState(source.coverage.at(-1)?.year||'');
+ const report=useMemo(()=>summarizeProjectReceipts(source,year),[year]);
+ const details=(project='')=>{
+  const query=new URLSearchParams({projectIncome:'1'});
+  if(year)query.set('year',year);
+  if(project)query.set('project',project);
+  return '/finance/reports?'+query+'#history-transactions';
+ };
+ const current=report.years.find((entry:{year:string;to:string})=>entry.year===year);
+ return <section className="history-panel" id="penerimaan-proyek" aria-labelledby="project-income-title">
+  <div className="history-section-title">
+   <div><h2 id="project-income-title">Penerimaan proyek</h2>
+    <strong>{money(report.incoming)}</strong>
+    <p>{report.count} transaksi · {year||'Seluruh tahun'}{current?.to&&' · Mutasi sampai '+date(current.to)}</p>
+   </div>
+   <label>Tahun<select value={year} onChange={event=>setYear(event.target.value)}>
+    <option value="">Seluruh tahun</option>
+    {report.years.map((entry:{year:string;incoming:number;count:number})=><option key={entry.year}>{entry.year}</option>)}
+   </select></label>
+  </div>
+  <details open={!year}>
+   <summary>Bandingkan penerimaan per tahun</summary>
+   <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Penerimaan</th><th>Transaksi</th></tr></thead>
+    <tbody>{report.years.map((entry:{year:string;incoming:number;count:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>setYear(entry.year)}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.count}</td></tr>)}</tbody>
+   </table></div>
+  </details>
+  <div className="history-scroll"><table><thead><tr><th>Proyek</th><th>Penerimaan</th><th>Transaksi</th></tr></thead>
+   <tbody>{report.projects.map((entry:{label:string;incoming:number;count:number})=><tr key={entry.label}><th><a href={details(entry.label)}>{entry.label}</a></th><td>{money(entry.incoming)}</td><td>{entry.count}</td></tr>)}
+   {!report.projects.length&&<tr><td colSpan={3}>Belum ada penerimaan proyek teridentifikasi pada periode ini.</td></tr>}</tbody>
+  </table></div>
+  <p className="history-note">Dihitung dari kredit mutasi yang dialokasikan ke proyek. Tahun mengikuti periode mutasi.</p>
+  <a href={details()}>Lihat semua transaksi penerimaan proyek</a>
+ </section>;
+}
+
 export default function HistoryReport(){
  const [year,setYear]=useState(''),[project,setProject]=useState(''),[kind,setKind]=useState(''),[direction,setDirection]=useState(''),[group,setGroup]=useState('category'),[breakdownBy,setBreakdownBy]=useState('category'),[search,setSearch]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[page,setPage]=useState(1);
- const chartRows=useMemo(()=>source.rows.filter(r=>(!project||r.project===project)&&(!kind||r.category===kind)&&(!from||(!!r.date&&!r.dateIssue&&r.date>=from))&&(!to||(!!r.date&&!r.dateIssue&&r.date<=to))&&(!direction||(direction==='in'?r.credit>0:r.debit>0))&&(!search||[r.description,r.reference,r.project,r.category].join(' ').toLowerCase().includes(search.toLowerCase()))),[project,kind,direction,search,from,to]);
+ const [projectIncomeOnly,setProjectIncomeOnly]=useState(false);
+ useEffect(()=>{
+  const query=new URLSearchParams(window.location.search);
+  if(query.get('projectIncome')!=='1')return;
+  setProjectIncomeOnly(true);
+  setYear(query.get('year')||'');
+  setProject(query.get('project')||'');
+  setDirection('in');
+  setGroup('project');
+  setBreakdownBy('project');
+ },[]);
+ const chartRows=useMemo(()=>source.rows.filter(r=>(!projectIncomeOnly||r.projectIncome)&&(!project||r.project===project)&&(!kind||r.category===kind)&&(!from||(!!r.date&&!r.dateIssue&&r.date>=from))&&(!to||(!!r.date&&!r.dateIssue&&r.date<=to))&&(!direction||(direction==='in'?r.credit>0:r.debit>0))&&(!search||[r.description,r.reference,r.project,r.category].join(' ').toLowerCase().includes(search.toLowerCase()))),[projectIncomeOnly,project,kind,direction,search,from,to]);
  const rows=useMemo(()=>chartRows.filter(r=>!year||r.year===year),[chartRows,year]);
  const groups=useMemo(()=>summarize(rows,group),[rows,group]),incoming=rows.reduce((n,r)=>n+r.credit,0),outgoing=rows.reduce((n,r)=>n+r.debit,0),projects=[...new Set(source.rows.map(r=>r.project))].sort(),categories=[...new Set(source.rows.map(r=>r.category))].sort(),count=new Set(rows.map(r=>r.id.split(':').slice(0,2).join(':'))).size,pages=Math.max(1,Math.ceil(rows.length/40)),currentPage=Math.min(page,pages);
  const change=(setter:any)=>(event:any)=>{setter(event.target.value);setPage(1);};
- return <main className="yg-history"><header className="history-header"><div><a href="/finance" className="history-back">← Ringkasan keuangan</a><p className="history-eyebrow">LAPORAN KEUANGAN</p><h1>Penerimaan & pengeluaran</h1><p>Arsip {source.coverage[0].year}–{source.coverage.at(-1)?.year} · seluruh periode tercatat</p></div><div className="history-actions"><button onClick={()=>download('ringkasan-keuangan.csv',[['Kelompok','Penerimaan (Rp)','Pengeluaran (Rp)','Arus kas bersih (Rp)','Transaksi'],...groups.map((r:any)=>[r.label,(r.incoming/100).toFixed(2),(r.outgoing/100).toFixed(2),(r.net/100).toFixed(2),r.count])])}>Unduh ringkasan CSV</button><button onClick={()=>window.print()}>Cetak ringkasan / PDF</button></div></header>
+ return <main className="yg-history"><header className="history-header"><div><a href="/finance" className="history-back">← Ringkasan keuangan</a><p className="history-eyebrow">LAPORAN KEUANGAN</p><h1>{projectIncomeOnly?'Penerimaan proyek':'Penerimaan & pengeluaran'}</h1><p>Arsip {source.coverage[0].year}–{source.coverage.at(-1)?.year} · seluruh periode tercatat</p></div><div className="history-actions"><button onClick={()=>download('ringkasan-keuangan.csv',[['Kelompok','Penerimaan (Rp)','Pengeluaran (Rp)','Arus kas bersih (Rp)','Transaksi'],...groups.map((r:any)=>[r.label,(r.incoming/100).toFixed(2),(r.outgoing/100).toFixed(2),(r.net/100).toFixed(2),r.count])])}>Unduh ringkasan CSV</button><button onClick={()=>window.print()}>Cetak ringkasan / PDF</button></div></header>
  <p className="history-note">Filter: {year||'Seluruh tahun'} · {project||'Semua proyek dan pos'} · {kind||'Semua jenis transaksi'} · {direction==='in'?'Penerimaan':direction==='out'?'Pengeluaran':'Masuk dan keluar'}{from?' · dari '+date(from):''}{to?' · sampai '+date(to):''}{search?' · pencarian: '+search:''}</p>
  <section className="history-coverage"><h2>Cakupan laporan</h2><p>Arus kas masuk dan keluar berdasarkan mutasi rekening. Saldo awal, alokasi antarpos, dan realisasi PJUM tidak ditambahkan sebagai transaksi kas baru. Pencairan UM merupakan kas keluar; rincian penggunaannya tetap tersedia di UM & PJUM.</p><details><summary>Saldo dan rekonsiliasi per tahun</summary><div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Periode mutasi</th><th>Transaksi</th><th>Saldo awal</th><th>Penerimaan</th><th>Pengeluaran</th><th>Saldo akhir bank</th><th>Selisih hitung</th></tr></thead><tbody>{source.coverage.map((c:any)=><tr key={c.year}><th>{c.year}</th><td>{date(c.from)} – {date(c.to)}{c.uncertainDates>0&&<small>{c.uncertainDates} tanggal perlu verifikasi</small>}</td><td>{c.transactions}</td><td>{money(c.opening)}</td><td>{money(c.incoming)}</td><td>{money(c.outgoing)}</td><td>{money(c.ending)}</td><td>{money(c.difference)}{c.carryDifference?<> · selisih antarperiode {money(c.carryDifference)}</>:null}</td></tr>)}</tbody></table></div></details>{source.coverage.some((c:any)=>Math.abs(c.difference)>1||Math.abs(c.carryDifference||0)>1)&&<p className="history-warning">Terdapat selisih pada sumber historis. Rinciannya ditampilkan pada rekonsiliasi per tahun; nilai sumber tetap dipertahankan.</p>}</section>
  {source.coverage.some((c:any)=>c.uncertainDates>0)&&<p className="history-warning">Beberapa tanggal pada arsip lama perlu verifikasi. Transaksinya tetap termasuk dalam total dan tahun sumber. Filter rentang tanggal hanya mencakup tanggal yang teridentifikasi.</p>}
- <section className="history-filters" aria-label="Filter laporan"><label>Tahun<select value={year} onChange={change(setYear)}><option value="">Seluruh tahun</option>{source.coverage.map(c=><option key={c.year}>{c.year}</option>)}</select></label><label>Proyek / pos dana<select value={project} onChange={change(setProject)}><option value="">Semua proyek dan pos</option>{projects.map(p=><option key={p}>{p}</option>)}</select></label><label>Jenis transaksi<select value={kind} onChange={change(setKind)}><option value="">Semua jenis</option>{categories.map(p=><option key={p}>{p}</option>)}</select></label><label>Arus kas<select value={direction} onChange={change(setDirection)}><option value="">Masuk dan keluar</option><option value="in">Penerimaan</option><option value="out">Pengeluaran</option></select></label><label>Dari tanggal<input type="date" value={from} onChange={change(setFrom)}/></label><label>Sampai tanggal<input type="date" value={to} onChange={change(setTo)}/></label><label className="history-search">Cari transaksi<input type="search" placeholder="Uraian atau referensi" value={search} onChange={change(setSearch)}/></label><button onClick={()=>{setYear('');setProject('');setKind('');setDirection('');setFrom('');setTo('');setSearch('');setPage(1);}}>Hapus filter</button></section>
+ <section className="history-filters" aria-label="Filter laporan"><label>Tahun<select value={year} onChange={change(setYear)}><option value="">Seluruh tahun</option>{source.coverage.map(c=><option key={c.year}>{c.year}</option>)}</select></label><label>Proyek / pos dana<select value={project} onChange={change(setProject)}><option value="">Semua proyek dan pos</option>{projects.map(p=><option key={p}>{p}</option>)}</select></label><label>Jenis transaksi<select value={kind} onChange={change(setKind)}><option value="">Semua jenis</option>{categories.map(p=><option key={p}>{p}</option>)}</select></label><label>Arus kas<select value={direction} onChange={change(setDirection)}><option value="">Masuk dan keluar</option><option value="in">Penerimaan</option><option value="out">Pengeluaran</option></select></label><label>Dari tanggal<input type="date" value={from} onChange={change(setFrom)}/></label><label>Sampai tanggal<input type="date" value={to} onChange={change(setTo)}/></label><label className="history-search">Cari transaksi<input type="search" placeholder="Uraian atau referensi" value={search} onChange={change(setSearch)}/></label><button onClick={()=>{setYear('');setProject('');setKind('');setDirection('');setFrom('');setTo('');setSearch('');setProjectIncomeOnly(false);setPage(1);}}>Hapus filter</button></section>
  {from&&to&&from>to&&<p role="alert" className="history-warning">Tanggal awal harus sebelum tanggal akhir.</p>}
  <section className="history-metrics" aria-label="Ringkasan sesuai filter"><article><span>Total penerimaan</span><strong>{money(incoming)}</strong></article><article><span>Total pengeluaran</span><strong>{money(outgoing)}</strong></article><article><span>Arus kas bersih</span><strong>{money(incoming-outgoing)}</strong></article><article><span>Transaksi bank</span><strong>{count}</strong><small>{rows.length!==count?'Beberapa transaksi memiliki lebih dari satu alokasi.':'Sesuai filter terpilih'}</small></article></section>
  <AnnualChart rows={chartRows} selected={year} onSelect={value=>{setYear(value);setPage(1);}}/>
