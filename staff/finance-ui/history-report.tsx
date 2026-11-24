@@ -108,7 +108,7 @@ export function ProjectIncomeSummary({full=false}:{full?:boolean}){
   <details open={full||!year}>
    <summary>Bandingkan penerimaan per tahun</summary>
    <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Penerimaan</th><th>Sumber</th></tr></thead>
-    <tbody>{report.years.map((entry:{year:string;incoming:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>{setYear(entry.year);setProject('');}}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.year<'2022'?'Histori proyek':'Mutasi rekening'}</td></tr>)}
+    <tbody>{report.years.map((entry:{year:string;incoming:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>{setYear(entry.year);setProject('');}}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.year<'2022'?'Histori proyek':'Mutasi rekening'}</td></tr>)}</tbody>
    </table></div>
   </details>
   <div className="history-scroll"><table><thead><tr><th>Proyek</th><th>Penerimaan</th><th>Jumlah</th></tr></thead>
