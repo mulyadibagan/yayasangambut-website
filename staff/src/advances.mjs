@@ -1,3 +1,4 @@
+import {advanceProjectCode,officialAdvanceNumber,lastOriginalAdvanceSequence,readIntegratedFinance,savingGatheringAdvanceId} from './finance-integration.mjs';
 import {advanceFilename} from './advance-filename.mjs';
 import {queuePjumReviewEmail,sendPjumReviewEmails} from './pjum-review-email.mjs';
 import {advanceDriveStatus,archiveAdvanceFile,syncAdvanceDrive} from './advance-drive.mjs';
@@ -110,14 +111,34 @@ function visible(u,row){if(!manager(u)&&!own(u,row))fail(403,'Pengajuan hanya da
 const number=row=>row.legacy_id?JSON.parse(row.payload).legacy.number:'UM-'+row.created_at.slice(0,4)+'-'+String(row.seq).padStart(5,'0');
 function serialize(row){return {...row,number:number(row),payload:JSON.parse(row.payload),report:row.report?JSON.parse(row.report):null};}
 async function read(env,id){const r=await q(env,'SELECT * FROM yg_advance_requests WHERE id=?',id).first();if(!r)fail(404,'Pengajuan tidak ditemukan.');return r;}
-const aprilOrdinal="CASE WHEN json_extract(payload,'$.project_id')='APRIL' AND legacy_id IS NULL THEN (SELECT COUNT(*) FROM yg_advance_requests a WHERE a.seq<=yg_advance_requests.seq AND json_extract(a.payload,'$.project_id')='APRIL') END AS april_ordinal";
+const aprilOrdinal=`CASE WHEN yg_advance_requests.seq<=${lastOriginalAdvanceSequence} AND json_extract(payload,'$.project_id')='APRIL' AND legacy_id IS NULL THEN (SELECT COUNT(*) FROM yg_advance_requests a WHERE a.seq<=yg_advance_requests.seq AND json_extract(a.payload,'$.project_id')='APRIL') END AS april_ordinal`;
 async function numberedAdvance(env,row){
  const record=serialize(row);
- if(row.legacy_id||record.payload.project_id!=='APRIL')return record;
- const ordinal=row.april_ordinal??(await q(env,'SELECT '+aprilOrdinal+' FROM yg_advance_requests WHERE id=?',row.id).first()).april_ordinal;
- const [year,month]=row.created_at.slice(0,7).split('-');
- const document_number=String(ordinal).padStart(2,'0')+'/YG-APRDYN/'+month+'/'+year;
- return {...record,number:document_number,document_number,download_filename:advanceFilename(record,ordinal)};
+ if(row.legacy_id)return record;
+ let ordinal=row.april_ordinal;
+ if(ordinal===undefined&&row.seq<=lastOriginalAdvanceSequence&&record.payload.project_id==='APRIL'){
+  ordinal=(await q(env,'SELECT '+aprilOrdinal+' FROM yg_advance_requests WHERE id=?',row.id).first()).april_ordinal;
+ }
+ const documentNumber=officialAdvanceNumber(row,record.payload,ordinal);
+ if(!documentNumber)return record;
+ const [sequence,code]=documentNumber.split('/');
+ const numbered={...record,number:documentNumber,document_number:documentNumber};
+ return {...numbered,download_filename:code==='YG-APRDYN'?advanceFilename(numbered,Number(sequence)):'UM_'+documentNumber.replaceAll('/','_')+'.xlsx'};
+}
+async function advanceNumberAllocation(env,row,data,at){
+ if(row.legacy_id||!data.project_id||data.document_number||row.id===savingGatheringAdvanceId)return null;
+ if(data.project_id==='APRIL'&&row.seq<=lastOriginalAdvanceSequence)return null;
+ const code=advanceProjectCode(data.project_id);
+ const archive=(await readIntegratedFinance(env)).records;
+ const normalize=value=>value.toLowerCase().replace(/[^a-z0-9]/g,'');
+ let floor=data.project_id==='YG'?3:0;
+ for(const record of archive){
+  if(record.type!=='UM'||String(record.id).startsWith('UM-WORKFLOW-'))continue;
+  const match=String(record.documentNumber||'').trim().match(/^(\d+)\s*\/\s*([A-Z0-9_-]+)\s*\/\s*(?:0[1-9]|1[0-2])\s*\/\s*20\d{2}$/i);
+  if(match&&normalize(match[2])===normalize(code))floor=Math.max(floor,Number(match[1]));
+ }
+ const period=new Date(at).toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}).slice(0,7).split('-');
+ return {projectId:data.project_id,floor,suffix:'/'+code+'/'+period[1]+'/'+period[0]};
 }
 async function detail(env,row){const record=await numberedAdvance(env,row);const files=(await q(env,'SELECT id,purpose,filename,mime,size,pages,actor_email,created_at FROM yg_advance_files WHERE request_id=? ORDER BY created_at',row.id).all()).results,ocr=(await q(env,'SELECT file_id,page,result,created_at FROM yg_advance_ocr WHERE request_id=?',row.id).all()).results.map(r=>({...r,result:JSON.parse(r.result)}));return {...record,drive:await advanceDriveStatus(env,row.id),files,ocr,checks:row.report?receiptChecks(JSON.parse(row.report),files,ocr,row.paid_date):null,events:(await q(env,'SELECT actor_email,action,version,snapshot,created_at FROM yg_advance_events WHERE request_id=? ORDER BY version',row.id).all()).results.map(r=>({...r,snapshot:JSON.parse(r.snapshot)}))};}
 async function input(req){let size=0;const chunks=[];const reader=req.body?.getReader();if(!reader)fail(400,'Data kosong.');while(true){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>150000){await reader.cancel();fail(413,'Data terlalu besar.');}chunks.push(r.value);}try{const out=new Uint8Array(size);let n=0;for(const c of chunks){out.set(c,n);n+=c.length;}return JSON.parse(new TextDecoder().decode(out));}catch{fail(400,'Data tidak valid.');}}
@@ -128,11 +149,19 @@ export function advanceTransition(u,row,action){
  if(action==='report_return')return advanceFinance(u)&&state==='pjum_submitted'||director(u)&&state==='pjum_checked'?'pjum_returned':fail(403,'PJUM tidak dapat dikembalikan pada tahap ini.');
  const rule=rules[action];if(!rule)fail(400,'Tindakan tidak dikenal.');if(!rule[0])fail(403,'Anda tidak memiliki kewenangan untuk tindakan ini.');if(!rule[1].includes(state))fail(409,'Status telah berubah atau belum memenuhi tahapan. Muat ulang pengajuan.');return rule[2];
 }
-async function mutate(env,row,u,action,changes,snapshot={}){
+async function mutate(env,row,u,action,changes,snapshot={},allocation=null){
  const event=crypto.randomUUID(),at=now(),fields=Object.keys(changes);const allowed=new Set(['status','payload','total','report','actual','paid_date','payment_reference','settlement_reference','note']);if(fields.some(k=>!allowed.has(k)))throw Error('Invalid advance mutation');
+ const assignment=key=>key==='payload'&&allocation?`payload=json_set(?, '$.document_number', printf('%02d', 1+MAX(?, (
+  SELECT COALESCE(MAX(CASE WHEN json_extract(a.payload,'$.document_number') IS NOT NULL
+   THEN CAST(json_extract(a.payload,'$.document_number') AS INTEGER) ELSE 0 END),0)
+  FROM yg_advance_requests a WHERE json_extract(a.payload,'$.project_id')=?
+ ), (SELECT CASE WHEN ?='APRIL' THEN COUNT(*) ELSE 0 END FROM yg_advance_requests a
+  WHERE a.seq<=${lastOriginalAdvanceSequence} AND json_extract(a.payload,'$.project_id')='APRIL'))) || ?)`:key+'=?';
+ const values=fields.flatMap(key=>key==='payload'&&allocation?
+  [changes[key],allocation.floor,allocation.projectId,allocation.projectId,allocation.suffix]:[changes[key]]);
  try{
   const result=await env.DB.batch([
-   q(env,'UPDATE yg_advance_requests SET '+fields.map(k=>k+'=?').join(',')+',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',...fields.map(k=>changes[k]),event,at,row.id,row.version),
+   q(env,'UPDATE yg_advance_requests SET '+fields.map(assignment).join(',')+',version=version+1,last_event=?,updated_at=? WHERE id=? AND version=?',...values,event,at,row.id,row.version),
    q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) SELECT ?,id,?,?,version,?,updated_at FROM yg_advance_requests WHERE id=? AND last_event=?',event,u.email,action,JSON.stringify(snapshot),row.id,event),
    ...(action==='report_check'?[queuePjumReviewEmail(env,row,event,at,changes.note)]:[])
   ]);if(!result[0].meta.changes)fail(409,'Pengajuan telah diubah. Muat ulang sebelum menyimpan.');
@@ -290,11 +319,20 @@ export async function advancesRoute(req,env,u,ctx){
   return json(await detail(env,await mutate(env,row,u,'title_updated',{payload:JSON.stringify(data)},{previous,activity})));
  }
  if(!action&&req.method==='PUT'){
-  if(!own(u,row)||!['draft','returned'].includes(row.status))fail(403,'Hanya pengaju yang dapat menyunting draf UM.');const data=await linkAdvanceProject(env,u,advanceInput(body));return json(await detail(env,await mutate(env,row,u,'updated',{payload:JSON.stringify(data),total:data.total},data)));
+  if(!own(u,row)||!['draft','returned'].includes(row.status))fail(403,'Hanya pengaju yang dapat menyunting draf UM.');const data=await linkAdvanceProject(env,u,advanceInput(body));
+  const previousNumber=await numberedAdvance(env,row);
+  if(previousNumber.document_number&&data.project_id!==previousNumber.payload.project_id)fail(409,'Sumber dana UM yang sudah bernomor tidak dapat diubah. Buat pengajuan baru untuk sumber dana lain.');
+  if(previousNumber.payload.document_number)data.document_number=previousNumber.payload.document_number;
+  return json(await detail(env,await mutate(env,row,u,'updated',{payload:JSON.stringify(data),total:data.total},data)));
  }
  if(req.method!=='POST')fail(405,'Metode tidak didukung.');
  const status=advanceTransition(u,row,action),changes={status},snapshot={};
- if(action==='submit'&&JSON.parse(row.payload).project_id){const data=await linkAdvanceProject(env,u,JSON.parse(row.payload));changes.payload=JSON.stringify(data);snapshot.allocations=data.allocations;}
+ let allocation=null;
+ if(action==='submit'&&JSON.parse(row.payload).project_id){
+  const data=await linkAdvanceProject(env,u,JSON.parse(row.payload));
+  allocation=await advanceNumberAllocation(env,row,data,now());
+  changes.payload=JSON.stringify(data);snapshot.allocations=data.allocations;
+ }
  if(['return','report_return'].includes(action))changes.note=string(body.note,4000);
  else if(['check','approve','report_check','report_approve'].includes(action))changes.note=string(body.note||'',4000,false);
  if(action==='disburse'){
@@ -320,7 +358,7 @@ export async function advancesRoute(req,env,u,ctx){
  if(action==='settle'){
   await proof(env,id,'settlement');if(amount(body.amount)!==Math.abs(row.total-row.actual))fail(400,'Nominal penyelesaian harus sama dengan selisih UM dan realisasi.');const settledDate=date(body.date);if(settledDate>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Jakarta'}))fail(400,'Tanggal penyelesaian tidak boleh di masa depan.');changes.settlement_reference=string(body.reference,160);Object.assign(snapshot,{amount:body.amount,date:settledDate,reference:changes.settlement_reference,direction:row.total>row.actual?'refund':'reimbursement'});
  }
- const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''});
+ const updated=await mutate(env,row,u,action,changes,{...snapshot,note:changes.note||''},allocation);
  if(action==='report_check'&&ctx)ctx.waitUntil(sendPjumReviewEmails(env,id).catch(()=>{}));
  if(id===dayunRequestId&&['check','approve','return'].includes(action)){
   try{await syncDayunReview(env,updated);}catch{ return json({...await detail(env,updated),workbookSyncWarning:'Status UM tersimpan. Sinkronisasi tanda tangan Excel perlu diulangi.'}); }
