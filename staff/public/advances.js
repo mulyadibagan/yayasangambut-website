@@ -27,6 +27,7 @@ function renderUmSummary(){
   const card=el('article',group.label);
   const button=el('button','Lihat '+group.rows.length+' UM',{type:'button',className:'quiet',ariaLabel:'Lihat UM: '+group.label});
   button.onclick=()=>{
+   listScope='um';
    setMode(false);
    $('#search').value='';
    $('#filter').value=group.status;
@@ -37,7 +38,19 @@ function renderUmSummary(){
   summary.append(card);
  }
 }
-function list(){const term=$('#search').value.toLowerCase(),status=$('#filter').value;$('#requests').replaceChildren();for(const row of rows.filter(r=>(!$('#overview-project').value||r.payload.project_id===$('#overview-project').value)&&(!status||r.status===status)&&[r.number,r.payload.activity,r.payload.project,r.creator_name].join(' ').toLowerCase().includes(term))){const b=el('button',row.payload.activity,{className:'record'+(current?.id===row.id?' active':'')});b.append(el('small',row.number+' · '+row.creator_name),el('small',labels[row.status]+' · '+money(row.total)));b.onclick=()=>run(async()=>{if(dirty&&!confirm('Ada perubahan yang belum disimpan. Buka pengajuan lain?'))return;current=await request('/'+row.id);dirty=false;render();});$('#requests').append(b);}if(!$('#requests').children.length)$('#requests').append(el('p','Belum ada pengajuan sesuai filter.'));renderUmSummary();}
+const pjumProcessStatuses=new Set(['disbursed','pjum_draft','pjum_returned','pjum_submitted','pjum_checked','settlement']);
+const umListStatuses=new Set(['draft','returned','submitted','checked','approved','cancelled']);
+let listScope='um';
+function showRequestList(scope){
+ listScope=scope;
+ $('#filter').value='';
+ setMode(false);
+ list();
+}
+function list(){
+ const allowed=listScope==='um'?umListStatuses:pjumProcessStatuses;
+ for(const option of $('#filter').options)option.hidden=!!option.value&&!allowed.has(option.value);
+ const term=$('#search').value.toLowerCase(),status=$('#filter').value;$('#request-list-title').textContent=listScope==='um'?'Daftar pengajuan UM':'PJUM dalam proses';$('#requests').replaceChildren();for(const row of rows.filter(r=>allowed.has(r.status)&&(!$('#overview-project').value||r.payload.project_id===$('#overview-project').value)&&(!status||r.status===status)&&[r.number,r.payload.activity,r.payload.project,r.creator_name].join(' ').toLowerCase().includes(term))){const b=el('button',row.payload.activity,{className:'record'+(current?.id===row.id?' active':'')});b.append(el('small',row.number+' · '+row.creator_name),el('small',labels[row.status]+' · '+money(row.total)));b.onclick=()=>run(async()=>{if(dirty&&!confirm('Ada perubahan yang belum disimpan. Buka pengajuan lain?'))return;current=await request('/'+row.id);dirty=false;render();});$('#requests').append(b);}if(!$('#requests').children.length)$('#requests').append(el('p','Belum ada pengajuan sesuai filter.'));renderUmSummary();}
 function addItem(target,row={},report=false){const tr=el('tr');tr.append(el('td'));const fields=report?['receipt_no','date','description','quantity','unit','times','days','rate']:['activity_code','description','quantity','unit','times','days','rate'];for(const key of fields){const td=el('td'),numeric=['quantity','days','times','rate'].includes(key),input=el('input',undefined,{type:key==='date'?'date':numeric?'number':'text',required:!['activity_code'].includes(key),value:row[key]??(key==='activity_code'?$('#activity-choice').value:undefined)??({date:date(),quantity:1,times:1,days:1,rate:0,unit:'unit'}[key]||'')});input.dataset.key=key;input.setAttribute('aria-label',key+' '+(document.querySelector(target).children.length+1));if(numeric){input.min=key==='rate'&&report?'0':key==='quantity'?'0.01':'1';input.step=key==='quantity'?'0.01':'1';}else if(key!=='date')input.maxLength=key==='description'?500:60;input.oninput=()=>{dirty=true;totals();};td.append(input);
  if(!report&&(key==='times'||key==='days')){
   const label=el('small',key==='times'?row.frequencyUnit||'':row.durationUnit||'hari');
@@ -48,7 +61,8 @@ function addItem(target,row={},report=false){const tr=el('tr');tr.append(el('td'
 function items(target){return [...$(target).children].map(tr=>Object.fromEntries([...tr.querySelectorAll('input,select')].map(i=>[i.dataset.key,['quantity','days','times','rate','page'].includes(i.dataset.key)?Number(i.value):i.value])));}
 function totals(){for(const [target,out] of [['#um-items','#um-total'],['#pjum-items','#pjum-total']]){let sum=0;[...$(target).children].forEach((tr,i)=>{tr.firstChild.textContent=i+1;const vals=Object.fromEntries([...tr.querySelectorAll('input,select')].map(x=>[x.dataset.key,x.value]));const n=Math.round(Number(vals.quantity)*Number(vals.days)*Number(vals.times||1)*Number(vals.rate));tr.querySelector('.subtotal').textContent=money(n);sum+=n||0;});$(out).textContent=money(sum);if(target==='#pjum-items'&&current){const diff=current.total-sum;$('#difference').textContent=diff>0?'Sisa UM yang harus dikembalikan: '+money(diff):diff<0?'Kekurangan pembayaran: '+money(-diff):'Realisasi sama dengan UM yang dicairkan.';}}}
 function setMode(pjum){document.body.classList.toggle('pjum-mode',pjum);$('#page-title').textContent=pjum?'Laporkan PJUM':'Pengajuan UM & arsip';$('#page-description').textContent=pjum?'Pilih UM, unggah Excel dan kuitansi, lalu kirim ke Riena.':'Kelola pengajuan, pencairan, dan pemeriksaan laporan.';$('#advanced-workspace').open=!pjum;$('#quick-pjum').hidden=!pjum;if(current)permissions();}
-$('#manage-advances').onclick=()=>setMode(false);
+$('#manage-advances').onclick=()=>showRequestList('um');
+$('#view-pjum-process').onclick=()=>showRequestList('pjum');
 function render(){
  $('#quick-pjum').hidden=!!current&&['draft','returned','submitted','checked','approved','cancelled'].includes(current.status);$('#empty').hidden=true;$('#detail').hidden=false;const data=current?{...current.payload}:{...me.recipient,project:'',activity:'',location:'',start:date(),end:date(),notes:'',items:[{}]};
  if(current&&editable()&&me.recipient?.account&&['bank','account','account_name'].every(key=>!String(data[key]||'').trim())){
@@ -122,7 +136,7 @@ async function act(action){if(dirty)throw Error('Simpan perubahan draf sebelum m
  try{current=await request('/'+current.id+'/'+action,'POST',data);}catch(error){draftTab?.close();throw error;}
  if(draftTab&&!draftTab.closed)draftTab.location.replace(umReviewDraft(current));
  dirty=false;await reload();render();notice(current.workbookSyncWarning||(action==='report_submit'?'PJUM tersimpan untuk pemeriksaan Riena. Buka draf email jika ingin mengirim pemberitahuan.':'Status pengajuan diperbarui.'));}
-$('#new').onclick=()=>run(async()=>{if(dirty&&!confirm('Ada draf belum disimpan. Buat pengajuan baru?'))return;setMode(false);current=null;dirty=false;render();$('#quick-pjum').hidden=true;});$('#refresh').onclick=()=>run(async()=>{if(dirty&&!confirm('Muat ulang dan abaikan perubahan belum disimpan?'))return;await reload();if(current){current=await request('/'+current.id);dirty=false;render();}});$('#search').oninput=list;$('#filter').onchange=list;
+$('#new').onclick=()=>run(async()=>{if(dirty&&!confirm('Ada draf belum disimpan. Buat pengajuan baru?'))return;showRequestList('um');current=null;dirty=false;render();$('#quick-pjum').hidden=true;});$('#refresh').onclick=()=>run(async()=>{if(dirty&&!confirm('Muat ulang dan abaikan perubahan belum disimpan?'))return;await reload();if(current){current=await request('/'+current.id);dirty=false;render();}});$('#search').oninput=list;$('#filter').onchange=list;
 $('#add-um').onclick=()=>{addItem('#um-items');dirty=true;};$('#add-pjum').onclick=()=>{addItem('#pjum-items',{},true);dirty=true;};$('#um-form').onsubmit=e=>{e.preventDefault();run(saveUm);};$('#um-form').addEventListener('input',()=>dirty=true);$('#pjum-form').addEventListener('input',e=>{if(e.target.type!=='file')dirty=true;});
 $('#pjum-form').onsubmit=e=>{e.preventDefault();run(async()=>{if(!$('#pjum-form').reportValidity())return;current=await request('/'+current.id+'/report','POST',{version:current.version,items:items('#pjum-items'),report_date:$('#pjum-form').elements.report_date.value,report_number:$('#pjum-form').elements.report_number.value,notes:$('#pjum-form').elements.notes.value});dirty=false;await reload();render();notice('Draf PJUM tersimpan.');});};
 $('#upload').onchange=()=>run(async()=>{const file=$('#upload').files[0];if(!file)return;if(dirty)throw Error('Simpan draf sebelum mengunggah lampiran.');if(file.size>5*1024*1024)throw Error('Berkas maksimal 5 MB.');const response=await fetch(api+'/'+current.id+'/files?'+new URLSearchParams({purpose:$('#purpose').value,name:file.name,version:current.version}),{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});const out=await response.json();if(!response.ok)throw Error(out.error||'Unggah belum berhasil.');current=out;render();notice('Dokumen tersimpan.');});
@@ -240,7 +254,7 @@ $('#legacy-form').onsubmit=e=>{e.preventDefault();run(async()=>{const f=e.target
 
 $('#view-submitted').onclick=()=>$('#submitted-pjum').scrollIntoView({behavior:'smooth',block:'start'});
 function renderSubmittedPjum(){
- const sent=rows.filter(r=>r.report&&['pjum_draft','pjum_returned','pjum_submitted','pjum_checked','settlement','closed'].includes(r.status)),box=$('#submitted-pjum-list');box.replaceChildren();$('#submitted-pjum').hidden=!sent.length;$('#view-submitted').hidden=!sent.length;$('#view-submitted').textContent='Laporan PJUM ('+sent.length+')';
+ const sent=rows.filter(r=>r.report&&r.status==='closed'),box=$('#submitted-pjum-list');box.replaceChildren();$('#submitted-pjum').hidden=!sent.length;$('#view-submitted').hidden=!sent.length;$('#view-submitted').textContent='Laporan PJUM ('+sent.length+')';
  for(const r of sent){const card=el('article',undefined,{className:'submitted-pjum-card'});card.append(el('strong',r.number+' · '+r.payload.activity),el('p',r.creator_name+' · '+labels[r.status]+' · '+money(r.actual??r.report.total)));
  const b=el('button','Pratinjau laporan',{type:'button',className:'secondary'});b.onclick=()=>run(async()=>{if(dirty&&!confirm('Abaikan perubahan draf yang belum disimpan?'))return;current=await request('/'+r.id);dirty=false;setMode(true);render();$('#quick-pjum').scrollIntoView({behavior:'smooth',block:'start'});});card.append(b);box.append(card);}
 }
