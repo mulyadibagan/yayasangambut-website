@@ -142,9 +142,11 @@ export async function applyFinancePresentation(root){
  await copyFile(new URL('../finance-ui/history-report.css',import.meta.url),resolve(app,'finance-history.css'));
  await mkdir(resolve(app,'reports'),{recursive:true});
  await writeFile(resolve(app,'reports/page.tsx'),"import HistoryReport from '../finance-history-report';\nexport default function ReportsPage(){return <HistoryReport />;}\n");
+ await mkdir(resolve(app,'project-income'),{recursive:true});
+ await writeFile(resolve(app,'project-income/page.tsx'),"export {ProjectIncomeReport as default} from '../finance-history-report';\n");
  const navFile=resolve(app,'finance-staff-tools.tsx');
  let nav=await readFile(navFile,'utf8');
- nav=nav.replace('<div><a href="/finance/invoices">','<div><a href="/finance/reports">Penerimaan & pengeluaran</a><a href="/finance/invoices">');
+ nav=nav.replace('<div><a href="/finance/invoices">','<div><a href="/finance/project-income">Penerimaan Proyek</a><a href="/finance/reports">Penerimaan & pengeluaran</a><a href="/finance/invoices">');
  await writeFile(navFile,nav);
  console.log('Finance presentation prepared; source data fingerprints unchanged; full bank history report validated.');
 }
