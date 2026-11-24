@@ -14,7 +14,7 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  const bankPath=resolve(root,'app/bank-statement-2026.ts');
  let bank=await readFile(bankPath,'utf8');
  const sourceMarker='// Period-specific original statement links; financial fields unchanged.';
- if(!bank.includes(sourceMarker))bank+=`\n${sourceMarker}\nimport statementDocuments from './finance-document-links.json' with {type:'json'};\nimport {attachStatementSources} from './finance-bank-source-policy.js';\nObject.assign(bankStatement2026,attachStatementSources(bankStatement2026,statementDocuments.statements));\n`;
+ if(!bank.includes(sourceMarker))bank+=`\n${sourceMarker}\nimport statementDocuments from './finance-document-links.json' with {type:'json'};\nimport {attachStatementSources} from './finance-bank-source-policy.js';\nimport {attachReceiptEvidence} from './finance-review-display.js';\nObject.assign(bankStatement2026,attachReceiptEvidence(attachStatementSources(bankStatement2026,statementDocuments.statements),statementDocuments.receipts));\n`;
  await writeFile(bankPath,bank);
  const read=async file=>(await readFile(resolve(root,file),'utf8')).replace(/\r\n/g,'\n');
  let receiptCss=await read('app/project-receipt-cluster.css');
@@ -25,7 +25,7 @@ export async function applyReviewDisplay(root,documents={receipts:[],records:[]}
  receipt=replace(receipt,'import source from',`import documentLinks from './finance-document-links.json';\nimport {receiptStatement} from './finance-review-display.js';\nimport source from`);
  receipt=replace(receipt,'evidenceUrl: row.evidence?.[0]?.url,','evidenceUrl: receiptStatement(row),');
  receipt=receipt.replace('receiptStatement(row),','receiptStatement(row,documentLinks.receipts),');
- receipt=replace(receipt,'Bukti ↗',"{documentLinks.receipts.some(link=>link.reference===receipt.reference&&link.date===receipt.date&&link.amount===receipt.amount)?'Bukti transfer ↗':'Mutasi bank ↗'}");
+ receipt=replace(receipt,'Bukti ↗',"{documentLinks.receipts.some(link=>link.files?.some(file=>file.url===receipt.evidenceUrl))?'Bukti transfer ↗':'Mutasi bank ↗'}");
  receipt=replace(receipt,'<small>{receipt.reference}</small>','<small>Mutasi bank belum tertaut · {receipt.reference}</small>');
  let dossier=await read('app/project-dossier.tsx');
  let dashboard=await read('app/finance-archive-dashboard.tsx');

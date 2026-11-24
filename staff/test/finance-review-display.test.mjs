@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reportSummary,timelineMonth,receiptStatement} from '../scripts/finance-review-policy.mjs';
+import {reportSummary,timelineMonth,receiptStatement,attachReceiptEvidence} from '../scripts/finance-review-policy.mjs';
 
 test('an advance without a report cannot be labelled fully verified',()=>{
  assert.equal(reportSummary([{advance:94750000,status:'Belum dilaporkan ke Riena'}],0),'1 aktivitas belum selesai dilaporkan');
@@ -30,4 +30,16 @@ test('private receipt proof requires exact transaction identity and never edits 
  for(const mismatch of [{reference:'other'},{date:'other'},{amount:101}])assert.equal(receiptStatement(row,[{...proof,...mismatch}]),undefined);
  assert.throws(()=>receiptStatement(row,[proof,proof]),/Ambiguous/);
  assert.deepEqual(row,before);
+});
+test('bank receipt proof appears on the selected bank row and in project receipts',()=>{
+ const row={postedAt:'18 Nov 2026 21:48:01',description:'BANK-ID Sender',reference:'-',credit:30000000};
+ const unrelated={...row,description:'OTHER-ID Sender'};
+ const proof={bankReference:'BANK-ID',date:row.postedAt,amount:row.credit,files:[{name:'Bukti',url:'https://drive.google.com/file/d/proof/view'}]};
+ const bank={mutations:[row,unrelated]};
+ const result=attachReceiptEvidence(bank,[proof]);
+ assert.deepEqual(result.mutations[0].evidence,[{label:'Bukti',url:proof.files[0].url}]);
+ assert.equal(result.mutations[1],unrelated);
+ assert.equal(row.evidence,undefined);
+ assert.equal(receiptStatement(row,[proof]),proof.files[0].url);
+ assert.throws(()=>attachReceiptEvidence({mutations:[row,row]},[proof]),/match one transaction/);
 });
