@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,type FormEvent} from 'react';
 import source from './finance-history.json';
 import {summarize,summarizeProjectReceipts} from './finance-history-policy.js';
 import './finance-history.css';
@@ -32,40 +32,109 @@ function CashBreakdown({rows,group,onSelect}:{rows:any[],group:string,onSelect:(
 }
 
 
-export function ProjectIncomeSummary(){
- const [year,setYear]=useState(source.coverage.at(-1)?.year||'');
- const report=useMemo(()=>summarizeProjectReceipts(source,year),[year]);
- const details=(project='')=>{
-  const query=new URLSearchParams({projectIncome:'1'});
-  if(year)query.set('year',year);
-  if(project)query.set('project',project);
-  return '/finance/reports?'+query+'#history-transactions';
- };
+const receiptHistoryApi='/finance/project-income/api';
+type ReceiptRow={year:string;project:string;credit:number;rawDate:string;reference:string;description:string};
+
+export function ProjectIncomeSummary({full=false}:{full?:boolean}){
+ const [year,setYear]=useState(full?'':source.coverage.at(-1)?.year||'');
+ const [project,setProject]=useState('');
+ const [archive,setArchive]=useState<ReceiptRow[]>([]);
+ const [canEdit,setCanEdit]=useState(false);
+ const [loadError,setLoadError]=useState(false);
+ const [input,setInput]=useState('');
+ const [message,setMessage]=useState('');
+ const [saving,setSaving]=useState(false);
+ useEffect(()=>{
+  if(full){
+   const query=new URLSearchParams(window.location.search);
+   setYear(query.get('year')||'');
+   setProject(query.get('project')||'');
+  }
+  const controller=new AbortController();
+  (async()=>{
+   try{
+    const response=await fetch(receiptHistoryApi,{signal:controller.signal});
+    if(!response.ok)throw Error();
+    const data=await response.json();
+    setArchive(data.rows);setCanEdit(data.canEdit);
+   }catch(error){if(!controller.signal.aborted)setLoadError(true);}
+  })();
+  return ()=>controller.abort();
+ },[full]);
+ const combined=useMemo(()=>{
+  const importedYears=new Set(archive.map(row=>row.year));
+  const historicalRows=archive.map(row=>({...row,id:row.year+':'+row.reference,date:'',debit:0,projectIncome:true}));
+  const coverage=[...source.coverage];
+  for(const historicalYear of importedYears)if(!coverage.some(entry=>entry.year===historicalYear)){
+   const entry=source.coverage[0];
+   coverage.push({...entry,year:historicalYear,from:'',to:''});
+  }
+  coverage.sort((a,b)=>a.year.localeCompare(b.year));
+  return {coverage,rows:[...historicalRows,...source.rows.filter(row=>!importedYears.has(row.year))]};
+ },[archive]);
+ const report=useMemo(()=>summarizeProjectReceipts(combined,year),[combined,year]);
  const current=report.years.find((entry:{year:string;to:string})=>entry.year===year);
+ const details=(name='')=>{
+  const query=new URLSearchParams();
+  if(year)query.set('year',year);
+  if(name)query.set('project',name);
+  return '/finance/project-income'+(query.size?'?'+query:'')+(name?'#project-receipt-transactions':'');
+ };
+ const transactions=useMemo(()=>full?combined.rows.filter(row=>row.projectIncome&&(!year||row.year===year)&&(!project||row.project===project)).sort((a,b)=>Number(b.year)-Number(a.year)):[],[combined,year,project,full]);
+ async function saveHistory(event:FormEvent<HTMLFormElement>){
+  event.preventDefault();
+  setSaving(true);setMessage('');
+  try{
+   const rows=JSON.parse(input);
+   const response=await fetch(receiptHistoryApi,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rows})});
+   const data=await response.json();
+   if(!response.ok)throw Error(data.error||'Histori gagal disimpan.');
+   setArchive(data.rows);setInput('');setMessage('Histori penerimaan disimpan.');
+  }catch(error){setMessage(error instanceof Error?error.message:'Histori gagal disimpan.');}
+  finally{setSaving(false);}
+ }
  return <section className="history-panel" id="penerimaan-proyek" aria-labelledby="project-income-title">
   <div className="history-section-title">
    <div><h2 id="project-income-title">Penerimaan proyek</h2>
     <strong>{money(report.incoming)}</strong>
-    <p>{report.count} transaksi · {year||'Seluruh tahun'}{current?.to&&' · Mutasi sampai '+date(current.to)}</p>
+    <p>{report.count} {year&&year<'2022'?'termin':'penerimaan'} · {year||'Seluruh tahun'}{current?.to&&' · Mutasi sampai '+date(current.to)}</p>
    </div>
-   <label>Tahun<select value={year} onChange={event=>setYear(event.target.value)}>
+   <label>Tahun<select value={year} onChange={event=>{setYear(event.target.value);setProject('');}}>
     <option value="">Seluruh tahun</option>
-    {report.years.map((entry:{year:string;incoming:number;count:number})=><option key={entry.year}>{entry.year}</option>)}
+    {report.years.map((entry:{year:string})=><option key={entry.year}>{entry.year}</option>)}
    </select></label>
   </div>
-  <details open={!year}>
+  {loadError&&<p className="history-warning">Histori tambahan belum dapat dimuat.</p>}
+  <details open={full||!year}>
    <summary>Bandingkan penerimaan per tahun</summary>
-   <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Penerimaan</th><th>Transaksi</th></tr></thead>
-    <tbody>{report.years.map((entry:{year:string;incoming:number;count:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>setYear(entry.year)}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.count}</td></tr>)}</tbody>
+   <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Penerimaan</th><th>Sumber</th></tr></thead>
+    <tbody>{report.years.map((entry:{year:string;incoming:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>{setYear(entry.year);setProject('');}}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.year<'2022'?'Histori proyek':'Mutasi rekening'}</td></tr>)}
    </table></div>
   </details>
-  <div className="history-scroll"><table><thead><tr><th>Proyek</th><th>Penerimaan</th><th>Transaksi</th></tr></thead>
+  <div className="history-scroll"><table><thead><tr><th>Proyek</th><th>Penerimaan</th><th>Jumlah</th></tr></thead>
    <tbody>{report.projects.map((entry:{label:string;incoming:number;count:number})=><tr key={entry.label}><th><a href={details(entry.label)}>{entry.label}</a></th><td>{money(entry.incoming)}</td><td>{entry.count}</td></tr>)}
    {!report.projects.length&&<tr><td colSpan={3}>Belum ada penerimaan proyek teridentifikasi pada periode ini.</td></tr>}</tbody>
   </table></div>
-  <p className="history-note">Dihitung dari kredit mutasi yang dialokasikan ke proyek. Tahun mengikuti periode mutasi.</p>
-  <a href={details()}>Lihat semua transaksi penerimaan proyek</a>
+  <p className="history-note">Histori 2020–2021 berasal dari rekap penerimaan proyek. Mulai 2022, nilai penerimaan mengikuti mutasi rekening.</p>
+  {!full&&<a href="/finance/project-income">Buka laporan penerimaan proyek</a>}
+  {full&&<section id="project-receipt-transactions" className="history-transactions">
+   <h3>Rincian penerimaan{project?' · '+project:''}</h3>
+   {project&&<button type="button" onClick={()=>setProject('')}>Semua proyek</button>}
+   <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Proyek</th><th>Tanggal</th><th>Uraian / referensi</th><th>Penerimaan</th></tr></thead>
+    <tbody>{transactions.map(row=><tr key={row.id}><td>{row.year}</td><th>{row.project}</th><td>{row.rawDate||'—'}</td><td>{row.description}{row.reference&&<small>{row.year<'2022'?'Baris histori ':'Referensi '}{row.reference}</small>}</td><td>{money(row.credit)}</td></tr>)}</tbody>
+   </table></div>
+   {!transactions.length&&<p>Tidak ada penerimaan untuk pilihan ini.</p>}
+  </section>}
+  {full&&canEdit&&<details><summary>Perbarui histori penerimaan 2020–2025</summary>
+   <form onSubmit={saveHistory}><label>Data histori (JSON)<textarea rows={5} value={input} onChange={event=>setInput(event.target.value)} required/></label>
+    <button disabled={saving}>{saving?'Menyimpan…':'Simpan histori'}</button><p role="status">{message}</p>
+   </form>
+  </details>}
  </section>;
+}
+
+export function ProjectIncomeReport(){
+ return <main className="yg-history"><header className="history-header"><a className="history-back" href="/finance">← Ringkasan keuangan</a></header><ProjectIncomeSummary full/></main>;
 }
 
 export default function HistoryReport(){
