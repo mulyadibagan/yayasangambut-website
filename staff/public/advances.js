@@ -12,7 +12,32 @@ async function run(fn){if(busy)return;busy=true;document.querySelectorAll('butto
 function own(){return current?.creator===me.id;}
 function editable(){return !current||own()&&['draft','returned'].includes(current.status);}
 function reportEditable(){return current&&own()&&['disbursed','pjum_draft','pjum_returned'].includes(current.status);}
-function list(){const term=$('#search').value.toLowerCase(),status=$('#filter').value;$('#requests').replaceChildren();for(const row of rows.filter(r=>(!$('#overview-project').value||r.payload.project_id===$('#overview-project').value)&&(!status||r.status===status)&&[r.number,r.payload.activity,r.payload.project,r.creator_name].join(' ').toLowerCase().includes(term))){const b=el('button',row.payload.activity,{className:'record'+(current?.id===row.id?' active':'')});b.append(el('small',row.number+' · '+row.creator_name),el('small',labels[row.status]+' · '+money(row.total)));b.onclick=()=>run(async()=>{if(dirty&&!confirm('Ada perubahan yang belum disimpan. Buka pengajuan lain?'))return;current=await request('/'+row.id);dirty=false;render();});$('#requests').append(b);}if(!$('#requests').children.length)$('#requests').append(el('p','Belum ada pengajuan sesuai filter.'));const active=rows.filter(r=>!['closed','cancelled'].includes(r.status));$('#summary').replaceChildren();for(const [name,value] of [['Pengajuan aktif',active.length],['Menunggu pemeriksaan',rows.filter(r=>['submitted','pjum_submitted'].includes(r.status)).length],['Menunggu persetujuan',rows.filter(r=>['checked','pjum_checked'].includes(r.status)).length],['UM aktif',money(active.reduce((n,r)=>n+r.total,0))]]){const a=el('article',name);a.append(el('strong',value));$('#summary').append(a);}}
+function renderUmSummary(){
+ const project=$('#overview-project');
+ const stages=[['submitted','Menunggu pemeriksaan'],['checked','Menunggu persetujuan UM'],['approved','Siap dicairkan']];
+ const scoped=rows.filter(row=>!project.value||row.payload.project_id===project.value);
+ const groups=stages.map(([status,label])=>({status,label,rows:scoped.filter(row=>row.status===status)}));
+ const sum=records=>records.reduce((total,row)=>total+Number(row.total),0);
+ const pending=groups.flatMap(group=>group.rows);
+ const summary=$('#summary');
+ const combined=el('article','Total UM dalam proses');
+ combined.append(el('strong',money(sum(pending))),el('small',pending.length+' UM · '+(project.value?project.selectedOptions[0].textContent:'Semua proyek')));
+ summary.replaceChildren(combined);
+ for(const group of groups){
+  const card=el('article',group.label);
+  const button=el('button','Lihat '+group.rows.length+' UM',{type:'button',className:'quiet',ariaLabel:'Lihat UM: '+group.label});
+  button.onclick=()=>{
+   setMode(false);
+   $('#search').value='';
+   $('#filter').value=group.status;
+   list();
+   $('#filter').focus();
+  };
+  card.append(el('strong',money(sum(group.rows))),button);
+  summary.append(card);
+ }
+}
+function list(){const term=$('#search').value.toLowerCase(),status=$('#filter').value;$('#requests').replaceChildren();for(const row of rows.filter(r=>(!$('#overview-project').value||r.payload.project_id===$('#overview-project').value)&&(!status||r.status===status)&&[r.number,r.payload.activity,r.payload.project,r.creator_name].join(' ').toLowerCase().includes(term))){const b=el('button',row.payload.activity,{className:'record'+(current?.id===row.id?' active':'')});b.append(el('small',row.number+' · '+row.creator_name),el('small',labels[row.status]+' · '+money(row.total)));b.onclick=()=>run(async()=>{if(dirty&&!confirm('Ada perubahan yang belum disimpan. Buka pengajuan lain?'))return;current=await request('/'+row.id);dirty=false;render();});$('#requests').append(b);}if(!$('#requests').children.length)$('#requests').append(el('p','Belum ada pengajuan sesuai filter.'));renderUmSummary();}
 function addItem(target,row={},report=false){const tr=el('tr');tr.append(el('td'));const fields=report?['receipt_no','date','description','quantity','unit','times','days','rate']:['activity_code','description','quantity','unit','times','days','rate'];for(const key of fields){const td=el('td'),numeric=['quantity','days','times','rate'].includes(key),input=el('input',undefined,{type:key==='date'?'date':numeric?'number':'text',required:!['activity_code'].includes(key),value:row[key]??(key==='activity_code'?$('#activity-choice').value:undefined)??({date:date(),quantity:1,times:1,days:1,rate:0,unit:'unit'}[key]||'')});input.dataset.key=key;input.setAttribute('aria-label',key+' '+(document.querySelector(target).children.length+1));if(numeric){input.min=key==='rate'&&report?'0':key==='quantity'?'0.01':'1';input.step=key==='quantity'?'0.01':'1';}else if(key!=='date')input.maxLength=key==='description'?500:60;input.oninput=()=>{dirty=true;totals();};td.append(input);
  if(!report&&(key==='times'||key==='days')){
   const label=el('small',key==='times'?row.frequencyUnit||'':row.durationUnit||'hari');
