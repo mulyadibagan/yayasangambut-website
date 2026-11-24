@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compileHistory,summarize,category,isoDate} from '../scripts/finance-history-policy.mjs';
-import {professionalCopy} from '../scripts/finance-presentation.mjs';
+import {compileHistory,summarize,category,isoDate,summarizeProjectReceipts} from '../scripts/finance-history-policy.mjs';
+import {professionalCopy,replaceProjectIncomeCard} from '../scripts/finance-presentation.mjs';
 import {applyFinancePresentation} from '../scripts/finance-presentation.mjs';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
@@ -57,4 +57,42 @@ test('presentation/report generation leaves source data byte-for-byte intact',as
   const page=await readFile(join(app,'finance-archive-dashboard.tsx'),'utf8');assert.ok(!page.includes('PayrollPaymentsPanel'));assert.ok(!page.includes('finance-invoice-entry'));assert.ok(page.includes('Arus Kas Proyek'));
   assert.ok((await readFile(join(app,'salary-balance-enhancer.tsx'),'utf8')).includes('<PayrollPaymentsPanel />'));
  }finally{await rm(root,{recursive:true,force:true});}
+});
+
+test('project receipts follow reconciled bank allocations across recorded years',()=>{
+ const old={year:2025,bank:{openingBalance:0,closingBalance:40,mutations:[
+  {date:'2025-01-01',project:'ARC3',description:'Dana dari donor',debit:0,credit:40,balance:40}
+ ]}};
+ const current={year:2026,bank:{openingBalance:40,closingBalance:172,mutations:[
+  {date:'2026-11-13',description:'Kredit GEC',debit:0,credit:100,balance:140},
+  {date:'2026-11-14',description:'Sisa UM',debit:0,credit:10,balance:150},
+  {date:'2026-11-15',description:'Donasi proyek',debit:0,credit:10,balance:160},
+  {date:'2026-11-16',description:'Bunga bank',debit:0,credit:2,balance:162},
+  {date:'2026-11-17',description:'Kredit tanpa proyek',debit:0,credit:10,balance:172}
+ ]}};
+ const closing={entries:[
+  {index:0,debit:0,credit:100,bankAllocations:[{bucket:'ARC3',amount:80},{bucket:'SPMCLS',amount:20}],allocations:[{bucket:'YG',amount:100}]},
+  {index:1,debit:0,credit:10,allocations:[{bucket:'ARC3',amount:10}]},
+  {index:2,debit:0,credit:10,allocations:[{bucket:'ARC3',amount:10}]},
+  {index:3,debit:0,credit:2,allocations:[{bucket:'ARC3',amount:2}]}
+ ]};
+ const report=compileHistory([old,current],closing);
+ const all=summarizeProjectReceipts(report),latest=summarizeProjectReceipts(report,'2026');
+ assert.deepEqual(all.years.map(r=>[r.year,r.incoming,r.count]),[['2025',4000,1],['2026',10000,1]]);
+ assert.equal(all.incoming,14000);
+ assert.equal(latest.incoming,10000);
+ assert.equal(latest.count,1);
+ assert.deepEqual(latest.projects.map(r=>[r.label,r.incoming]),[['Aramco Phase 3',8000],['SPM-CLS',2000]]);
+ assert.equal(report.coverage[1].incoming,13200);
+});
+test('replaces the project income section while retaining adjacent dashboard items',()=>{
+ const original=`'use client';
+ export default function Page(){return <main><section className="project-income">
+ <div><p>PENERIMAAN PROYEK · 2026</p><strong>{total}</strong></div>
+ <p>{count} transaksi teridentifikasi</p><div>{projects.map(p=><article>{p.name}</article>)}</div>
+ </section><section>Saldo bank</section></main>;}`;
+ const changed=replaceProjectIncomeCard(original);
+ assert.match(changed,/^'use client';\s*import \{ProjectIncomeSummary\}/);
+ assert.match(changed,/<ProjectIncomeSummary \/><section>Saldo bank<\/section>/);
+ assert.ok(!changed.includes('transaksi teridentifikasi'));
 });
