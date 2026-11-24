@@ -21,6 +21,7 @@ export function category(row){
   if(/angsuran|piutang|cicilan|pengembalian.*pinjaman/.test(s))return 'Pelunasan piutang';
   if(/pinjaman/.test(s))return 'Penerimaan pinjaman';
   if(/bunga|interest/.test(s))return 'Bunga bank';
+  if(/transfer (?:internal|antar(?:\s*rekening|\s*pos))|setor(?:an)? tunai|koreksi|reversal|refund|pengembalian|reimburse|pemulihan talangan|saldo awal/.test(s))return 'Penerimaan lain';
   if(/pencairan|payment|pembayaran.*(?:global|gec)|termin|term\s*\d|grant|transfer dari wilmar/.test(s))return 'Penerimaan proyek';
   return 'Penerimaan lain / perlu klasifikasi';
  }
@@ -34,11 +35,21 @@ export function category(row){
 }
 export function projectLabel(value){
  const s=String(value||'').trim(),k=s.toLowerCase().replace(/[\s_.-]+/g,'');
- const labels={arc3:'Aramco Phase 3',aramcophase3:'Aramco Phase 3',aramcophaseiii:'Aramco Phase 3',arc2:'Aramco Phase 2',aramcophase2:'Aramco Phase 2',aramcophaseii:'Aramco Phase 2',ppcf:'PPCF',spmcls:'SPM-CLS',spm25:'SPM 2025',spm2025:'SPM 2025',spm2024:'SPM 2024',penabulu:'Penabulu Small Grants',maearth:'MA Earth',core25:'Aliansi Kolibri · Core Fund 2025',core26:'Aliansi Kolibri · Core Fund 2026',resto:'Restorasi Imbo Putui',bpdpks:'BPDPKS',yg:'Operasional Yayasan',sav:'Operasional Yayasan',staff:'Gaji staf',staffpending:'Gaji staf · alokasi menunggu rincian',gaji:'Gaji staf'};
+ const labels={arc1:'Aramco Phase 1',aramcophase1:'Aramco Phase 1',aramcophasei:'Aramco Phase 1',april:'APRIL Group',aprildayun:'APRIL Group',aprilgroup:'APRIL Group',arc3:'Aramco Phase 3',aramcophase3:'Aramco Phase 3',aramcophaseiii:'Aramco Phase 3',arc2:'Aramco Phase 2',aramcophase2:'Aramco Phase 2',aramcophaseii:'Aramco Phase 2',ppcf:'PPCF',spmcls:'SPM-CLS',spm25:'SPM 2025',spm2025:'SPM 2025',spm2024:'SPM 2024',penabulu:'Penabulu Small Grants',maearth:'MA Earth',akcore2025:'Aliansi Kolibri · Core Fund 2025',akcf26:'Aliansi Kolibri · Core Fund 2026',core25:'Aliansi Kolibri · Core Fund 2025',core26:'Aliansi Kolibri · Core Fund 2026',resto:'Restorasi Imbo Putui',bpdpks:'BPDPKS',yg:'Operasional Yayasan',sav:'Operasional Yayasan',staff:'Gaji staf',staffpending:'Gaji staf · alokasi menunggu rincian',gaji:'Gaji staf'};
  return labels[k]||(!s||s==='–'||s==='-'?'Belum dialokasikan':s);
 }
 export function compileHistory(sources,closing){
  const seen=new Set(),rows=[],coverage=[];
+ const projectNames=new Set([
+  ...['ARC1','ARC2','ARC3','PPCF','SPMCLS','SPM25','SPM2024','PENABULU','MAEARTH','CORE25','CORE26','RESTO','BPDPKS','APRIL'].map(projectLabel),
+  ...(closing?.projects||[]).flatMap(p=>[p.key,p.name,p.label].filter(Boolean).map(projectLabel))
+ ]);
+ const addRow=row=>{
+  const type=category({...row,debit:row.debit/100,credit:row.credit/100});
+  const projectIncome=row.credit>0 && projectNames.has(row.project) &&
+   (type==='Penerimaan proyek'||type==='Penerimaan lain / perlu klasifikasi');
+  rows.push({...row,category:projectIncome?'Penerimaan proyek':type,projectIncome});
+ };
  for(const source of sources){
   const bank=source.bank,year=String(source.year);
   if(!Array.isArray(bank.mutations)||!bank.mutations.length||seen.has(year))throw Error('Bank report source missing or duplicated');
@@ -57,8 +68,8 @@ export function compileHistory(sources,closing){
    // Split only a genuine one-direction allocation. Reallocations never add cash flow.
    const splits=allocations?.filter(a=>a.amount!==0);
    if(splits?.length&&!(debit&&credit)&&splits.every(a=>Math.sign(a.amount)===sign)&&splits.reduce((n,a)=>n+Math.round(Math.abs(a.amount)*100),0)===amount){
-    for(const [j,a] of splits.entries()){const part={...base,id:base.id+':'+j,debit:debit?Math.round(Math.abs(a.amount)*100):0,credit:credit?Math.round(Math.abs(a.amount)*100):0,project:projectLabel(a.bucket)};rows.push({...part,category:category({...part,debit:part.debit/100,credit:part.credit/100})});}
-   }else rows.push({...base,category:category({...base,debit:debit/100,credit:credit/100})});
+    for(const [j,a] of splits.entries()){const part={...base,id:base.id+':'+j,debit:debit?Math.round(Math.abs(a.amount)*100):0,credit:credit?Math.round(Math.abs(a.amount)*100):0,project:projectLabel(a.bucket)};addRow(part);}
+   }else addRow(base);
   }
   const list=rows.filter(r=>r.year===year),first=bank.mutations[0],last=bank.mutations.at(-1);
   const opening=Number.isFinite(bank.openingBalance)?Math.round(bank.openingBalance*100):Math.round((first.balance+first.debit-first.credit)*100);
@@ -77,4 +88,16 @@ export function compileHistory(sources,closing){
 export function summarize(rows,group='category'){
  const map=new Map();for(const row of rows){const key=row[group]||'Belum dialokasikan',v=map.get(key)||{label:key,incoming:0,outgoing:0,ids:new Set()};v.incoming+=row.credit;v.outgoing+=row.debit;v.ids.add(row.id.split(':').slice(0,2).join(':'));map.set(key,v);}
  return [...map.values()].map(({ids,...v})=>({...v,count:ids.size,net:v.incoming-v.outgoing})).sort((a,b)=>['year','month'].includes(group)?a.label.localeCompare(b.label):b.incoming+b.outgoing-a.incoming-a.outgoing||a.label.localeCompare(b.label));
+}
+
+export function summarizeProjectReceipts(report,year=''){
+ const receipts=report.rows.filter(row=>row.projectIncome);
+ const rows=receipts.filter(row=>!year||row.year===year);
+ const lookup=new Map(summarize(receipts,'year').map(entry=>[entry.label,entry]));
+ return {
+  years:report.coverage.map(({year,from,to})=>({year,from,to,incoming:lookup.get(year)?.incoming||0,count:lookup.get(year)?.count||0})),
+  projects:summarize(rows,'project'),
+  incoming:rows.reduce((sum,row)=>sum+row.credit,0),
+  count:new Set(rows.map(row=>row.id.split(':').slice(0,2).join(':'))).size
+ };
 }
