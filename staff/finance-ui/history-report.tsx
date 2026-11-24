@@ -73,6 +73,7 @@ export function ProjectIncomeSummary({full=false}:{full?:boolean}){
   return {coverage,rows:[...historicalRows,...source.rows.filter(row=>!importedYears.has(row.year))]};
  },[archive]);
  const report=useMemo(()=>summarizeProjectReceipts(combined,year),[combined,year]);
+ const peak=Math.max(1,...report.years.map((entry:{incoming:number})=>entry.incoming));
  const current=report.years.find((entry:{year:string;to:string})=>entry.year===year);
  const details=(name='')=>{
   const query=new URLSearchParams();
@@ -93,10 +94,10 @@ export function ProjectIncomeSummary({full=false}:{full?:boolean}){
   }catch(error){setMessage(error instanceof Error?error.message:'Histori gagal disimpan.');}
   finally{setSaving(false);}
  }
- return <section className="history-panel" id="penerimaan-proyek" aria-labelledby="project-income-title">
-  <div className="history-section-title">
+ return <section className="history-panel project-receipts" id="penerimaan-proyek" aria-labelledby="project-income-title">
+  <div className="history-section-title project-receipts-header">
    <div><h2 id="project-income-title">Penerimaan proyek</h2>
-    <strong>{money(report.incoming)}</strong>
+    <strong className="project-receipts-total">{money(report.incoming)}</strong>
     <p>{report.count} {year&&year<'2022'?'termin':'penerimaan'} · {year||'Seluruh tahun'}{current?.to&&' · Mutasi sampai '+date(current.to)}</p>
    </div>
    <label>Tahun<select value={year} onChange={event=>{setYear(event.target.value);setProject('');}}>
@@ -105,18 +106,29 @@ export function ProjectIncomeSummary({full=false}:{full?:boolean}){
    </select></label>
   </div>
   {loadError&&<p className="history-warning">Histori tambahan belum dapat dimuat.</p>}
-  <details open={full||!year}>
-   <summary>Bandingkan penerimaan per tahun</summary>
+  <section className="project-receipts-chart" aria-label="Grafik penerimaan proyek per tahun">
+   <div className="project-receipts-chart-heading"><h3>Penerimaan per tahun</h3>{year&&<button type="button" onClick={()=>{setYear('');setProject('');}}>Seluruh tahun</button>}</div>
+   <ul>{report.years.map((entry:{year:string;incoming:number})=><li key={entry.year}>
+    <button type="button" aria-pressed={year===entry.year} aria-label={'Lihat penerimaan '+entry.year+' sebesar '+money(entry.incoming)}
+     onClick={()=>{setYear(entry.year);setProject('');}}>
+     <span>{entry.year}</span><span className="project-receipts-track" aria-hidden="true"><span style={{width:(100*entry.incoming/peak)+'%'}}/></span>
+     <span className="project-receipts-amount">{money(entry.incoming)}</span>
+    </button>
+   </li>)}</ul>
+  </section>
+  <details className="project-receipts-history">
+   <summary>Lihat angka dan sumber per tahun</summary>
    <div className="history-scroll"><table><thead><tr><th>Tahun</th><th>Penerimaan</th><th>Sumber</th></tr></thead>
     <tbody>{report.years.map((entry:{year:string;incoming:number})=><tr key={entry.year}><th><button type="button" aria-pressed={year===entry.year} onClick={()=>{setYear(entry.year);setProject('');}}>{entry.year}</button></th><td>{money(entry.incoming)}</td><td>{entry.year<'2022'?'Histori proyek':'Mutasi rekening'}</td></tr>)}</tbody>
    </table></div>
   </details>
-  <div className="history-scroll"><table><thead><tr><th>Proyek</th><th>Penerimaan</th><th>Jumlah</th></tr></thead>
+  <h3>Rincian per proyek</h3>
+  <div className="history-scroll"><table><thead><tr><th scope="col">Proyek</th><th scope="col">Penerimaan</th><th scope="col">Jumlah</th></tr></thead>
    <tbody>{report.projects.map((entry:{label:string;incoming:number;count:number})=><tr key={entry.label}><th><a href={details(entry.label)}>{entry.label}</a></th><td>{money(entry.incoming)}</td><td>{entry.count}</td></tr>)}
    {!report.projects.length&&<tr><td colSpan={3}>Belum ada penerimaan proyek teridentifikasi pada periode ini.</td></tr>}</tbody>
   </table></div>
-  <p className="history-note">Histori 2020–2021 berasal dari rekap penerimaan proyek. Mulai 2022, nilai penerimaan mengikuti mutasi rekening.</p>
-  {!full&&<a href="/finance/project-income">Buka laporan penerimaan proyek</a>}
+  <p className="history-note project-receipts-note">Histori 2020–2021 berasal dari rekap penerimaan proyek. Mulai 2022, nilai penerimaan mengikuti mutasi rekening.</p>
+  {!full&&<a className="project-receipts-link" href="/finance/project-income">Buka laporan penerimaan proyek →</a>}
   {full&&<section id="project-receipt-transactions" className="history-transactions">
    <h3>Rincian penerimaan{project?' · '+project:''}</h3>
    {project&&<button type="button" onClick={()=>setProject('')}>Semua proyek</button>}
