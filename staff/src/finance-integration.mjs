@@ -5,6 +5,20 @@ const norm=v=>String(v||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const aliases={arc3:'ARC3',aramcophase3:'ARC3',aramcophaseiii:'ARC3',spmcls:'SPMCLS',spmclsriau:'SPMCLS',ppcf:'PPCF',ppcfpematangduku:'PPCF',penabulu:'PENABULU',penabulusmallgrants:'PENABULU',maearth:'MAEARTH',resto:'RESTO',restorasiimboputui:'RESTO',april:'APRIL',aprilgroup:'APRIL',aprildayun:'APRIL',dayunapril:'APRIL',core26:'CORE26',akcf26:'CORE26',aliansikolibricorefund2026:'CORE26',core25:'AK_CORE_2025',akcore2025:'AK_CORE_2025',aliansikolibricorefund2025:'AK_CORE_2025',spm25:'SPM25',spm2025:'SPM25',bpdpks:'BPDPKS',yg:'YG',sav:'YG',savingumumyg:'YG',operasionalyayasan:'YG'};
 export const financeProject=value=>{const key=norm(value).replace(/^yg/,'');return aliases[norm(value)]||aliases[key]||String(value||'Belum dialokasikan');};
 Object.assign(aliases,{operasionalyg:'YG',arc2:'ARC2',aramcophase2:'ARC2',aramcophaseii:'ARC2',arc1:'ARC1',aramcophase1:'ARC1'});
+// Existing assignments issued before project numbering was generalized.
+export const lastOriginalAdvanceSequence=7;
+export const savingGatheringAdvanceId='3a225c65-206f-4082-9f85-0c5c73798c89';
+export function advanceProjectCode(projectId){
+ return ({APRIL:'YG-APRDYN',YG:'YG_Sav'})[projectId]||'YG_'+projectId;
+}
+export function officialAdvanceNumber(row,payload,aprilOrdinal){
+ if(payload.legacy?.number)return payload.legacy.number;
+ if(payload.document_number)return payload.document_number;
+ const [year,month]=row.created_at.slice(0,10).split('-');
+ if(row.id===savingGatheringAdvanceId)return '03/YG_Sav/11/2026';
+ if(payload.project_id==='APRIL'&&aprilOrdinal)return String(aprilOrdinal).padStart(2,'0')+'/YG-APRDYN/'+month+'/'+year;
+ return '';
+}
 const cents=v=>{const n=Number(v??0);if(!Number.isFinite(n)||n<0||!Number.isSafeInteger(Math.round(n*100)))throw Error('Nominal Finance tidak valid.');return Math.round(n*100);};
 const isPaid=r=>r.workflowPaid===true||r.status==='Dicairkan'||r.bankStatus==='Cocok'&&cents(r.bankAmount)===cents(r.advanceAmount??r.amount);
 const isApproved=r=>['Disetujui','Selesai','Ditutup'].includes(r.status);
@@ -47,13 +61,15 @@ export function integrateFinance(archive,workflows,history){
   const matches=[...records.values()].filter(u=>u.type==='UM'&&norm(u.documentNumber)===norm(r.umNumber)&&financeProject(u.project)===financeProject(r.project)&&cents(u.advanceAmount??u.amount)>0&&cents(u.advanceAmount??u.amount)===cents(r.advanceAmount));
   if(matches.length===1)r.parentUmId=matches[0].id;
  }
+ const originalApril=workflows.filter(row=>row.seq<=lastOriginalAdvanceSequence&&parse(row.payload).project_id==='APRIL').sort((a,b)=>a.seq-b.seq);
+ const aprilOrdinals=new Map(originalApril.map((row,index)=>[row.id,index+1]));
  for(const row of workflows){
   if(row.status==='cancelled')continue;
   const p=parse(row.payload),report=row.report?parse(row.report):null;
   const parentId=row.legacy_id||'UM-WORKFLOW-'+row.id,old=records.get(parentId);
   if(row.legacy_id&&(!old||cents(old.advanceAmount??old.amount)!==cents(row.total))){warnings.push({id:row.id,reason:'UM asal belum cocok dengan arsip.'});continue;}
   const paid=['disbursed','pjum_draft','pjum_returned','pjum_submitted','pjum_checked','settlement','closed'].includes(row.status);
-  const number=p.legacy?.number||'UM-'+String(row.created_at).slice(0,4)+'-'+String(row.seq).padStart(5,'0');
+  const number=officialAdvanceNumber(row,p,aprilOrdinals.get(row.id))||'UM-'+String(row.created_at).slice(0,4)+'-'+String(row.seq).padStart(5,'0');
   const project=old?.project||p.project_id||p.project;
   records.set(parentId,{...old,id:parentId,type:'UM',code:old?.code||(p.allocations||[]).map(a=>a.code).join(', '),title:p.activity,project,submitter:row.creator_name,amount:row.total,advanceAmount:row.total,documentNumber:number,submittedAt:old?.submittedAt||row.created_at,workflowId:row.id,workflowStatus:row.status,workflowPaid:paid,status:paid?'Dicairkan':({draft:'Draf',returned:'Perlu Revisi',submitted:'Menunggu Pemeriksaan',checked:'Menunggu Persetujuan',approved:'Disetujui'}[row.status]||row.status),paymentDate:row.paid_date,paymentReference:row.payment_reference,documentUrl:old?.documentUrl||'/finance/advances?id='+row.id});
   if(!report)continue;
