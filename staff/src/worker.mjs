@@ -280,6 +280,32 @@ async function route(req,env,ctx){
     if((url.pathname==='/finance'||url.pathname==='/finance/')&&req.method==='GET'&&payrollOperator(u,env)&&!financeDashboardAccess(u))return redirect(env.APP_ORIGIN+'/finance/payroll');
     if(!financeDashboardAccess(u))fail(403,'Menu Keuangan hanya dapat diakses oleh staf Finance yang ditunjuk dan Direktur.');
     if(url.pathname.startsWith('/api/finance'))fail(404,'Halaman tidak ditemukan.');
+    if(url.pathname==='/finance/project-income/api'){
+      const key='project_receipt_history_v1';
+      const headers={'Cache-Control':'private, no-store'};
+      if(req.method==='GET'){
+        const row=await env.DB.prepare('SELECT setting_value FROM finance_settings WHERE setting_key=?').bind(key).first();
+        return Response.json({rows:row?JSON.parse(row.setting_value):[],canEdit:financeOwner(u)},{headers});
+      }
+      if(req.method!=='PUT')fail(405,'Metode tidak didukung.');
+      if(!financeOwner(u)||req.headers.get('Origin')!==env.APP_ORIGIN)fail(403,'Histori penerimaan dikelola oleh Direktur.');
+      const data=await payload(req);
+      if(!Array.isArray(data?.rows)||!data.rows.length||data.rows.length>800)fail(400,'Daftar histori penerimaan tidak valid.');
+      const textField=(value,max)=>typeof value==='string'&&value.length<=max&&value.trim()===value;
+      const seen=new Set(),years=new Set(),rows=[];
+      for(const row of data.rows){
+        if(!row||!/^202[0-5]$/.test(row.year)||typeof row.year!=='string'||!Number.isSafeInteger(row.credit)||row.credit<=0||row.credit>1000000000000||
+          !textField(row.project,160)||!row.project||!textField(row.rawDate,80)||!textField(row.description,800)||
+          typeof row.reference!=='string'||!/^[1-9][0-9]{0,5}$/.test(row.reference)||(row.year>='2022'&&!row.rawDate))fail(400,'Ada baris histori yang tidak valid.');
+        const id=row.year+':'+row.reference;
+        if(seen.has(id))fail(400,'Referensi penerimaan pada tahun yang sama tercatat dua kali.');
+        seen.add(id);years.add(row.year);
+        rows.push({year:row.year,project:row.project,credit:row.credit,rawDate:row.rawDate,reference:row.reference,description:row.description});
+      }
+      if(years.size!==6)fail(400,'Histori harus mencakup tahun 2020–2025.');
+      await env.DB.prepare('INSERT INTO finance_settings (setting_key,setting_value) VALUES (?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value').bind(key,JSON.stringify(rows)).run();
+      return Response.json({rows,canEdit:true},{headers});
+    }
     if(!env.FINANCE)fail(503,'Aplikasi keuangan sedang disiapkan.');
     const headers=new Headers(req.headers);
     for(const name of [...headers.keys()])if(name.startsWith('oai-')||name.startsWith('x-yg-finance-')||['cookie','authorization'].includes(name))headers.delete(name);
