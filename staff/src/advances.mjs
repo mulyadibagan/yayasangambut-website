@@ -236,8 +236,8 @@ export async function advancesRoute(req,env,u,ctx){
   return json(projectCommitments(source,records,url.searchParams.get('exclude')));
  }
  if(path===prefix+'/api'){
-  if(req.method==='GET'){const rows=(await q(env,'SELECT *, '+aprilOrdinal+' FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;const attachments=(await q(env,`SELECT f.request_id,f.id,f.purpose,d.web_url FROM yg_advance_files f
-   JOIN yg_advance_requests r ON r.id=f.request_id LEFT JOIN yg_advance_drive d ON d.file_id=f.id AND d.status='archived'
+  if(req.method==='GET'){const rows=(await q(env,'SELECT *, '+aprilOrdinal+' FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;const attachments=(await q(env,`SELECT f.request_id,f.id,f.purpose,${env.FINANCE_DRIVE_FOLDER_ID?"d.web_url":"NULL AS web_url"} FROM yg_advance_files f
+   JOIN yg_advance_requests r ON r.id=f.request_id ${env.FINANCE_DRIVE_FOLDER_ID?"LEFT JOIN yg_advance_drive d ON d.file_id=f.id AND d.status='archived'":""}
    WHERE f.purpose IN ('um','pjum') AND lower(f.filename) LIKE '%.xlsx' `+(manager(u)?'':'AND r.creator=? ' )+'ORDER BY f.created_at DESC',...(manager(u)?[]:[u.id])).all()).results;
    return json(await Promise.all(rows.map(async row=>{
     const record=await numberedAdvance(env,row);
