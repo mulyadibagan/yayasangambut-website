@@ -199,6 +199,14 @@ export async function advancesRoute(req,env,u,ctx){
   if(source.bank_status!=='Cocok'||source.bank_amount!==source.amount||!source.paid_date)fail(400,'Bukti pencairan UM lama perlu diperiksa Finance terlebih dahulu.');
   return advancesRoute(new Request(env.APP_ORIGIN+prefix+'/api/legacy',{method:'POST',headers:{Origin:env.APP_ORIGIN,'Content-Type':'application/json'},body:JSON.stringify({id:source.id,owner_email:u.email,paid_date:source.paid_date,reference:source.reference||'Mutasi terverifikasi '+source.paid_date+' / '+source.number})}),env,u);
  }
+ if(path===prefix+'/api/document-archive'&&req.method==='GET'){
+  if(!manager(u))fail(403,'Akses arsip terbatas.');
+  const {records}=await readIntegratedFinance(env);
+  return json(records.filter(r=>['UM','PJUM'].includes(r.type)&&!String(r.id).includes('-WORKFLOW-')).map(r=>({
+   type:r.type,number:r.documentNumber||r.code,title:r.title,document:r.documentUrl,name:r.documentName,
+   folder:r.archiveFolderUrl,email:r.sourceEmailId
+  })));
+ }
  if(path===prefix+'/api/legacy'&&req.method==='GET'){
   if(!manager(u))fail(403,'Arsip UM dilaporkan oleh Direktur atau Finance.');
   const adopted=(await q(env,'SELECT legacy_id,id,status FROM yg_advance_requests WHERE legacy_id IS NOT NULL').all()).results;
@@ -228,7 +236,19 @@ export async function advancesRoute(req,env,u,ctx){
   return json(projectCommitments(source,records,url.searchParams.get('exclude')));
  }
  if(path===prefix+'/api'){
-  if(req.method==='GET'){const rows=(await q(env,'SELECT *, '+aprilOrdinal+' FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;return json(await Promise.all(rows.map(row=>numberedAdvance(env,row))));}
+  if(req.method==='GET'){const rows=(await q(env,'SELECT *, '+aprilOrdinal+' FROM yg_advance_requests '+(manager(u)?'':'WHERE creator=? ')+'ORDER BY seq DESC LIMIT 500',...(manager(u)?[]:[u.id])).all()).results;const attachments=(await q(env,`SELECT f.request_id,f.id,f.purpose,d.web_url FROM yg_advance_files f
+   JOIN yg_advance_requests r ON r.id=f.request_id LEFT JOIN yg_advance_drive d ON d.file_id=f.id AND d.status='archived'
+   WHERE f.purpose IN ('um','pjum') AND lower(f.filename) LIKE '%.xlsx' `+(manager(u)?'':'AND r.creator=? ' )+'ORDER BY f.created_at DESC',...(manager(u)?[]:[u.id])).all()).results;
+   return json(await Promise.all(rows.map(async row=>{
+    const record=await numberedAdvance(env,row);
+    record.workbooks={};
+    for(const purpose of ['um','pjum']){
+     const file=attachments.find(f=>f.request_id===row.id&&f.purpose===purpose);
+     if(file)record.workbooks[purpose]={url:file.web_url||prefix+'/api/'+row.id+'/files/'+file.id,download:!file.web_url};
+    }
+    if(row.id===dayunRequestId)record.workbooks.um={url:'https://drive.google.com/file/d/'+dayunWorkbookId+'/view'};
+    return record;
+   })));}
   if(req.method==='POST'){
    const data=await linkAdvanceProject(env,u,advanceInput(await input(req))),id=crypto.randomUUID(),event=crypto.randomUUID(),at=now();
    await env.DB.batch([q(env,'INSERT INTO yg_advance_requests(id,creator,creator_email,creator_name,payload,total,last_event,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?)',id,u.id,u.email,u.name,JSON.stringify(data),data.total,event,at,at),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) VALUES(?,?,?,?,1,?,?)',event,id,u.email,'created',JSON.stringify(data),at)]);
