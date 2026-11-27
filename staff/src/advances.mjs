@@ -236,7 +236,7 @@ export async function advancesRoute(req,env,u,ctx){
   const rows=(await q(env,'SELECT *, '+aprilOrdinal+" FROM yg_advance_requests WHERE json_extract(payload,'$.project_id')=?"+visibility+' ORDER BY seq DESC',projectId,...(manager(u)?[]:[u.id])).all()).results;
   return json(await Promise.all(rows.map(async row=>{
    const record=await numberedAdvance(env,row);
-   return {id:row.id,number:record.number,activity:record.payload.activity,total:row.total,status:row.status};
+   return {id:row.id,number:record.number,activity:record.payload.activity,total:row.total,status:row.status,paidDate:row.paid_date,paymentReference:row.payment_reference};
   })));
  }
  if(path===prefix+'/api/project'&&req.method==='GET'){

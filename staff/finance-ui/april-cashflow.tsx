@@ -21,7 +21,7 @@ export function AprilProjectShell({children}:{children:ReactNode}){
   return active?null:el;
  })}<style>{'.dossier-rollforward .april-metric-value{font:inherit;color:inherit;background:transparent;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.april-budget-detail{margin:16px 0;border-top:1px solid #dbe3de;padding-top:16px}.april-budget-detail summary{cursor:pointer;font-weight:700}.april-budget-detail table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:12px}.april-budget-detail th,.april-budget-detail td{padding:10px 12px;border-bottom:1px solid #e3e9e5;text-align:left}.april-budget-detail .amount{text-align:right;white-space:nowrap}.april-budget-detail .scroll{overflow:auto}@media(max-width:640px){.april-budget-detail th,.april-budget-detail td{padding:8px}}'}</style></section>;
 }
-type ProjectAdvance={id:string;number:string;activity:string;total:number;status:string};
+type ProjectAdvance={id:string;number:string;activity:string;total:number;status:string;paidDate:string|null;paymentReference:string|null};
 const advanceStatus:Record<string,string>={draft:'Draf UM',returned:'UM dikembalikan',submitted:'Pemeriksaan Keuangan',checked:'Persetujuan Direktur',approved:'Siap dicairkan',disbursed:'Menunggu PJUM',pjum_draft:'Draf PJUM',pjum_returned:'PJUM dikembalikan',pjum_submitted:'Pemeriksaan PJUM',pjum_checked:'Persetujuan PJUM',settlement:'Penyelesaian selisih',closed:'Selesai',cancelled:'Dibatalkan'};
 function AprilAdvances(){
  const [records,setRecords]=useState<ProjectAdvance[]|null>(null);
@@ -35,8 +35,8 @@ function AprilAdvances(){
  },[]);
  return <section className="april-budget-detail"><h3>Uang muka kegiatan</h3>
   {error?<p role="alert">{error}</p>:records===null?<p role="status">Memuat pengajuan UM…</p>:records.length===0?<p>Belum ada pengajuan UM yang dapat ditampilkan.</p>:
-   <div className="scroll"><table><thead><tr><th>Nomor UM</th><th>Kegiatan</th><th>Status</th><th className="amount">Nilai UM</th></tr></thead>
-   <tbody>{records.map(row=><tr key={row.id}><td><a href={'/finance/advances?project=APRIL&id='+encodeURIComponent(row.id)}>{row.number}</a></td><td>{row.activity}</td><td>{advanceStatus[row.status]||row.status}</td><td className="amount">{money(row.total)}</td></tr>)}</tbody></table></div>}
+   <div className="scroll"><table><thead><tr><th>Nomor UM</th><th>Kegiatan</th><th>Status</th><th>Tanggal pencairan</th><th>Referensi pencairan</th><th className="amount">Nilai UM</th></tr></thead>
+   <tbody>{records.map(row=><tr key={row.id}><td><a href={'/finance/advances?project=APRIL&view=um&id='+encodeURIComponent(row.id)}>{row.number}</a></td><td>{row.activity}</td><td>{advanceStatus[row.status]||row.status}</td><td>{row.paidDate?date(row.paidDate):"—"}</td><td>{row.paymentReference||"—"}</td><td className="amount">{money(row.total)}</td></tr>)}</tbody></table></div>}
  </section>;
 }
 export default function AprilCashflow(){

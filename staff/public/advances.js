@@ -182,6 +182,16 @@ async function setupProjects(){
  projects=await request('/projects');
  for(const id of ['#project-choice','#overview-project'])$(id).replaceChildren(el('option','Pilih proyek',{value:''}),...projects.map(p=>el('option',p.name+(p.closed?' · ditutup':''),{value:p.id,disabled:id==='#project-choice'&&p.closed})));
  const params=new URLSearchParams(location.search),id=params.get('project');
+ const advanceId=params.get('id');
+ if(params.get('view')==='um' && advanceId && /^[a-f0-9-]{36}$/.test(advanceId)){
+  current=await request('/'+advanceId);
+  dirty=false;
+  render();
+  setMode(false);
+  $('#page-title').textContent='Detail pengajuan UM';
+  $('#detail').scrollIntoView({block:'start'});
+  return;
+ }
  const reportId=params.get('id');if(reportId&&/^[a-f0-9-]{36}$/.test(reportId)){current=await request('/'+reportId);dirty=false;const review=me.finance||me.director&&params.get('view')==='review';setMode(!review);render();if(review){$('#page-title').textContent='Pemeriksaan PJUM';$('#page-description').textContent=me.finance?'Periksa laporan, dokumen, dan catatan PJUM.':'Tampilan pemeriksaan untuk Direktur. Pemeriksaan Finance tetap dilakukan oleh Riena.';$('#pjum-manual').open=false;$('#receipt-notes').open=false;}}
  if(projects.some(p=>p.id===id)){$('#overview-project').value=id;await loadOverview();if(params.get('activity'))await chooseActivity(id,params.get('activity'));}
 }
