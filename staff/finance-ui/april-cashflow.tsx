@@ -21,6 +21,24 @@ export function AprilProjectShell({children}:{children:ReactNode}){
   return active?null:el;
  })}<style>{'.dossier-rollforward .april-metric-value{font:inherit;color:inherit;background:transparent;border:0;padding:0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.april-budget-detail{margin:16px 0;border-top:1px solid #dbe3de;padding-top:16px}.april-budget-detail summary{cursor:pointer;font-weight:700}.april-budget-detail table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:12px}.april-budget-detail th,.april-budget-detail td{padding:10px 12px;border-bottom:1px solid #e3e9e5;text-align:left}.april-budget-detail .amount{text-align:right;white-space:nowrap}.april-budget-detail .scroll{overflow:auto}@media(max-width:640px){.april-budget-detail th,.april-budget-detail td{padding:8px}}'}</style></section>;
 }
+type ProjectAdvance={id:string;number:string;activity:string;total:number;status:string};
+const advanceStatus:Record<string,string>={draft:'Draf UM',returned:'UM dikembalikan',submitted:'Pemeriksaan Keuangan',checked:'Persetujuan Direktur',approved:'Siap dicairkan',disbursed:'Menunggu PJUM',pjum_draft:'Draf PJUM',pjum_returned:'PJUM dikembalikan',pjum_submitted:'Pemeriksaan PJUM',pjum_checked:'Persetujuan PJUM',settlement:'Penyelesaian selisih',closed:'Selesai',cancelled:'Dibatalkan'};
+function AprilAdvances(){
+ const [records,setRecords]=useState<ProjectAdvance[]|null>(null);
+ const [error,setError]=useState('');
+ useEffect(()=>{
+  const controller=new AbortController();
+  fetch('/finance/advances/api/project-advances?id=APRIL',{cache:'no-store',signal:controller.signal})
+   .then(async response=>{if(!response.ok)throw Error('Daftar UM belum dapat dimuat.');setRecords(await response.json());})
+   .catch(err=>{if(err.name!=='AbortError')setError(err.message);});
+  return ()=>controller.abort();
+ },[]);
+ return <section className="april-budget-detail"><h3>Uang muka kegiatan</h3>
+  {error?<p role="alert">{error}</p>:records===null?<p role="status">Memuat pengajuan UM…</p>:records.length===0?<p>Belum ada pengajuan UM yang dapat ditampilkan.</p>:
+   <div className="scroll"><table><thead><tr><th>Nomor UM</th><th>Kegiatan</th><th>Status</th><th className="amount">Nilai UM</th></tr></thead>
+   <tbody>{records.map(row=><tr key={row.id}><td><a href={'/finance/advances?project=APRIL&id='+encodeURIComponent(row.id)}>{row.number}</a></td><td>{row.activity}</td><td>{advanceStatus[row.status]||row.status}</td><td className="amount">{money(row.total)}</td></tr>)}</tbody></table></div>}
+ </section>;
+}
 export default function AprilCashflow(){
  const [budget,setBudget]=useState<any>(null),[error,setError]=useState('');
  useEffect(()=>{const c=new AbortController();fetch('/finance/advances/api/project?id=APRIL',{cache:'no-store',signal:c.signal}).then(async r=>{const b=await r.json();if(!r.ok)throw Error(b.error||'Anggaran belum dapat dimuat.');setBudget(b);}).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>c.abort();},[]);
@@ -45,6 +63,7 @@ export default function AprilCashflow(){
  <details className="dossier-note"><summary>Catatan perhitungan</summary><p>Anggaran merupakan rencana pembiayaan. Kas mengikuti alokasi mutasi bank. Pelaporan PJUM tidak dihitung sebagai transaksi kas kedua.</p></details></section>
  {error&&<p role="alert">{error}</p>}{!budget&&!error&&<p role="status">Memuat anggaran proyek…</p>}
  {s&&<><section className="linked-project-status"><div><h3>Jasa pendampingan</h3><strong>{money(s.servicesTotal)}</strong><p>Anggaran 12 bulan. Pembayaran gaji aktual dicatat terpisah.</p></div><div><h3>Kegiatan termin berjalan</h3><strong>{money(s.periodTotal)}</strong><p>{date(s.periodStart)} – {date(s.periodEnd)}</p></div></section></>}
+ <AprilAdvances />
  <nav aria-label="Layanan APRIL Dayun"><a href="/finance/advances?project=APRIL">UM &amp; PJUM</a><a href="/finance/advances/budget">Anggaran dan dokumen proyek</a></nav>
  {s&&<>{[true,false].map(jasa=><details className="april-budget-detail" key={String(jasa)}><summary>{jasa?'Rincian jasa pendampingan':'Rincian anggaran kegiatan'}</summary><div className="scroll"><table><thead><tr><th>No.</th><th>Komponen</th><th className="amount">{jasa?'Anggaran 12 bulan':'Termin berjalan'}</th></tr></thead><tbody>{rows.filter((r:any)=>!!r.management===jasa).map((r:any,i:number)=><tr key={r.code}><td>{i+1}</td><td>{r.code} · {r.name}</td><td className="amount">{money(jasa?r.annualBudget:r.periodBudget)}</td></tr>)}</tbody></table></div></details>)}</>}
 
