@@ -230,6 +230,15 @@ export async function advancesRoute(req,env,u,ctx){
   try{await env.DB.batch([q(env,"INSERT INTO yg_advance_requests(id,creator,creator_email,creator_name,status,payload,total,paid_date,payment_reference,legacy_id,last_event,created_at,updated_at) VALUES(?,?,?,?,'disbursed',?,?,?,?,?,?,?,?)",id,owner.id,owner.email,owner.name,JSON.stringify(data),legacy.amount,paid,'ARSIP:'+legacy.id,legacy.id,event,at,at),q(env,'INSERT INTO yg_advance_events(id,request_id,actor_email,action,version,snapshot,created_at) VALUES(?,?,?,?,1,?,?)',event,id,u.email,'legacy_linked',JSON.stringify({legacy,paid_date:paid,reference,confirmed:body.confirm_existing_payment===true}),at)]);}catch(e){if(String(e.message).includes('UNIQUE constraint'))fail(409,'UM arsip ini sudah terhubung. Muat ulang daftar.');throw e;}
   return json(await detail(env,await read(env,id)),201);
  }
+ if(path===prefix+'/api/project-advances'&&req.method==='GET'){
+  const projectId=new URL(req.url).searchParams.get('id');
+  const visibility=manager(u)?'':' AND creator=?';
+  const rows=(await q(env,'SELECT *, '+aprilOrdinal+" FROM yg_advance_requests WHERE json_extract(payload,'$.project_id')=?"+visibility+' ORDER BY seq DESC',projectId,...(manager(u)?[]:[u.id])).all()).results;
+  return json(await Promise.all(rows.map(async row=>{
+   const record=await numberedAdvance(env,row);
+   return {id:row.id,number:record.number,activity:record.payload.activity,total:row.total,status:row.status};
+  })));
+ }
  if(path===prefix+'/api/project'&&req.method==='GET'){
   const url=new URL(req.url),source=await projectSource(env,u,url.searchParams.get('id'));
   const records=(await q(env,'SELECT id,status,payload,report FROM yg_advance_requests').all()).results;
